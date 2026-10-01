@@ -1,0 +1,58 @@
+
+-->8
+-- label harness (appended by
+-- label.sh, never shipped).
+--
+-- the cover is a real board with
+-- the title laid over it: it shows
+-- what the game is and names it in
+-- one 128x128 image. see
+-- PICO8-LABEL.md for the pipeline.
+
+function dump()
+ printh("@@begin")
+ for y=0,127 do
+  local s=""
+  for x=0,127 do
+   local c=pget(x,y)
+   s=s..sub("0123456789abcdef",c+1,c+1)
+  end
+  printh(s)
+ end
+ printh("@@end")
+end
+
+function _init()
+ tk=30 shk=0 prt={}
+ cartdata("roberto_ringsort_l")
+ unl=20 sel=1
+ -- the busiest board in the set,
+ -- so the cover shows seven colours
+ ld(20) sc=1
+ -- a ring in hand, mid-board: the
+ -- cover should show the verb
+ cur=3 lift() cur=6
+ hx=px(6) hy=hcy(6)
+ drwg()
+
+ -- title plate. drawn over the
+ -- board's dead middle band, where
+ -- the two rows meet, so it hides
+ -- as few rings as possible
+ pdef()
+ fillp(0b0101101001011010.1)
+ rectfill(0,44,127,74,0)
+ fillp()
+ rectfill(6,46,121,72,0)
+ rect(6,46,121,72,4)
+ rect(7,47,120,71,0)
+ line(8,48,119,48,15)
+ -- wide+tall "ring sort" is 9 chars
+ -- at 8px each = 72px, centred
+ otext("\^w\^tring sort",28,52,10)
+ otext("puzzle",50,63,6)
+ dump()
+ extcmd("shutdown")
+end
+function _update60() end
+function _draw() end

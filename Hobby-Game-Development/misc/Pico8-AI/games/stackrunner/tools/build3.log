@@ -1,0 +1,126 @@
+floor 1  entry bcb/-  forbid=[]
+  ##########
+  #cb.#.cbp#
+  #.#bbcb#c#
+  #..bb#c..#
+  #c.#..b.##
+  ##.^b.#bb#
+  #...#a.b.#
+  #a#abc.#c#
+  ##########
+  score=170 states=25001 free=83% traps=79% routes=11 bad=0/11 topline=<v>v<^<(1) death=n len=5
+  sols: <v<v< <v<v>< v<v<v< <><v<v< <v<><v< <v<^vv<
+  hauls: bcb/ bc/ b/ bb/ bcbb/ / bcc/ bbb/ bca/ bbcb/ ba/ c/ a/ bbc/ bbca/ bba/
+  -> entry bcbb/-   forbid next: bbcb/ bbca/ bcb/ bcc/ bbb/ bca/ bbc/ bba/
+floor 2  entry bcbb/-  forbid=[bbcb/ bbca/ bcb/ bcc/ bbb/ bca/ bbc/ bba/]
+  ##########
+  #.#.cp.#.#
+  #.ab###b.#
+  ##baca#bc#
+  #ba#..ca##
+  #a.bb#bcb#
+  #b#.b..#a#
+  #a^a#..bb#
+  ##########
+  score=195 states=25002 free=76% traps=87% routes=19 bad=0/19 topline=<v<v>v<(1) death=n len=7
+  sols: <v<v>v< <v>v<v< <v<>v<v< <v<v<vv> <v><v>v< <v>v<^v<
+  hauls: bcbb/ bcb/ bc/ bcba/ b/ bb/ bab/ bca/ / ba/ a/
+  -> entry bcbb/-   forbid next: bcba/ bcb/ bab/ bca/
+floor 3  entry bcbb/-  forbid=[bcba/ bcb/ bab/ bca/]
+  ##########
+  ##cpbd#..#
+  #..b#bbdb#
+  #d#cb..#.#
+  #c.b.#c.d#
+  #..##b..##
+  ##.b.d#.c#
+  #.b.#.c^.#
+  ##########
+  score=200 states=25000 free=75% traps=82% routes=12 bad=0/12 topline=v>v<v>(1) death=n len=5
+  sols: v>v>v >v>v>v v>v<>v v>v<v> <>v>v>v >v>v<>v
+  hauls: bcb/ bc/ bcbbc/ bcbc/ b/ bcc/ / c/ bbc/
+  -> entry bcbbc/-   forbid next: bcbc/
+floor 4  entry bcbbc/-  forbid=[bcbc/]
+  ##########
+  #.b##ccbc#
+  #.#bc..#.#
+  #.c^b#b.a#
+  #c.#b..b##
+  ##b..a#..#
+  #b.a#abco#
+  #.#c#c.#p#
+  ##########
+  score=430 states=25001 free=77% traps=76% routes=23 bad=0/23 topline=^<<^<^<v(2) death=n len=8
+  sols: ^<<^<<^> ^<<^<^<v ^<><^<^< ^<<^<<>^< ^<<^<<^<> ^<<^^<^<v
+  hauls: bcb/ bcbb/ bc/ bcbc/ bcba/ b/ bbb/ bb/ / bab/ bcc/ c/ bbc/ ba/
+  -> entry bcbb/-   forbid next: bcbc/ bcba/ bcb/ bbb/ bab/ bcc/ bbc/
+floor 5  entry bcbb/-  forbid=[bcbc/ bcba/ bcb/ bbb/ bab/ bcc/ bbc/]
+  ##########
+  #..#^cbb##
+  #.ca.#b.b#
+  #b#bbb.#c#
+  #bcb#bca.#
+  ##aco.#..#
+  #.c#.ob###
+  #cbcc#bp.#
+  ##########
+  score=430 states=25000 free=74% traps=81% routes=24 bad=0/24 topline=<^<^><^<(1) death=n len=8
+  sols: <^<^><^< <^<^^>^< ><^<^><^ <^<^^<^>^ <^<^^>v^< <^<^v^><^
+  hauls: bcbc/ bbc/ b/ bc/ / bb/ bcb/ bccc/ c/ bbb/ bcc/ cc/ bbbc/
+  -> entry bcbc/-   forbid next: bccc/ bbbc/ bbc/ bcb/ bbb/ bcc/
+floor 6  entry bcbc/-  forbid=[bccc/ bbbc/ bbc/ bcb/ bbb/ bcc/]
+  ##########
+  #cc.#.bc.#
+  #.#b.cb#b#
+  #.bc.#^.b#
+  #ca#.b#.##
+  ##bccc#.c#
+  #ccc#.c..#
+  #p#.2..#.#
+  ##########
+  score=190 states=25000 free=75% traps=76% routes=10 bad=0/10 topline=^>^<>^>v(1) death=y len=8
+  sols: ^>^<>^>v ^>^<>^>^v ^>^><>^>v ^>^>^<^>v ^><>^<>^>v ^>^<>^<>>v
+  hauls: bcbc/ bcc/ bc/ bcb/ c/ b/ / bcbb/ bccb/ bb/ bbb/ cb/
+  -> entry bcbc/-   forbid next: bcbb/ bccb/ bcc/ bcb/ bbb/
+floor 7  entry bcbc/-  forbid=[bcbb/ bccb/ bcc/ bcb/ bbb/]
+  ##########
+  ##.bcb#.##
+  #.b#c.bb##
+  #p.a.#.bc#
+  #b#c.a.#.#
+  #.cc#...^#
+  ##aa..#.2#
+  #2b#bcbc##
+  ##########
+  score=189 states=25000 free=69% traps=84% routes=15 bad=0/15 topline=>^>v>v(1) death=y len=5
+  sols: >v>v> >^>v>v >^v>v> >v<>v> >v>^>v >v>^v>
+  hauls: b/ bcbb/ bb/ / bcb/ bc/ bbb/ c/ cb/
+  -> entry bcbb/-   forbid next: bcb/ bbb/
+floor 8  entry bcbb/-  forbid=[bcb/ bbb/]
+  ##########
+  #c.ca##yp#
+  ##c#.ba-##
+  ##abc.#bb#
+  #=b.#b.bc#
+  #.#cc.a#y#
+  #bcac#.cb#
+  #.c#^bb.##
+  ##########
+  score=145 states=25002 free=48% traps=85% routes=23 bad=0/23 topline=<Xv>vv<v<(2) death=n len=9
+  sols: <Xv>vv<v< <Xvv>v<v< <Xv>v^v<v< <Xv>vv<vX< <Xv^v>v<v< <Xvv<v<v>v
+  hauls: bcb/y bb/y bcb/ bc/ b/ b/y bb/ c/ c/y /y / bc/y ba/ bac/ bab/ cb/y cb/
+  -> entry bcb/y   forbid next: bcb/ bac/ bab/ bb/y bc/y cb/y
+floor 9  entry bcb/y  forbid=[bcb/ bac/ bab/ bb/y bc/y cb/y]
+  ##########
+  ##a.a.#o^#
+  ##.#.cc.##
+  #b..a#.ba#
+  #x#...c#.#
+  #cpa#bbac#
+  ##.b.c#ab#
+  #x.#...c##
+  ##########
+  score=-868 states=25000 free=0% traps=100% routes=5 bad=0/5 topline=<^>>^>Xv>^<^>(2) death=n len=13
+  sols: <^>>^>Xv>^<^> <^>>^>Xv^><^> <^>>^>Xv>^<^X> <^>>^>Xv^><^X> <^>>^>Xv<>>^<^>
+  hauls: cc/y /y cc/ / c/y
+  -> entry cc/y   forbid next: cc/

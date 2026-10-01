@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>embed harness — WebJsGameRunner</title>
+<link rel="icon" href="data:,">
+
+<style>
+  :root { color-scheme: dark; }
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: #17151c;
+    color: #c2c3c7;
+    font: 13px/1.6 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    padding: 18px;
+    box-sizing: border-box;
+  }
+  h1 { font-size: 14px; font-weight: 600; color: #fff1e8; margin: 0; letter-spacing: .08em; }
+  p { margin: 0; color: #5f574f; max-width: 62ch; text-align: center; }
+  .bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: center; }
+  button {
+    font: inherit;
+    color: #fff1e8;
+    background: #2b2733;
+    border: 1px solid #46414f;
+    border-radius: 4px;
+    padding: 4px 10px;
+    cursor: pointer;
+  }
+  button:hover { background: #383243; }
+  button.on { background: #29adff; border-color: #29adff; color: #000; }
+  #frame {
+    /* the resizable box itch.io gives the game */
+    width: 640px;
+    height: 360px;
+    resize: both;
+    overflow: hidden;
+    border: 1px solid #46414f;
+    background: #000;
+    /* deliberately not centered content: the engine must letterbox itself */
+  }
+  iframe { display: block; width: 100%; height: 100%; border: 0; }
+  code { color: #ffa300; }
+</style>
+</head>
+<body>
+
+<h1>ITCH.IO EMBED HARNESS</h1>
+<p>
+  Same cross-origin-ish sandbox itch uses. Drag the bottom-right corner of the frame
+  to resize, or pick a preset — the game must integer-scale and letterbox itself.
+  Keyboard only reaches the game after you click inside it.
+</p>
+
+<div class="bar">
+  <button data-size="640x360" class="on">640 × 360</button>
+  <button data-size="960x540">960 × 540</button>
+  <button data-size="1280x720">1280 × 720</button>
+  <button data-size="500x300">500 × 300 (squeezed)</button>
+  <button data-size="900x420">900 × 420 (odd)</button>
+  <button id="full">fullscreen</button>
+  <button id="reload">reload</button>
+</div>
+
+<div id="frame">
+  <!-- itch's sandbox. "allow-fullscreen" is NOT a sandbox token (Chrome logs an
+       error for it) — fullscreen is granted by the allow= / allowfullscreen
+       attributes instead. allow-same-origin is what lets the game fetch its own
+       relative assets; keeping it next to allow-scripts is exactly what itch does,
+       and is the source of the one "can escape its sandboxing" advisory below. -->
+  <iframe
+    id="game"
+    src="../index.html"
+    sandbox="allow-scripts allow-same-origin allow-pointer-lock"
+    allow="autoplay; fullscreen"
+    title="game"></iframe>
+</div>
+
+<p>served from <code id="origin"></code> — if this says <code>file://</code>, stop: <code>fetch</code> is blocked. Run <code>npx --yes serve . -l 8000</code> from the repo root.</p>
+
+<script>
+  var frame = document.getElementById("frame");
+  var game = document.getElementById("game");
+  document.getElementById("origin").textContent = location.protocol + "//" + location.host;
+
+  document.querySelectorAll("button[data-size]").forEach(function (b) {
+    b.addEventListener("click", function () {
+      var wh = b.dataset.size.split("x");
+      frame.style.width = wh[0] + "px";
+      frame.style.height = wh[1] + "px";
+      document.querySelectorAll("button[data-size]").forEach(function (o) {
+        o.classList.toggle("on", o === b);
+      });
+    });
+  });
+
+  document.getElementById("full").addEventListener("click", function () {
+    if (frame.requestFullscreen) frame.requestFullscreen();
+  });
+
+  document.getElementById("reload").addEventListener("click", function () {
+    game.src = game.src;
+  });
+</script>
+</body>
+</html>

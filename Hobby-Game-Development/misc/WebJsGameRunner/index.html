@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Stardust Run</title>
+<!-- inline so the browser never requests /favicon.ico (no network at runtime) -->
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect width='16' height='16' fill='%23000'/%3E%3Cpath d='M8 2 L13 13 L8 10 L3 13 Z' fill='%2329adff'/%3E%3C/svg%3E">
+<style>
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    background: #000;
+    overflow: hidden;
+  }
+  body {
+    -webkit-user-select: none;
+    user-select: none;
+    touch-action: none;
+    -webkit-tap-highlight-color: transparent;
+    color: #fff1e8;
+    font: 13px/1.5 ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  }
+
+  /* the frame the canvas is integer-scaled and letterboxed inside */
+  #wrap {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  #screen {
+    display: block;
+    background: #000;
+    outline: none;
+    touch-action: none;
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+  }
+
+  .overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: #000;
+    text-align: center;
+    padding: 16px;
+    box-sizing: border-box;
+  }
+  .overlay[hidden] { display: none; }
+
+  #bar {
+    width: 200px;
+    height: 6px;
+    border: 1px solid #5f574f;
+    background: #000;
+  }
+  #bar > i {
+    display: block;
+    height: 100%;
+    width: 0%;
+    background: #fff1e8;
+    transition: width .1s linear;
+  }
+
+  #start { cursor: pointer; }
+  #start .title { font-size: 22px; letter-spacing: .18em; }
+  #start .hint  { color: #c2c3c7; }
+  #start .keys  { color: #5f574f; font-size: 12px; }
+
+  /* engine puts .touch on <html> when it detects a touch-primary device */
+  .touch-only { display: none; }
+  html.touch .touch-only { display: inline; }
+  html.touch .mouse-only { display: none; }
+
+  #fail { color: #ff004d; white-space: pre-wrap; max-width: 90%; }
+</style>
+</head>
+<body>
+
+<div id="wrap">
+  <canvas id="screen" tabindex="0" aria-label="game screen"></canvas>
+</div>
+
+<div class="overlay" id="load">
+  <div>LOADING</div>
+  <div id="bar"><i></i></div>
+</div>
+
+<div class="overlay" id="start" hidden>
+  <div class="title">STARDUST RUN</div>
+  <div class="hint"><span class="mouse-only">CLICK TO START</span><span class="touch-only">TAP TO START</span></div>
+  <div class="keys">
+    <span class="mouse-only">ARROWS move &nbsp; X pulse &nbsp; ENTER pause</span>
+    <span class="touch-only">BOTTOM-LEFT PAD to move &nbsp; BOTTOM-RIGHT X to pulse &nbsp; TOP-RIGHT to pause</span>
+  </div>
+</div>
+
+<div class="overlay" id="fail" hidden></div>
+
+<script src="assets.js"></script>
+<script src="engine.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

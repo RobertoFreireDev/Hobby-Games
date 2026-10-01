@@ -1,0 +1,165 @@
+floor 1  entry bcb/
+  ##########
+  #pcc.#b.b#
+  #.#b.b.#.#
+  #.#b#..b^#
+  ##a.b.#bb#
+  #bb#.c.a##
+  #.c.b#ccb#
+  #.#b.#.#.#
+  ##########
+  score=125 states=17681 free=67% traps=77% routes=17 bad=0/17 death=n len=6
+  sols: >>v>v> >>v>^>v >>v>^v> >v>^>v> >v^>>v> ><>v>^>v
+  hauls: b/ bcb/ bb/ / bcc/ bccb/ bc/ c/ cb/ cbb/
+  hauls: bccb/ bcb/ bcc/ cbb/ bb/ bc/ cb/ b/ c/ /
+  -> entry bccb/-
+floor 2  entry bccb/
+  ##########
+  #b#..a.#a#
+  #bc.#cab.#
+  ##c^.b#b.#
+  #cc#..c###
+  #..ab#.b.#
+  #.#.c.b###
+  #c.b#abcp#
+  ##########
+  score=200 states=25000 free=79% traps=79% routes=17 bad=0/17 death=n len=6
+  sols: <^^<^< <<>^<^< <<^><^< <^^<^>< <^^<v^< <^v^<^<
+  hauls: bc/ bcc/ b/ / c/
+  hauls: bcc/ bc/ b/ c/ /
+  -> entry bcc/-
+floor 3  entry bcc/
+  ##########
+  #p#c#b...#
+  #d#d...#d#
+  #.c.c#.cc#
+  #cc#bd.b##
+  ##cb.b#..#
+  #cc.#.bcb#
+  #c#.^b.#.#
+  ##########
+  score=200 states=25002 free=77% traps=83% routes=13 bad=0/13 death=n len=6
+  sols: v>v>v> v>^v>v> v>v<>v> v>v>^v> v><>v>v> v>^>v>v<
+  hauls: bc/ / bcd/ b/ bcdb/ bcdc/ bcb/ bb/
+  hauls: bcdb/ bcdc/ bcd/ bcb/ bc/ bb/ b/ /
+  -> entry bcdb/-
+floor 4  entry bcdb/
+  ##########
+  ##abba#pc#
+  #bc#b..o##
+  #cc.c#a..#
+  #.#abb.#.#
+  #.^c#b#cb#
+  ##bba.#cc#
+  #..#bcc.##
+  ##########
+  score=410 states=25001 free=74% traps=82% routes=10 bad=0/10 death=n len=6
+  sols: v<v<v< v<^v<v> ><v<v<v< v<><v<v< v<>v<<v< v<^vv<v<
+  hauls: bcc/ bc/ c/ bb/ b/ / ba/ a/ bcb/ bac/ ac/
+  hauls: bcc/ bcb/ bac/ bc/ bb/ ba/ ac/ c/ b/ a/ /
+  -> entry bcc/-
+floor 5  entry bcc/
+  ##########
+  #..#^bcb##
+  #b.bc#...#
+  #c#o.b.#b#
+  #b.c#accb#
+  ##.a..##a#
+  #c.#.ocb##
+  #...a#cbp#
+  ##########
+  score=299 states=2642 free=60% traps=69% routes=15 bad=0/15 death=n len=7
+  sols: <^<^>^< <^<^^<^ <^<^^><^ <^<^^>^< <^><^>^< <^><^^<^
+  hauls: bcb/ bc/ c/ bb/ b/ /
+  hauls: bcb/ bc/ bb/ c/ b/ /
+  -> entry bcb/-
+floor 6  entry bcb/
+  ##########
+  ##a^b.#bc#
+  #.bb#c.ca#
+  #c#a.bb#a#
+  #...c#cbb#
+  #.c#...b##
+  ##bc2c#.p#
+  #ac.#b..b#
+  ##########
+  score=139 states=22668 free=69% traps=80% routes=11 bad=0/11 death=y len=7
+  sols: <^<^<^< <^<^<v^< <^><^<^< <^<><^<^< <^<^<^v^< <^<^<v<^^
+  hauls: bb/ b/ / bba/ bbb/ ba/ a/
+  hauls: bba/ bbb/ bb/ ba/ b/ a/ /
+  -> entry bba/-
+floor 7  entry bba/
+  ##########
+  ##b..c#b2#
+  ##a.#bbb^#
+  #.#..c.#b#
+  #bb..#bbc#
+  #.c#cbca##
+  ##p.#a#ba#
+  #.2.#....#
+  ##########
+  score=176 states=6773 free=68% traps=83% routes=13 bad=0/13 death=y len=7
+  sols: ^^>^>^> ^^>^>v^> ^^>v><^> ^^>v>^>^ ^^>v^>^> ^^>^>^<>>
+  hauls: b/ bb/ bbbb/ bbcb/ / bbb/ bcb/ bbc/ bc/
+  hauls: bbbb/ bbcb/ bbb/ bcb/ bbc/ bb/ bc/ b/ /
+  -> entry bbbb/-
+floor 8  entry bbbb/
+  ##########
+  #ac=b#b-^#
+  #c##bcba##
+  ##ccby#b.#
+  #...#cbbb#
+  #.#p.ca#.#
+  #b...#bc.#
+  #.b#..bc##
+  ##########
+  score=-9 states=25001 free=29% traps=93% routes=12 bad=0/12 death=n len=6
+  sols: >^>X^> >^<>^X> >^>X^<> ^>^>X^> >^<>>X^> >^><>X^>
+  hauls: bbb/ bbbc/ bb/ b/ / bc/ c/
+  hauls: bbbc/ bbb/ bb/ bc/ b/ c/ /
+  -> entry bbbc/-
+floor 9  entry bbbc/
+  ##########
+  #b.bb#c.b#
+  #cc#cb.p##
+  ##x...#.b#
+  #o..#b.cc#
+  #.#c..c#.#
+  #^#bc#.cc#
+  #..#aac.##
+  ##########
+  score=-566 states=25002 free=0% traps=100% routes=4 bad=0/4 death=n len=10
+  sols: <^<vX^vv<v <^<vX><vv^<v <^<vX>v<v^<v <^<vX^<v>v<v
+  hauls: / b/
+  hauls: b/ /
+  -> entry b/-
+floor 10  entry b/
+  ##########
+  #.bac#.bc#
+  #.#...p#b#
+  #.b.#bbbb#
+  ##baac#bb#
+  #.b#.caa##
+  #2...#xbb#
+  #^#b.bc#.#
+  ##########
+  score=-543 states=25002 free=2% traps=98% routes=25 bad=0/25 death=y len=17
+  sols: v>v<v<^<^<v<^vX<v v>v<v<^<^v<^vX<vv v>^v<v<^<<^<<^vX<v v>^v<v<^<^<v<^vX<v v>^v<v<^<^v<^vX<vv v>v<v<^<^v<^vX<><v
+  hauls: / b/ bb/
+  hauls: bb/ b/ /
+  -> entry bb/-
+floor 11  entry bb/
+  ##########
+  ##...x#.p#
+  #bab#d..b#
+  #d#ccdc#d#
+  #ddc.#y..#
+  #dd#dyxc##
+  ###^-b#bc#
+  #.ca#d.ca#
+  ##########
+  score=156 states=11802 free=46% traps=95% routes=5 bad=0/5 death=n len=12
+  sols: vv<^<v<v>Xv< vv<^<v<v<>Xv< vv<^<v<v>Xv>< vv<^<v<v<>^Xv< vv<^<v<v<>Xv><
+  hauls: / c/ dd/ cd/ d/ /yx d/yx c/yx /xy /x
+  hauls: dd/ cd/ c/ d/ d/yx c/yx / /yx /xy /x
+  -> entry dd/-

@@ -1,0 +1,5 @@
+﻿isfullscreen = false
+title = "Black Box"
+resolutionx = 320
+resolutiony = 180
+palette = "#000000,#ffffff,#f7aaa8,#697594,#d4689a,#782c96,#e83562,#f2825c,#ffc76e,#88c44d,#3f9e59,#373461,#4854a8,#7199d9,#9e5252,#4d2536,#1a1c2c,#5d275d,#b13e53,#ffa300,#ffec27,#a7f070,#38b764,#257179,#29366f,#3b5dc9,#41a6f6,#73eff7,#f4f4f4,#94b0c2,#566c86,#333c57"

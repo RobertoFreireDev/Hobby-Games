@@ -1,0 +1,23 @@
+-- Key mappings from controls/main.gptk in rg353ps
+controls = {
+    back = "escape",
+    start = "return",
+    a = "z",
+    b = "lshift",
+    x = "space",
+    y = "b",
+    l1 = "l",
+    l2 = "x",
+    l3 = "\"",
+    r1 = "r",
+    r2 = "y",
+    r3 = "\"",
+    up = "w",
+    down = "s",
+    left = "a",
+    right = "d",
+    left_analog_up = "up",
+    left_analog_down = "down",
+    left_analog_left = "left",
+    left_analog_right = "right",
+}

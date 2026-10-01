@@ -1,0 +1,434 @@
+pico-8 cartridge // http://www.pico-8.com
+version 42
+__lua__
+-- rougue dungeon
+-- roberto freire
+
+-- name game
+function _init()
+	state = game
+end
+
+function _update()
+	game:update()
+end
+
+
+function _draw()
+	cls()
+	game:draw()
+end
+
+
+-->8
+-- states
+game = {
+	first=true,
+	grid={}
+}
+
+function game:init()
+	self.grid = grid7x6(0)
+	self.grid:set(1, 1, 1)
+	self.grid:set(2, 2, 4)
+	self.grid:set(2, 1, 2)	
+	self.grid:set(3, 2, 3)
+	self.grid:set(3, 3, 6)
+	self.grid:set(3, 4, 7)
+	self.grid:set(4, 4, 8)	
+	self.grid:set(2, 4, 5)	
+	self.grid:set(1, 4, 9)
+	self.grid:set(6, 4, 8)	
+	self.grid:set(6, 7, 5)	
+	self.grid:set(5, 7, 9)
+	
+	add(self.grid.coins,{4,4})
+	add(self.grid.coins,{5,7})
+end
+
+function game:update()
+		if self.first then
+				self.first = false
+				self:init()
+		end
+		
+		player:update()
+end
+
+function game:draw()
+		self.grid:draw()
+		player:draw()
+end
+
+-->8
+-- grid
+function grid7x6(default_val)
+    local g = {
+        w = grid_h,
+        h = grid_w,
+        data = {},
+        coins = {}
+    }
+
+    for y=1,g.h do
+        g.data[y] = {}
+        for x=1,g.w do
+            g.data[y][x] = default_val or 0
+        end
+    end
+
+    function g:get(x, y)
+        return self.data[y][x]
+    end
+
+    function g:set(x, y, val)
+        self.data[y][x] = val
+    end
+    
+    function g:removetile(x,y)
+    				local o = convertpostogrid(x,y)
+								
+								if o.x < 1 or o.x > self.w
+										or o.y < 1 or o.y > self.h then
+										return 0
+								end
+								
+								local value = self.data[o.y][o.x]
+								self.data[o.y][o.x] = 0
+								return value
+				end
+				
+				function g:addtile(x,y,val)
+    				local o = convertpostogrid(x,y)
+								
+								if o.x < 1 or o.x > self.w
+										or o.y < 1 or o.y > self.h then
+										return false
+								end
+								
+								if self.data[o.y][o.x] == 0 then
+									self.data[o.y][o.x] = val
+									return true
+								end
+								
+								return false
+				end
+				
+    function g:canwalk(x,y,bit,shift,x0,y0,bit0,shift0)
+    				local o = convertpostogrid(x,y)
+								local oo = convertpostogrid(x0,y0)
+								
+								if o.x < 1 or o.x > self.w
+										or o.y < 1 or o.y > self.h then
+										return false
+								end
+								
+								if self.data[o.y][o.x] == 0 then
+										return false
+								end
+								
+								local tl = tiles[self.data[o.y][o.x]]
+								local tl0 = tiles[self.data[oo.y][oo.x]]
+								
+								return ((tl.v & bit) >> shift) == 1
+									and ((tl0.v & bit0) >> shift0) == 1
+				end
+
+    function g:draw()
+        local ox, oy, gsz = grid_pos_x,
+        				grid_pos_y,
+        				grid_size        
+        
+    				--rect(ox,oy,ox-1+self.h*gsz,oy-1+self.w*gsz,1)
+
+        for y=1,self.h do
+            for x=1,self.w do
+                local val = self:get(x,y)
+                if val > 0 then
+                	local tl=tiles[val]
+	                spr(tl.s, ox + (x-1)*gsz, oy + (y-1)*gsz,scale,scale,tl.fx,tl.fy)
+                end
+            end
+        end
+        
+        foreach(self.coins, function(c)
+								  spr(64,ox+(c[1]-1)*gsz,oy+(c[2]-1)*gsz,scale,scale)
+								end)
+    end
+
+    return g
+end
+-->8
+-- constants and utils
+grid_size = 16
+grid_pos_x = 8
+grid_pos_y = 4
+max_pyr_tiles = 3
+scale=2
+grid_h=7
+grid_w=7
+
+function convertpostogrid(x,y)
+		return {
+				x = flr((x-grid_pos_x)/grid_size) +1,
+				y =	flr((y-grid_pos_y)/grid_size) +1
+		}
+end
+
+-- tiles
+--v->15 = 1x8 top 1x4 right 1x2 down 1x1 left
+minitiles = {32,48,32,48,33,49,34,35,35}
+
+tiles = {
+	{
+		s = 5,
+		fx=false,
+		fy=false,
+		v=14--1110 
+	},
+	{
+		s = 37,
+		fx=false,
+		fy=false,
+		v=7--0111 
+	},
+	{
+		s = 5,
+		fx=true,
+		fy=false,
+		v=11--1011 
+	},
+	{
+		s = 37,
+		fx=false,
+		fy=true,
+		v=13--1101 
+	},
+	{
+		s = 7,
+		fx=false,
+		fy=false,
+		v=5--0101 
+	},
+	{
+		s = 39,
+		fx=false,
+		fy=false,
+		v=10--1010 
+	},
+	{
+		s = 9,
+		fx=false,
+		fy=false,
+		v=15--1111 
+	},
+	{ s = 11,
+		fx=false,
+		fy=false,
+		v=1--0001 
+	},
+	{
+		s = 11,
+		fx=true,
+		fy=false,
+		v=4--0100 
+	}
+}
+
+-->8
+-- player
+player = {
+	x = grid_pos_x,
+	y = grid_pos_y,
+	tx = grid_pos_x,
+	ty = grid_pos_y,
+	fx=false,
+	fy=false,
+	spd = 2,
+	spt = 1,
+	dir=4,
+	tiles={},
+	maxgettiles=10,
+	coins=0
+}
+
+function player:update()
+ self:move()
+ self:interact()
+end
+
+function player:interact()
+	if self.x ~= self.tx 
+		or self.y ~= self.ty then
+		return
+	end
+		
+	-- collect tile
+	if btnp(4) and #self.tiles < max_pyr_tiles then
+		local value = 0
+			
+		if self.dir == 1 then
+			value = game.grid:removetile(self.tx-grid_size,self.ty)
+		elseif self.dir == 2 then
+			value = game.grid:removetile(self.tx+grid_size,self.ty)
+		elseif self.dir == 3 then
+			value = game.grid:removetile(self.tx,self.ty-grid_size)
+		elseif self.dir == 4 then
+			value = game.grid:removetile(self.tx,self.ty+grid_size)
+		end
+		
+		if value > 0 then
+			self.maxgettiles-=1
+			add(self.tiles,value)
+		end
+	end	
+	
+	-- place tile
+	if btnp(5) and #self.tiles > 0 then
+		local added = false
+		local tiletoadd = self.tiles[#self.tiles]
+		
+		if self.dir == 1 then
+			added = game.grid:addtile(self.tx-grid_size,self.ty,tiletoadd)
+		elseif self.dir == 2 then
+			added = game.grid:addtile(self.tx+grid_size,self.ty,tiletoadd)
+		elseif self.dir == 3 then
+			added = game.grid:addtile(self.tx,self.ty-grid_size,tiletoadd)
+		elseif self.dir == 4 then
+			added = game.grid:addtile(self.tx,self.ty+grid_size,tiletoadd)
+		end
+		
+		if added then
+			self.tiles[#self.tiles]=nil
+		end
+	end	
+end
+
+function player:move()
+	-- if we are not moving
+ if self.x == self.tx 
+		and self.y == self.ty then
+			local posgd=convertpostogrid(self.x,self.y)
+			
+			--check coins
+			foreach(game.grid.coins, function(c)
+		  if posgd.x == c[1] and posgd.y == c[2] then
+						self.coins+=1
+						del(game.grid.coins,c)
+						sfx(0)
+				end
+		 end)
+		
+   -- check input to set new target
+   if btnp(0) then -- left
+   	if self.dir ~= 1 then
+    		self.dir = 1
+    		self.fx = true
+      self.spt = 3
+    elseif game.grid:canwalk(self.tx - grid_size,self.y,0b0100,2,self.x,self.y,0b0001,0) then
+   			self.tx -= grid_size
+   	end
+   elseif btnp(1) then -- right
+    if self.dir ~= 2 then
+    		self.dir = 2
+    		self.fx = false
+      self.spt = 3
+    elseif game.grid:canwalk(self.tx + grid_size,self.y,0b0001,0,self.x,self.y,0b0100,2) then
+      self.tx += grid_size
+    end
+   elseif btnp(2) then -- top
+    if self.dir ~= 3 then
+    		self.dir = 3
+    		self.fy = true
+      self.spt = 1
+    elseif game.grid:canwalk(self.x,self.ty-grid_size,0b0010,1,self.x,self.y,0b1000,3) then
+      self.ty -= grid_size
+    end
+   elseif btnp(3) then -- down
+    if self.dir ~= 4 then
+    		self.dir = 4
+    		self.fy = false
+      self.spt = 1
+    elseif game.grid:canwalk(self.x,self.ty+grid_size,0b1000,3,self.x,self.y,0b0010,1) then
+      self.ty += grid_size
+    end
+   end
+ else
+  -- move toward target
+  if self.x < self.tx then
+    self.x = min(self.x + self.spd, self.tx)
+  elseif self.x > self.tx then
+    self.x = max(self.x - self.spd, self.tx)
+  elseif self.y < self.ty then
+    self.y = min(self.y + self.spd, self.ty)
+  elseif self.y > self.ty then
+    self.y = max(self.y - self.spd, self.ty)
+  end
+ end
+end
+
+function player:draw()
+		spr(self.spt, self.x, self.y,scale,scale,self.fx,self.fy)
+		
+		for i=1,#self.tiles do
+			local tl = tiles[self.tiles[i]]
+			local mtl = minitiles[self.tiles[i]]
+			spr(mtl,2+(i-1)*10,117,1,1,tl.fx,tl.fy)
+			if i == #self.tiles then
+				rect(2+(i-1)*10,126,9+(i-1)*10,126,13)
+			end
+		end
+		
+		for i=1,self.coins do
+			spr(50,2+(i+2)*10,117,1,1)
+		end
+		
+		print(self.maxgettiles,120,120,13)
+end
+__gfx__
+00000000000000000000000000000000000000000533333333333350000000000000000005333333333333500000000000000000000000000000000000000000
+00000000000000000000000000000000000000000533333333333355555555555555555555333333333333555555555555555555000000000000000000000000
+00700700000000000000000000000000000000000533333333333333333333333333333333333333333333333333333333333335000000000000000000000000
+00077000000000088000000000000000088000000533333333333333333333333333333333333b3b333333333333333333333335000000000000000000000000
+000770000000000880000000000000000880000005333333333333333333333333333333333333b3333b33333333333333333335000000000000000000000000
+0070070000000008800000000000000008888000053333333b3b33333333333333333333333333333333b33333333333b3333335000000000000000000000000
+00000000000000088000000000000000088880000533333333b333333333333333333333333b33333333b333333333333b333335000000000000000000000000
+000000000000000880000000000888888888888005333333333333333333333333333b333333b33333333333333b33333b333335000000000000000000000000
+0000000000000008800000000008888888888880053333333333333333b333b33333b3333333b3333b33333333b3333333333335000000000000000000000000
+000000000008888888888000000000000888800005333333333333333b33333b3333333333333333b333333333b3333333333335000000000000000000000000
+000000000008888888888000000000000888800005333b3333333b333333333b3333333333333333b3333333333333b3b3333335000000000000000000000000
+0000000000000888888000000000000008800000053333b33333b333333333333333333333333333333333333333333b33333335000000000000000000000000
+0000000000000888888000000000000008800000053333b33333b333333333333333333333333333333b3b333333333333333335000000000000000000000000
+000000000000000880000000000000000000000005333333333333333333333333333333333b3b333333b3333333333333333335000000000000000000000000
+0000000000000008800000000000000000000000053333333333335555555555555555555533b333333333555555555555555555000000000000000000000000
+00000000000000000000000000000000000000000533333333333350000000000000000005333333333333500000000000000000000000000000000000000000
+53333335555555555333333555555555000000000000000000000000053333333333335000000000000000000000000000000000000000000000000000000000
+53333333333333333333333333333335000000005555555555555555053333333333335000000000000000000000000000000000000000000000000000000000
+53333333333333333333333333333335000000003333333333333333053333333333335000000000000000000000000000000000000000000000000000000000
+53333333333333333333333333333335000000003333333333333333053333333333335000000000000000000000000000000000000000000000000000000000
+5333333333333333333333333333333500000000333b3333333333330533333333b3335000000000000000000000000000000000000000000000000000000000
+53333333333333333333333333333335000000003333b3333333333305333333333b335000000000000000000000000000000000000000000000000000000000
+53333333333333333333333333333335000000003333b33333333333053333333333335000000000000000000000000000000000000000000000000000000000
+5333333555555555533333355555555500000000333333333333b333053333333333335000000000000000000000000000000000000000000000000000000000
+555555555333333500999900000000000000000033333333333b3333053333333333335000000000000000000000000000000000000000000000000000000000
+3333333353333335097aaa9000000000000000003333333333333333053333333333335000000000000000000000000000000000000000000000000000000000
+333333335333333597a99aa90000000000000000333333b333333333053333b3b333335000000000000000000000000000000000000000000000000000000000
+33333333533333359a99a9a900000000000000003333333b333333330533333b3333335000000000000000000000000000000000000000000000000000000000
+33333333533333359a9aa9a900000000000000003333333b333333330533333b3333335000000000000000000000000000000000000000000000000000000000
+33333333533333359aa99aa900000000000000003333333333333333053333333333335000000000000000000000000000000000000000000000000000000000
+333333335333333509aaaa9000000000000000005533333333333355053333333333335000000000000000000000000000000000000000000000000000000000
+53333335533333350099990000000000000000000533333333333350053333333333335000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000099990000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+0000097aaa9000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000097a99aa900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00009a99a9a900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00009a9aa9a900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00009aa99aa900000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+000009aaaa9000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+00000099990000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+__sfx__
+00010000264502d4503145032450324502d4502045000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000

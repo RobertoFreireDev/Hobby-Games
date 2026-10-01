@@ -1,0 +1,34 @@
+assets/maps/ — map_*.c: ASCII-art maps + legend { ch, tile, pal, coll, tag }. Width and height
+20..200 tiles; every row exactly w chars; every char has a legend entry; pal 0-6 (| MAP_FLIPX/MAP_FLIPY/
+MAP_OVER); tile < tileset count; coll = COLL_* (collision); tag = the game's TAG_* bits (assets.h). The engine
+knows no tile flags: the AI turns the editor's flags into these (meanings + what each became: GAME.md).
+Title screens, menus and HUD backgrounds are 20x18 maps too. Full conventions: docs/graphics.md (6.5).
+
+---- map_level1.c -----------------------------------------------------------
+#include "engine/engine.h"
+#include "assets.h"                       /* TAG_HAZARD 0x01, TAG_EXIT 0x02 */
+extern const tileset_def_t ts_forest;
+
+static const char * const rows[] = {
+ /*           1111111111 */
+ /* 01234567890123456789 */
+   "####################",
+   "#..................#",
+   "#.......~~~~.......#",
+   "#..P....~~~~....X..#",
+   "####################",
+};
+static const map_legend_t legend[] = {
+    { '.', 0, 0 },                         /* grass */
+    { '#', 1, 0, COLL_SOLID },             /* stone block (SOLID) */
+    { '~', 2, 1, 0, TAG_HAZARD },          /* water, BG palette 1 (HAZARD) */
+    { 'P', 0, 0 },                         /* SPAWN0 player start, drawn as grass: map_find('P') */
+    { 'X', 0, 0, 0, TAG_EXIT },            /* LEAVE0 exit: GAME.md says which scene */
+    { 0 }
+};
+const map_def_t map_level1 = { 20, 5, rows, legend, &ts_forest };
+
+---- assets.h ---------------------------------------------------------------
+extern const map_def_t map_level1;
+#define TAG_HAZARD 0x01                   /* legend tag bits: the game's own, listed in GAME.md */
+#define TAG_EXIT   0x02

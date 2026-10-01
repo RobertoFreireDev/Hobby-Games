@@ -1,0 +1,94 @@
+floor 1 kept -> bcbb/-
+floor 2 kept -> bcbb/-
+floor 3 kept -> bcbbc/-
+floor 4 kept -> bcbb/-
+floor 5 kept -> bcbc/-
+floor 6 kept -> bcbc/-
+floor 7 kept -> bcbb/-
+floor 8 kept -> bacb/-
+floor 9  entry bacb/-  forbid=[]
+  ##########
+  #cc.#cx.b#
+  #b#ca.c#c#
+  #.c#b#.ba#
+  #bb#pbcb##
+  ##x.ba#.c#
+  #..c#ac.o#
+  #b#..b.#^#
+  ##########
+  score=-193 states=25002 free=1% traps=99% routes=14 bad=0/14 topline=^>^>v<vX>v(1) death=n len=9
+  sols: >^v>^vX>v >^v<>^vX>v >^v><>vX>v ^>^>v<vX>v v<>^>^vX>v ><>^>v<vX>v
+  hauls: ba/ b/ / bacc/ bac/
+  -> entry bacc/-   forbid next: bac/
+floor 10  entry bacc/-  forbid=[bac/]
+  ##########
+  #b#bcbb#^#
+  #cpc#b..2#
+  ##cbaa#xb#
+  #xb#bcbc##
+  #c..b#bb.#
+  #c#cc.c#b#
+  #bb.#c..c#
+  ##########
+  score=-298 states=25002 free=0% traps=100% routes=5 bad=0/5 topline=>v>v>v^X>^(1) death=y len=10
+  sols: >v>v>v^X>^ v^>v>v^X>^ <>v>v>v^X>^ >^>vv>v^X>^ >^v>v>v^X>^
+  hauls: baca/ bacb/ bacc/
+  -> entry baca/-   forbid next: bacb/ bacc/
+floor 11  entry baca/-  forbid=[bacb/ bacc/]
+  ##########
+  ##b.#c.cc#
+  ##^bcc#dc#
+  #xb#cca.##
+  #cddc#..b#
+  #d#.a.x###
+  #...#yb-c#
+  ##cc.b#yp#
+  ##########
+  score=258 states=25000 free=52% traps=92% routes=21 bad=0/21 topline=<>^X<v<^<>^<(1) death=n len=10
+  sols: <X^<^^<<^< <>^X<^<^>^< <>^X<v<^>^< <X^<<v<^>^< <X^<^^<<^>< <>^X<^<^<>^<
+  hauls: b/x cb/y bcb/y dcb/y /yx cb/ bdcb/y b/yx bcb/ dcb/ /x bdcb/ b/y b/ db/x d/xx bb/y cb/yx /xx db/ d/x bb/ cb/x b/xy /xyx /y /
+  -> entry bdcb/y   forbid next: bdcb/ bcb/y dcb/y
+floor 12  entry bdcb/y  forbid=[bdcb/ bcb/y dcb/y]
+  ##########
+  #p#b...#y#
+  #-ca.#.yb#
+  #ad#cc..##
+  ##ac.d#2d#
+  #...#cd..#
+  #.#.^bc#.#
+  #cdcc#c.b#
+  ##########
+  score=-728 states=13997 free=58% traps=76% routes=36 bad=0/36 topline=Xv>v<v>^(1) death=y len=8
+  sols: Xv>v<v>^ Xv>v>v>^ Xv>v^>v< Xv>^v<v>^ Xv>^v>v>^ Xv>^v^>v<
+  hauls: bddc/ bd/ bdcc/ b/ bdc/ bdd/ dc/ / bc/ c/ d/
+  -> entry bddc/-   forbid next: bdcc/ bdc/ bdd/
+floor 13  entry bddc/-  forbid=[bdcc/ bdc/ bdd/]
+  ##########
+  #bbc#a..c#
+  #b#pcoc#b#
+  #.bcb#c..#
+  #2.#cbbc##
+  ##.b.b#b.#
+  #c..#b#^c#
+  #b#.bc.#a#
+  ##########
+  score=175 states=25000 free=71% traps=80% routes=14 bad=0/14 topline=>v>^>v(1) death=y len=6
+  sols: >v>^>v >v^v>v v>v>^>v ><>v>^>v >v<>>^>v >v>^<>>v
+  hauls: bddbb/ bdbbb/ bbbb/ bddb/ bddc/ bdb/ bdbb/ bbbbb/ bb/ bdd/ bbb/ bd/ b/ / bdbc/
+  -> entry bddbb/-   forbid next: bdbbb/ bbbbb/ bbbb/ bddb/ bddc/ bdbb/ bdbc/
+floor 14  entry bddbb/-  forbid=[bdbbb/ bbbbb/ bbbb/ bddb/ bddc/ bdbb/ bdbc/]
+  ##########
+  #.#^cb.#b#
+  #yb.#.ccc#
+  ##ob..#cb#
+  #c.#a..=##
+  #.2ac#c-y#
+  #.#bcb.#c#
+  #...#c#.p#
+  ##########
+  score=370 states=1994 free=52% traps=77% routes=19 bad=0/19 topline=^X<v<^<^(1) death=y len=8
+  sols: ^X<^<>^< ^X<^<^<^ ^X<v<^<^ ^X<^<>^>< ^X<^<^><^ ^X<^<v^<^
+  hauls: bdc/ bd/ bddb/ bc/ b/ bdd/ bddc/ / c/
+  -> entry bddb/-   forbid next: bddc/ bdc/ bdd/
+floor 15 FAILED from bddb/
+saved tools/levels3.txt

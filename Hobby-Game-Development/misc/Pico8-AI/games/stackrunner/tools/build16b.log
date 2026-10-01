@@ -1,0 +1,30 @@
+floor 1  entry bcb/-  forbid=[]
+  ##########
+  #p#..ab#.#
+  #ac.#a...#
+  ##.ccb#a.#
+  #a.#cc.c##
+  #.baa#b^##
+  #.#cbc.#.#
+  #cb.#b.c.#
+  ##########
+  score=157 states=25000 free=75% traps=84% routes=13 bad=0/13 topline=v>v>^>v(1) death=n len=7
+  sols: v>v>^>v v>>v>v>v v>v<>^>v v>v>v^>v v>v^>v>v v><>v>v>v
+  hauls: bcac/ bc/ bac/ bcc/ c/ bca/ ac/ / b/ ba/ bcb/ ca/ bb/ bcbc/ a/ bbc/ bcca/ cc/
+  -> entry bcac/-   forbid next: bcbc/ bcca/ bac/ bcc/ bca/ bcb/ bbc/
+floor 2  entry bcac/-  forbid=[bcbc/ bcca/ bac/ bcc/ bca/ bcb/ bbc/]
+  ##########
+  ##...b#b.#
+  #.p#.ba.##
+  #cc.c#...#
+  #.#a#.c#a#
+  #..b#..b.#
+  ##ca#.#^.#
+  #.c#.ba.##
+  ##########
+  score=-3785 states=1071 free=9% traps=92% routes=12 bad=0/12 topline=v>^v>v>v<v(1) death=n len=10
+  sols: v>^v>v>v<v v<>^v>v>v<v v>^>v><v<>v v>^>v><v>v< v>^>v>v>v<v v>^v>^v>v<v
+  hauls: /
+  -> entry /-   forbid next: 
+floor 3 FAILED from /
+saved tools/levels2.txt

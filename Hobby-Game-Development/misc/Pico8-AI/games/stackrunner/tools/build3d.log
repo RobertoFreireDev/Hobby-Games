@@ -1,0 +1,43 @@
+floor 1 kept -> bcbb/-
+floor 2 kept -> bcbb/-
+floor 3 kept -> bcbbc/-
+floor 4 kept -> bcbb/-
+floor 5 kept -> bcbc/-
+floor 6 kept -> bcbc/-
+floor 7 kept -> bcbb/-
+floor 8 kept -> bacb/-
+floor 9 kept -> bacc/-
+floor 10 kept -> baca/-
+floor 11 kept -> bdcb/y
+floor 12 kept -> bddc/-
+floor 13 kept -> bddbb/-
+floor 14 kept -> bddb/-
+floor 15  entry bddb/-  forbid=[]
+  ##########
+  #-b2c#ba.#
+  #b#.ccd#c#
+  #^#c#cypx#
+  ##b..a##.#
+  #ba#bcc.##
+  #.cc.#db.#
+  #c#xbay#d#
+  ##########
+  score=-438 states=25000 free=0% traps=100% routes=3 bad=0/3 topline=><^v^<XX^<v(2) death=y len=11
+  sols: ><^v^<XX^<v <><^v^<X^X<v <><^v^<X^<X<v
+  hauls: bdb/ bb/ b/
+  -> entry bdb/-   forbid next: bb/
+floor 16  entry bdb/-  forbid=[bb/]
+  ##########
+  ##d..d#px#
+  #bbb#cbx.#
+  #c#2bb=#b#
+  #.bb.#y-##
+  #.2#...c##
+  ##ob#b#yd#
+  #d.^#.bab#
+  ##########
+  score=-1462 states=938 free=5% traps=97% routes=2 bad=0/2 topline=v<^<v<vX><v>v(1) death=y len=13
+  sols: v<^<v<vX><v>v v<v^<v<vX><v>v
+  hauls: b/
+floor 16 leaves nothing usable
+saved tools/levels3.txt

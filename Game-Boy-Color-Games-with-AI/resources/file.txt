@@ -1,0 +1,63 @@
+resources/ — art drawn by the human in tools/gbc-pixel-editor.html and exported here.
+The AI reads these files and converts them to assets/*.c; it never edits them. Maps go in maps/.
+Full format + conversion recipe: docs/art-pipeline.md (16). The editor ignores every file.txt.
+
+---- spritesheet.txt (source of truth for pixels, palettes and tile flags) ---
+# gbc-pixel-editor spritesheet v2
+# 256x256 px = 32x32 tiles of 8x8 px. tile index = row*32 + col (0-1023).
+# Flags 0-30 by name; 31-63 by the human's name from a "flag" line, else by number (game-defined); - = none.
+# Read by the AI only, never by the engine.
+# List and how each becomes game data: docs/art-pipeline.md (16.2).
+
+palette 0: 224,232,192 136,168,80 56,104,48 16,40,24
+palette 1: 192,224,240 104,160,216 40,96,168 16,40,88
+palette 2: 216,216,208 144,144,152 88,88,104 32,32,48
+palette 3: 240,208,160 192,128,72 128,64,40 48,24,16
+palette 4: 248,0,248 24,16,40 208,72,56 240,200,152
+palette 5: 248,0,248 96,48,0 232,176,32 248,240,176
+palette 6: 248,0,248 32,16,48 136,72,192 208,168,240
+palette 7: 24,24,40 8,8,16 112,136,208 240,240,224
+
+flag 40 ICE blue
+
+tile 0001 row 0 col 1 pal 2 flags SOLID ICE
+11111113
+12222223
+12222223
+12222223
+12222223
+12222223
+12222223
+33333333
+tile 0036 row 1 col 4 pal 5 flags -
+00111100
+01233210
+12322221
+12322221
+12222221
+12222221
+01222210
+00111100
+
+---- spritesheet.png --------------------------------------------------------
+The same sheet as a 256x256 image, for looking at the art (Read it); never decoded.
+
+---- objects.txt ------------------------------------------------------------
+# gbc-pixel-editor objects v1
+
+object coin
+description Collectible. Spins in place; +1 score and sfx_coin when the player touches it.
+
+  animation spin
+  description Loops forever.
+  size 1x1
+  collision 1 0 6 8
+  speed 12
+  loop yes
+  frame
+    0036
+  # tile 0037 = the coin turning (not shown above)
+  frame
+    0037
+
+end

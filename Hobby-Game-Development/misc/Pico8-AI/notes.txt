@@ -1,0 +1,20 @@
+- PUBLISH PICO8
+
+export {name}.p8.png
+
+- ITCH.IO
+
+export {name}.html
+rename game.html to index.html
+zip html and js
+
+
+- TRANSFER FILE
+
+https://muos.dev/web/sftpfilebrowser
+
+http://192.168.0.115:9090/
+
+WebUI Port: 9090
+Username: muos
+Password: muos

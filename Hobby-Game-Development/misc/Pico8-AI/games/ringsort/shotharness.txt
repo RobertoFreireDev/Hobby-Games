@@ -1,0 +1,37 @@
+
+-->8
+-- screenshot harness (appended by
+-- shot.sh, never shipped)
+
+function dump()
+ printh("@@begin")
+ for y=0,127 do
+  local s=""
+  for x=0,127 do
+   local c=pget(x,y)
+   s=s..sub("0123456789abcdef",c+1,c+1)
+  end
+  printh(s)
+ end
+ printh("@@end")
+end
+
+function _init()
+ tk=30 shk=0 prt={}
+ cartdata("roberto_ringsort_s")
+ unl=20 sel=7
+ local w=stat(6)
+ if w=="intro" then
+  goint() drwi()
+ else
+  ld(tonum(w) or 20)
+  sc=1
+  cur=2 lift() cur=6
+  hx=px(6) hy=hcy(6)
+  drwg()
+ end
+ dump()
+ extcmd("shutdown")
+end
+function _update60() end
+function _draw() end

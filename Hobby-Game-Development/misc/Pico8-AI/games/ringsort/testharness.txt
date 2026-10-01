@@ -1,0 +1,129 @@
+
+-->8
+-- headless test harness (appended
+-- by mktest.sh, never shipped)
+
+function chk(c,m)
+ if not c then printh("FAIL "..m) fails+=1 end
+end
+
+function runtests()
+ fails=0
+ tk=0 shk=0 prt={}
+ cartdata("roberto_ringsort_t")
+ unl=20 sel=1
+ -- every level string parses, has
+ -- the right ring counts, and fits
+ -- the screen
+ for n=1,20 do
+  ld(n)
+  local cnt={}
+  local tot=0
+  for i=1,8 do
+   for j=1,#pil[i] do
+    local c=pil[i][j]
+    cnt[c]=(cnt[c] or 0)+1 tot+=1
+   end
+   chk(#pil[i]<=k,"l"..n.." pillar over k")
+  end
+  chk(tot==nc*k,"l"..n.." ring total "..tot)
+  for c=0,nc-1 do
+   chk(cnt[c]==k,"l"..n.." colour "..c.." count "..(cnt[c] or 0))
+  end
+  chk(not solved(),"l"..n.." starts solved")
+  chk(hasmv(),"l"..n.." starts dead")
+  -- geometry: nothing leaves the
+  -- board band (top bar 0..8,
+  -- hud from 111)
+  for i=1,8 do
+   chk(pby(i)+4<111,"l"..n.." base into hud")
+   chk(hcy(i)>8,"l"..n.." held creature over top bar "..hcy(i))
+   chk(ry(i,k)>8,"l"..n.." top creature over top bar")
+   chk(ry(i,k)-2>8,"l"..n.." cap line over top bar")
+   chk(px(i)+28<128,"l"..n.." pillar off screen")
+  end
+  -- rows must not collide: the top
+  -- row's base sits above the
+  -- bottom row's tallest ring
+  chk(pby(1)+3<ry(5,k),"l"..n.." rows overlap")
+ end
+
+ -- geometry has to hold for every
+ -- capacity the design allows, not
+ -- just the ones the current level
+ -- table happens to use
+ for kk=2,5 do
+  k=kk
+  for i=1,8 do
+   chk(hcy(i)>8,"k"..kk.." held creature over top bar "..hcy(i))
+   chk(ry(i,kk)>8,"k"..kk.." top creature over top bar")
+   chk(ry(i,kk)-2>8,"k"..kk.." cap line over top bar")
+   chk(pby(1)+3<ry(5,kk)-2,"k"..kk.." cap line into row 1 base")
+   chk(pby(i)+4<111,"k"..kk.." base into hud")
+   chk(hcy(i)+9<=ry(i,kk),"k"..kk.." held creature overlaps a full stack")
+  end
+  chk(pby(1)+3<ry(5,kk),"k"..kk.." rows overlap")
+ end
+
+ -- a full move cycle on level 1
+ ld(1)
+ local src
+ for i=1,8 do
+  if #pil[i]>0 then src=i break end
+ end
+ cur=src lift()
+ chk(hld!=nil,"lift produced nothing")
+ chk(hsrc==src,"hsrc wrong")
+ -- cancelling back onto the source
+ -- is free
+ drop()
+ chk(mv==0,"cancel cost a move")
+ while drp do updg() end
+ chk(#pil[src]>0,"cancel lost the ring")
+
+ -- a real move onto an empty pillar
+ local dst
+ for i=1,8 do
+  if #pil[i]==0 then dst=i break end
+ end
+ cur=src lift() cur=dst drop()
+ chk(mv==1,"move not counted")
+ while drp do updg() end
+ chk(#pil[dst]==1,"ring did not land")
+
+ -- grid navigation: clamps at the
+ -- row edges, steps between rows
+ cur=1 hld=nil
+ chk(px(1)==0 and px(4)==96,"row 0 x")
+ chk(pby(1)==pby(4),"row 0 shares a base")
+ chk(pby(5)==pby(8),"row 1 shares a base")
+ chk(pby(5)>pby(1),"row 1 below row 0")
+
+ -- the blocking rule refuses the
+ -- pair and names the plate
+ ld(4)
+ local a,b=rul[1][1],rul[1][2]
+ for i=1,8 do
+  local p=pil[i]
+  if #p>0 and p[#p]==a and #p<k then
+   chk(not canp(b,i),"rule not enforced")
+   chk(why(b,i)==1,"wrong plate blamed")
+  end
+ end
+
+ -- drawing every scene must not
+ -- error; _draw does not run under
+ -- -x so call it directly
+ ld(20) sc=1
+ hld=pil[1][#pil[1]] hy=hcy(1)
+ drwg()
+ blkf=10 rul[1][3]=10 drwg()
+ wint=80 drwg() wint=0
+ dead=20 drwg() dead=0
+ sc=0 goint() drwi()
+ printh(fails==0 and "PASS" or ("FAILED "..fails))
+end
+
+function _init() runtests() extcmd("shutdown") end
+function _update60() end
+function _draw() end

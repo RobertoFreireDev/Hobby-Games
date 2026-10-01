@@ -1,0 +1,201 @@
+GAME SUMMARIES
+==============
+
+
+THE EMBER SEAL  (games/emberseal)
+
+Play The Ember Seal to carry a burnt coin across a dying valley and find out
+which of the endings you get. Every choice sticks: what you pack, who you
+trust, and whether you ever put the seal on.
+
+Arrows to pick, X to choose.
+
+Game by Roberto Freire
+
+
+GRIDLOCK  (games/gridlock)
+
+Play Gridlock to slide the red block out of the jam before the board
+detonates. You get a fixed number of moves per level - one wasted move and
+the whole thing blows up.
+
+Arrows to move, X to grab and drop a block, hold O to reset.
+
+Game by Roberto Freire
+
+
+KANGUROO  (games/kanguroo)
+
+Play Kanguroo to hop through the desert and land every crate on an orange
+pad. Roo hops two tiles at a time, one if something is in the way, and water
+sinks roo and crates alike.
+
+Arrows to hop, X to undo, hold O to retry the level.
+
+Game by Roberto Freire
+
+
+LOCKSTEP  (games/lockstep)
+
+Play Lockstep to move everybody at once - one press and every piece on the
+board steps together. Get them all home inside par to unlock the next level.
+
+Arrows to step, X to play, O to go back.
+
+Game by Roberto Freire
+
+
+MONSTERGRAM  (games/monstergram)
+
+Play Monstergram to solve a nonogram that fights back. The numbers count runs
+of monsters, every blank tile is safe to dig, and you swing a sword at
+anything you uncover wrong.
+
+X to dig or fight, O to flag a tile.
+
+Game by Roberto Freire
+
+
+MOONFALL  (games/moonfall)
+
+Play Moonfall to find the wolf hiding in a village of eight. Every night you
+walk around, ask people what they heard, and write it in your notebook -
+one of them is lying, and you have to name them before the moon comes up.
+
+Arrows to walk and choose, O to talk and accuse, X for the notebook.
+
+Game by Roberto Freire
+
+
+PATTERN HUNT  (games/patternhunt)
+
+Play Pattern Hunt to find sets of three in a grid of shapes. A chain counts
+when its three digits are all the same, a run in any order, or all one
+colour - diagonals count too.
+
+Arrows to move, X to pick cells, O for how to play.
+
+Game by Roberto Freire
+
+
+PEG DUNGEON  (games/pegsolitairerpg)
+
+Play Peg Dungeon to clear a floor of monsters that never move. It is peg
+solitaire with a hero in it: jump stones over monsters to kill them, jump a
+sword to block damage, and route every jump so you are the one left standing.
+
+Arrows to jump, O to select a stone/item, X to drink a potion.
+
+Game by Roberto Freire
+
+
+PORTAL FLOW  (games/portalflow)
+
+Play Portal Flow to join every pair of dots and fill every last tile - a
+connected board with one empty square is not solved. Some boards carry a
+portal pair: a pipe that enters one comes out of the other, and it can only
+ever belong to one colour.
+
+Arrows to draw, X to grab a dot, O to undo or hold to clear.
+
+Game by Roberto Freire
+
+
+QUADRIS  (games/quadris)
+
+Play Quadris to survive tetris from all four sides at once. Blocks fall in
+from every edge toward the middle - clear a full ring to score.
+
+Arrows to move and rotate, X to start.
+
+Game by Roberto Freire
+
+
+RING SORT  (games/ringsort)
+
+Play Ring Sort to sort eight stacks of little creatures until every pile is a
+single colour. Some colours refuse to sit on each other - the plates along the
+bottom name the pairs, and the two of them scowl at you if you try it anyway.
+
+Arrows to move, X to lift a creature and X again to drop it.
+
+Game by Roberto Freire
+
+
+ROOMMATES  (games/roommates)
+
+Play Roommates to seat a house full of difficult people and keep everyone
+happy. Drifters, homebodies, loners and clingers all want different
+neighbours, and a red outline means somebody is mad.
+
+Arrows to move people, X to place, O to go back.
+
+Game by Roberto Freire
+
+
+ROTAMAZE  (games/rotamaze)
+
+Play Rotamaze to escape a maze that turns. You cannot go around the walls -
+you spin them out of the way, one tile at a time, and walk through the gap
+you just made.
+
+Arrows to walk (bump a wall to aim at it), X to turn the faced tile,
+O to rewind, hold O to restart.
+
+Game by Roberto Freire
+
+
+SNAKEBOX  (games/snakebox)
+
+Play Snakebox to fill every tile in the box without biting yourself or
+boxing yourself in. No food, no growth timer - just you, the walls, and how
+much of the room you can cover before you run out of room.
+
+Arrows to turn, X to start.
+
+Game by Roberto Freire
+
+
+STACK RUNNER  (games/stackrunner)
+
+Play Stack Runner to get down sixteen floors on a stack of cards. Every step
+you take spends a card you found, so what you pick up decides how far you can
+still go.
+
+Arrows to spend a card and move, X to use an item, O to undo.
+
+Game by Roberto Freire
+
+
+STONE LOGIC  (games/stone)
+
+Play Stone Logic to clear a pile of stones by deduction instead of luck. Take
+any stone nothing sits on and match two of a face - covered stones hide their
+faces, so you read the board's laws and the tally to work out what is under
+there.
+
+Arrows to pick a stone, X to take, O for the laws, hold O to retry.
+
+Game by Roberto Freire
+
+
+TRIAD  (games/triad)
+
+Play Triad to spot trios in a grid of cards. Three cards make a trio when
+every property - shape, colour, number, fill - is either all the same or all
+different across them. One bad property fails the whole thing.
+
+Arrows to move, X to pick a card, O for the tutorial.
+
+Game by Roberto Freire
+
+
+HIGH ROLLER  (games/yahtzee)
+
+Play High Roller to beat the house over thirteen rounds of dice. Roll, hold
+what you want, and score it in the box that gets you the most - fill the top
+half for the +35 bonus.
+
+X to roll and score, O to hold dice, up/down to pick a box.
+
+Game by Roberto Freire

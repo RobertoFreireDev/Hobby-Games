@@ -1,0 +1,33 @@
+__lua__
+t = 0
+
+function _init()
+  x = 128
+  y = 72
+end
+
+function _update(dt)
+  t = t + 1
+  if btn(0) then x = x - 2 end
+  if btn(1) then x = x + 2 end
+  if btn(2) then y = y - 2 end
+  if btn(3) then y = y + 2 end
+end
+
+function _draw()
+  cls(1)
+  print("hello from lua!", 8, 8, 7)
+  circfill(x, y, 6 + 3 * sin(t / 60), 12)
+end
+__gfx__
+
+__gff__
+
+__atl__
+
+__map__
+
+__sfx__
+
+__music__
+

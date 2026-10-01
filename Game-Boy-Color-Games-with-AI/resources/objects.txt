@@ -1,0 +1,105 @@
+# gbc-pixel-editor objects v1
+# object <name> / description <text> / one or more animations / end
+# animation <name> / description <text> / size <w>x<h> (tiles) / collision <x> <y> <w> <h> (pixels from the frame top-left)
+# speed <game frames per animation frame, 1/60 s> / loop yes|no / frame + <h> rows of <w> tile indices (---- = empty)
+# tile index = spritesheet row*32 + col, see spritesheet.txt.
+
+object hero
+description The player, a young adventurer in a green tunic and cap. Walks in 4 directions with the D-pad (top-down, no jumping). Bushes, rocks, trees, fences, water and the sign block him. Press A facing the sign to read it. Collects gems; touching a slime or the spike trap costs one of 3 hearts and blinks for 1 s.
+
+  animation walk_down
+  description Walking toward the camera. Holds frame 1 when standing still.
+  size 2x2
+  collision 3 8 10 8
+  speed 10
+  loop yes
+  frame
+    0128 0129
+    0160 0161
+  frame
+    0130 0131
+    0162 0163
+
+  animation walk_up
+  description Walking away from the camera. Holds frame 1 when standing still.
+  size 2x2
+  collision 3 8 10 8
+  speed 10
+  loop yes
+  frame
+    0132 0133
+    0164 0165
+  frame
+    0134 0135
+    0166 0167
+
+  animation walk_side
+  description Walking right; flip X for left. Holds frame 1 when standing still.
+  size 2x2
+  collision 3 8 10 8
+  speed 10
+  loop yes
+  frame
+    0136 0137
+    0168 0169
+  frame
+    0138 0139
+    0170 0171
+
+end
+
+object slime
+description Enemy. Hops slowly in a random direction, changing it every 1-2 s or when it hits a wall. Hurts the hero on touch.
+
+  animation hop
+  description Stretch then squash, forever.
+  size 2x2
+  collision 2 6 12 9
+  speed 16
+  loop yes
+  frame
+    0140 0141
+    0172 0173
+  frame
+    0142 0143
+    0174 0175
+
+end
+
+object gem
+description Collectible. A glint runs across it; +1 gem and a chime when the hero touches it. Collect all of them to win.
+
+  animation shine
+  description The highlight slides left to right, then a sparkle. Loops forever.
+  size 1x2
+  collision 1 0 6 13
+  speed 8
+  loop yes
+  frame
+    0144
+    0176
+  frame
+    0145
+    0177
+  frame
+    0146
+    0178
+  frame
+    0147
+    0179
+
+end
+
+object heart
+description Pickup. Restores one heart (up to 3) when the hero touches it.
+
+  animation idle
+  description Still.
+  size 1x1
+  collision 0 0 7 7
+  speed 60
+  loop no
+  frame
+    0148
+
+end

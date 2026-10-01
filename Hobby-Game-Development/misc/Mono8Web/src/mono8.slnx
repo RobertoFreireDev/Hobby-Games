@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="../web/web.csproj" />
+  <Project Path="mono8.csproj" />
+</Solution>

@@ -1,0 +1,593 @@
+﻿<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    <title>web</title>
+    <base href="./" />
+    <link href="css/bootstrap/bootstrap.min.css" rel="stylesheet" />
+    <link href="css/app.css" rel="stylesheet" />
+    <link href="web.styles.css" rel="stylesheet" />
+
+    <style>
+        /* Pixel-art monospace for the Lua code editor. */
+        @font-face {
+            font-family: 'DepartureMono';
+            src: url('lib/fonts/DepartureMono-Regular.woff2') format('woff2');
+            font-weight: normal;
+            font-style: normal;
+            font-display: block;
+        }
+
+        /* Ace overlay: a modal editor that covers the KNI canvas while editing Lua. Shown when the
+           Esc cycle reaches it. Colours are the Mono8 (PICO-8) palette so it matches the engine. */
+        #aceHost {
+            display: none;
+            position: fixed;
+            top: 0; right: 0; bottom: 0; left: 0;
+            z-index: 100;
+            background: #111d35; /* DarkerBlue */
+            flex-direction: column;
+        }
+        #aceHost.open { display: flex; }
+
+        #aceHint {
+            flex: 0 0 auto;
+            display: flex;
+            justify-content: space-between;
+            gap: 8px;
+            height: 22px;
+            line-height: 22px;
+            padding: 0 8px;
+            background: #1d2b53; /* DarkBlue */
+            color: #c2c3c7;      /* LightGray */
+            font-family: 'DepartureMono', monospace;
+            font-size: 12px;
+            letter-spacing: 1px;
+            user-select: none;
+            border-bottom: 1px solid #29adff; /* Blue */
+        }
+        #aceHint b { color: #ffec27; } /* Yellow */
+        #aceCount { flex: 0 0 auto; color: #5f574f; } /* DarkGray */
+        #aceCount.full { color: #ff004d; } /* Red */
+
+        #aceEditor {
+            flex: 1 1 auto;
+            width: 100%;
+        }
+
+        /* Custom Mono8 Ace theme — crisp pixel text, no antialiasing smoothing. */
+        .ace-mono8 {
+            background-color: #111d35;
+            color: #c2c3c7;
+            -webkit-font-smoothing: none;
+            -moz-osx-font-smoothing: unset;
+            font-smooth: never;
+        }
+        .ace-mono8 .ace_gutter { background: #1d2b53; color: #5f574f; }
+        .ace-mono8 .ace_gutter-active-line { background-color: #291814; }
+        .ace-mono8 .ace_print-margin { width: 1px; background: #1d2b53; }
+        .ace-mono8 .ace_cursor { color: #fff1e8; }
+        .ace-mono8 .ace_marker-layer .ace_selection { background: rgba(41, 173, 255, 0.35); }
+        .ace-mono8 .ace_marker-layer .ace_active-line { background: rgba(29, 43, 83, 0.55); }
+        .ace-mono8 .ace_marker-layer .ace_bracket { border-color: #5f574f; }
+        .ace-mono8 .ace_indent-guide {
+            background: linear-gradient(90deg, transparent 0, transparent calc(100% - 1px), #291814 100%);
+        }
+        .ace-mono8 .ace_comment { color: #5f574f; }        /* DarkGray */
+        .ace-mono8 .ace_keyword { color: #29adff; }        /* Blue */
+        .ace-mono8 .ace_keyword.ace_operator { color: #ff77a8; } /* Pink */
+        .ace-mono8 .ace_constant,
+        .ace-mono8 .ace_constant.ace_language,
+        .ace-mono8 .ace_constant.ace_numeric { color: #ffa300; } /* Orange */
+        .ace-mono8 .ace_string { color: #00e436; }         /* Green */
+        .ace-mono8 .ace_support.ace_function,
+        .ace-mono8 .ace_entity.ace_name.ace_function { color: #ffec27; } /* Yellow */
+        .ace-mono8 .ace_variable { color: #ffccaa; }       /* Peach */
+        .ace-mono8 .ace_paren { color: #c2c3c7; }
+
+        /* Ctrl+F search box (ext-searchbox) — repainted in the Mono8 palette, since its
+           built-in CSS is light-themed and would glare over the dark editor. */
+        .ace-mono8 .ace_search {
+            background: #1d2b53;                /* DarkBlue */
+            border-color: #291814;
+            border-radius: 0;
+            font-family: 'DepartureMono', monospace;
+            color: #fff1e8;
+        }
+        .ace-mono8 .ace_search_field,
+        .ace-mono8 .ace_searchbtn,
+        .ace-mono8 .ace_button {
+            background: #291814;
+            border-color: #5f574f;
+            border-radius: 0;
+            color: #fff1e8;
+            font-family: 'DepartureMono', monospace;
+        }
+        .ace-mono8 .ace_searchbtn:hover,
+        .ace-mono8 .ace_button:hover { background: #5f574f; }
+        .ace-mono8 .ace_button.checked { border-color: #ffec27; color: #ffec27; }
+        .ace-mono8 .ace_search_counter { color: #5f574f; background: transparent; }
+        .ace-mono8 .ace_searchbtn_close { background-color: #fff1e8; }
+        .ace-mono8 .ace_marker-layer .ace_selected-word { background: rgba(255, 163, 0, 0.35); border: 0; }
+    </style>
+</head>
+
+<body>
+
+    <div id="app">
+        <div id="loading" style="display: table-cell; margin: auto; width:100vw; height:100vh; vertical-align: middle; background: #ffcc10;">
+            <div style="display: block; margin: auto; width: 9em; color: white;font-family: 'Segoe UI', sans-serif;">
+                <div style="text-align: center; font-size: 0.85em;">Made with<br/><a href="https://github.com/kniEngine/kni"><img src="kni.png" border="0" alt="Kni"></a></div>
+                <div style="text-align: center; font-size: 1.8em;">loading&nbsp;<marquee style="width:0.9em; vertical-align: bottom;">.&nbsp;.&nbsp;.&nbsp;&nbsp;&nbsp;</marquee></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Lua code editor (Ace) overlaid on the KNI canvas. Shown when the Esc cycle reaches it. -->
+    <div id="aceHost">
+        <div id="aceHint"><span>__lua__ &nbsp;·&nbsp; <b>Ctrl+F</b> to search &nbsp;·&nbsp; <b>Esc</b> to return to the editor</span><span id="aceCount">0 / 524288</span></div>
+        <div id="aceEditor"></div>
+    </div>
+
+    <script src="_framework/blazor.webassembly.js" autostart="false"></script>
+    <script type="module">
+        import { BrotliDecode } from './js/decode.min.js';
+        window.BrotliDecode = BrotliDecode;
+        // Set this to enable Brotli (.br) decompression on static webServers
+        // that don't support content compression and http://.
+        var enableBrotliDecompression = false;
+        Blazor.start({
+            loadBootResource: function (type, name, defaultUri, integrity)
+            {
+                if (enableBrotliDecompression === true && type !== 'dotnetjs' && location.hostname !== 'localhost')
+                {
+                    return (async function()
+                    {
+                        const response = await fetch(defaultUri + '.br', { cache: 'no-cache' });
+                        if (!response.ok)
+                            throw new Error(response.statusText);
+                        const originalResponseBuffer = await response.arrayBuffer();
+                        const originalResponseArray = new Int8Array(originalResponseBuffer);
+                        const contentType = (type === 'dotnetwasm')
+                                          ? 'application/wasm'
+                                          : 'application/octet-stream';
+                        const decompressedResponseArray = BrotliDecode(originalResponseArray);
+                        return new Response(decompressedResponseArray,
+                                            { headers: { 'content-type': contentType }
+                                   });
+                    })();
+                }
+            }
+        });
+    </script>
+
+    <script src="_content/nkast.Wasm.JSInterop/js/JSObject.8.0.11.js"></script>
+    <script src="_content/nkast.Wasm.Dom/js/Window.8.0.11.js"></script>
+    <script src="_content/nkast.Wasm.Dom/js/Document.8.0.11.js"></script>
+    <script src="_content/nkast.Wasm.Dom/js/Navigator.8.0.11.js"></script>
+    <script src="_content/nkast.Wasm.Dom/js/Gamepad.8.0.11.js"></script>
+    <script src="_content/nkast.Wasm.Dom/js/Media.8.0.11.js"></script>
+    <script src="_content/nkast.Wasm.XHR/js/XHR.8.0.11.js"></script>
+    <script src="_content/nkast.Wasm.Canvas/js/Canvas.8.0.11.js"></script>
+    <script src="_content/nkast.Wasm.Canvas/js/CanvasGLContext.8.0.11.js"></script>
+    <script src="_content/nkast.Wasm.Audio/js/Audio.8.0.11.js"></script>
+    <script src="_content/nkast.Wasm.XR/js/XR.8.0.11.js"></script>
+
+    <!-- Ace code editor (vendored, offline) + Lua syntax mode. -->
+    <script src="lib/ace/ace.js"></script>
+    <script src="lib/ace/mode-lua.js"></script>
+    <!-- Ctrl+F / Ctrl+H search box. Preloaded because Ace is vendored offline: its "find" command
+         lazy-loads this module, and with no CDN base path the fetch would fail. -->
+    <script src="lib/ace/ext-searchbox.js"></script>
+
+    <script>
+        // Browsers create every AudioContext suspended and only let it start from inside a
+        // user-gesture handler. KNI's audio backend just does `new AudioContext()` and never
+        // resumes it, and our sounds are triggered a frame later from requestAnimationFrame
+        // (not synchronously in the click/keydown handler), so the gesture never "counts" and
+        // the context stays suspended — no audio ever plays. Wrap the constructor to keep a
+        // reference to every context KNI creates, and resume them on any user gesture (KNI
+        // creates its context lazily on the first sound, so we keep listening, not once).
+        // Runs before KNI's Create/Create1 (invoked only at runtime) and before the
+        // getAudioSampleRate probe below, so every context is tracked.
+        (function ()
+        {
+            var Native = window.AudioContext || window.webkitAudioContext;
+            if (!Native)
+                return;
+
+            var contexts = [];
+            var gestured = false;
+
+            function resume(ctx)
+            {
+                if (ctx && ctx.state === 'suspended')
+                {
+                    try { ctx.resume(); } catch (e) { }
+                }
+            }
+
+            function resumeAll()
+            {
+                gestured = true;
+                for (var i = 0; i < contexts.length; i++)
+                    resume(contexts[i]);
+            }
+
+            function Wrapped(options)
+            {
+                var ctx = arguments.length ? new Native(options) : new Native();
+                contexts.push(ctx);
+                if (gestured)
+                    resume(ctx);
+                return ctx;
+            }
+            Wrapped.prototype = Native.prototype;
+
+            window.AudioContext = Wrapped;
+            if (window.webkitAudioContext)
+                window.webkitAudioContext = Wrapped;
+
+            ['pointerdown', 'mousedown', 'keydown', 'touchstart'].forEach(function (evt)
+            {
+                window.addEventListener(evt, resumeAll, true);
+            });
+        })();
+
+        // Report the browser's AudioContext sample rate so the game can match it
+        // (KNI's BlazorGL audio backend rejects a mismatched DynamicSoundEffectInstance rate).
+        window.getAudioSampleRate = () =>
+        {
+            try
+            {
+                var Ctx = window.AudioContext || window.webkitAudioContext;
+                var ctx = new Ctx();
+                var rate = ctx.sampleRate;
+                ctx.close();
+                return rate;
+            }
+            catch (e)
+            {
+                return 0;
+            }
+        };
+
+        // Mirror the Mono8 data files (data.mono8, data.save, ...) into localStorage so edits made in
+        // the editors survive a page reload; the WASM in-memory filesystem is wiped on reload.
+        window.mono8Persist = (name, content) =>
+        {
+            try { localStorage.setItem('mono8/' + name, content); } catch (e) { }
+        };
+        window.mono8Load = (name) =>
+        {
+            try { return localStorage.getItem('mono8/' + name); } catch (e) { return null; }
+        };
+
+        // Menu-bar Save: let the user choose a name/location and write the cartridge there. Uses the
+        // File System Access API ("save as" dialog) where available (Chromium), and falls back to a
+        // plain download everywhere else. Called from the game loop, still inside the click's
+        // transient user activation, which these APIs require.
+        window.mono8SaveFile = async (name, content) =>
+        {
+            // Notify .NET that the dialog is done (saved or cancelled) so it lifts the "saving cart..."
+            // overlay and resumes. Runs on every exit path via the finally below.
+            var notifyDone = () =>
+            {
+                if (window.theInstance)
+                    window.theInstance.invokeMethod('OnCartSaved');
+            };
+
+            try
+            {
+                try
+                {
+                    if (window.showSaveFilePicker)
+                    {
+                        var handle = await window.showSaveFilePicker({
+                            suggestedName: name,
+                            types: [{ description: 'Mono8 cartridge', accept: { 'text/plain': ['.mono8'] } }]
+                        });
+                        var writable = await handle.createWritable();
+                        await writable.write(content);
+                        await writable.close();
+                        return;
+                    }
+                }
+                catch (e)
+                {
+                    // User cancelled the picker — nothing to save, and don't fall through to a download.
+                    if (e && e.name === 'AbortError')
+                        return;
+                }
+
+                try
+                {
+                    var blob = new Blob([content], { type: 'text/plain' });
+                    var url = URL.createObjectURL(blob);
+                    var a = document.createElement('a');
+                    a.href = url;
+                    a.download = name;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    URL.revokeObjectURL(url);
+                }
+                catch (e) { }
+            }
+            finally
+            {
+                notifyDone();
+            }
+        };
+
+        // Menu-bar Load: open a file picker; once the user picks a cartridge, read it and hand the
+        // text back to .NET (OnCartLoaded), which applies and persists it.
+        window.mono8OpenFile = () =>
+        {
+            // Report to .NET that the picker was dismissed without loading a file, so the "loading
+            // cart..." overlay lifts. Guarded so the change/cancel races only notify once.
+            var cancelled = function ()
+            {
+                if (window.theInstance)
+                    window.theInstance.invokeMethod('OnCartImportCancelled');
+            };
+
+            try
+            {
+                var input = document.createElement('input');
+                input.type = 'file';
+                input.accept = '.mono8,text/plain';
+                var handled = false;
+                input.addEventListener('change', function ()
+                {
+                    handled = true;
+                    var file = input.files && input.files[0];
+                    if (!file)
+                    {
+                        cancelled();
+                        return;
+                    }
+                    var reader = new FileReader();
+                    reader.onload = function ()
+                    {
+                        // OnCartLoaded runs the completion callback itself, so no cancelled() here.
+                        if (window.theInstance)
+                            window.theInstance.invokeMethod('OnCartLoaded', reader.result);
+                    };
+                    reader.onerror = function () { cancelled(); };
+                    reader.readAsText(file);
+                });
+                // Browsers fire 'cancel' when the picker is dismissed with no selection.
+                input.addEventListener('cancel', function ()
+                {
+                    if (!handled)
+                        cancelled();
+                });
+                input.click();
+            }
+            catch (e) { cancelled(); }
+        };
+
+        // ---- Lua code editor (Ace) ------------------------------------------------------
+        // A JS/DOM code editor overlaid on the KNI canvas for editing the cartridge's __lua__
+        // section, which the engine's bitmap-font renderer can't do. The Esc cycle opens it
+        // (mono8CycleState) and Esc again commits and returns. While it's open .NET pauses the
+        // engine tick (SetAceOpen), so keystrokes typed here don't leak into the engine's shortcuts.
+        var mono8Ace = null;         // the Ace editor instance (created lazily)
+        var mono8AceOpen = false;    // whether the overlay is currently showing
+        var mono8GameRunning = true; // whether the Lua game is currently running (boots into the game)
+
+        // Esc cycles the three views: editor -> game -> Lua code editor -> editor. While the Ace
+        // overlay is open the engine tick is paused and can't see Esc, so the whole cycle is driven
+        // here in JS (the engine's own Esc handling is compiled out on the web head — see Mono8API).
+        function mono8CycleState()
+        {
+            if (!window.theInstance)
+                return;
+
+            if (mono8AceOpen)
+            {
+                // Lua code editor -> editor (commit + close the overlay)
+                mono8CloseAce();
+                return;
+            }
+
+            if (mono8GameRunning)
+            {
+                // game -> Lua code editor
+                window.theInstance.invokeMethod('StopGame');
+                mono8GameRunning = false;
+                mono8OpenAce();
+                return;
+            }
+
+            // editor -> game
+            window.theInstance.invokeMethod('RunGame');
+            mono8GameRunning = true;
+        }
+
+        // Register a Mono8 (PICO-8 palette) dark theme. The actual colours live in index.html's
+        // <style> block, keyed on the .ace-mono8 class Ace applies when this theme is selected.
+        function mono8DefineAceTheme()
+        {
+            if (typeof ace === 'undefined') return;
+            ace.define('ace/theme/mono8', ['require', 'exports', 'module'], function (require, exports)
+            {
+                exports.isDark = true;
+                exports.cssClass = 'ace-mono8';
+                exports.cssText = '';
+                var dom = require('ace/lib/dom');
+                if (dom && dom.importCssString)
+                    dom.importCssString(exports.cssText, exports.cssClass, false);
+            });
+        }
+
+        window.aceInit = function ()
+        {
+            if (mono8Ace || typeof ace === 'undefined')
+                return;
+            mono8DefineAceTheme();
+            mono8Ace = ace.edit('aceEditor');
+            mono8Ace.setTheme('ace/theme/mono8');
+            mono8Ace.session.setMode('ace/mode/lua');
+            mono8Ace.setOptions({
+                fontFamily: 'DepartureMono, monospace',
+                fontSize: '14px',
+                showPrintMargin: false,
+                useWorker: false,        // no worker-lua.js fetch; the engine reports errors at runtime
+                tabSize: 2,
+                useSoftTabs: true,
+                highlightActiveLine: true,
+                wrap: false
+            });
+
+            // Cap the Lua source at 524288 chars (512 KiB). Ace has no native max-length,
+            // so clamp on every change (covers typing, paste and programmatic setValue).
+            mono8Ace.on('change', function ()
+            {
+                if (mono8Ace.getValue().length > MONO8_ACE_MAX_LEN)
+                {
+                    var pos = mono8Ace.getCursorPosition();
+                    mono8Ace.setValue(mono8Ace.getValue().slice(0, MONO8_ACE_MAX_LEN), -1);
+                    mono8Ace.moveCursorToPosition(pos);
+                    mono8Ace.clearSelection();
+                }
+                mono8UpdateAceCount();
+            });
+        };
+
+        var MONO8_ACE_MAX_LEN = 524288;
+        function mono8UpdateAceCount()
+        {
+            var el = document.getElementById('aceCount');
+            if (!el || !mono8Ace)
+                return;
+            var len = mono8Ace.getValue().length;
+            el.textContent = len + ' / ' + MONO8_ACE_MAX_LEN;
+            el.classList.toggle('full', len >= MONO8_ACE_MAX_LEN);
+        }
+
+        function mono8OpenAce()
+        {
+            if (mono8AceOpen || !window.theInstance)
+                return;
+            if (!mono8Ace)
+                window.aceInit();
+            if (!mono8Ace)
+                return;
+            var code = window.theInstance.invokeMethod('GetLuaCode') || '';
+            mono8Ace.setValue(code, -1); // -1: place cursor at start, don't select-all
+            document.getElementById('aceHost').classList.add('open');
+            mono8Ace.resize();
+            mono8Ace.focus();
+            mono8AceOpen = true;
+            window.theInstance.invokeMethod('SetAceOpen', true);
+        }
+
+        function mono8CloseAce()
+        {
+            if (!mono8AceOpen || !window.theInstance)
+                return;
+            window.theInstance.invokeMethod('CommitLuaCode', mono8Ace.getValue());
+            document.getElementById('aceHost').classList.remove('open');
+            mono8AceOpen = false;
+            window.theInstance.invokeMethod('SetAceOpen', false);
+            var canvas = document.getElementById('theCanvas');
+            if (canvas)
+                canvas.focus();
+        }
+
+        function tickJS()
+        {
+            window.theInstance.invokeMethod('TickDotNet');
+            window.requestAnimationFrame(tickJS);
+        }
+
+        // Keep the canvas backbuffer matched to the (resizable) holder, and let the engine
+        // recompute its letterbox/scale. Sizes are CSS pixels so KNI's mouse coordinates stay 1:1
+        // with the backbuffer, which is what keeps clicks landing on the right virtual pixel.
+        function resizeCanvasJS()
+        {
+            var canvas = document.getElementById('theCanvas');
+            var holder = document.getElementById('canvasHolder');
+            if (!canvas || !holder)
+                return;
+            canvas.width = holder.clientWidth;
+            canvas.height = holder.clientHeight;
+            if (window.theInstance)
+                window.theInstance.invokeMethod('OnCanvasResized', holder.clientWidth, holder.clientHeight);
+        }
+        window.addEventListener('resize', resizeCanvasJS);
+
+        window.initRenderJS = (instance) =>
+        {
+            window.theInstance = instance;
+
+            // set initial canvas size
+            var canvas = document.getElementById('theCanvas');
+            var holder = document.getElementById('canvasHolder');
+            canvas.width = holder.clientWidth;
+            canvas.height = holder.clientHeight;
+            // disable context menu on right click
+            canvas.addEventListener("contextmenu", e => e.preventDefault());
+
+            // create the Lua code editor now that the app is up (kept hidden until Tab)
+            window.aceInit();
+
+            // begin game loop
+            window.requestAnimationFrame(tickJS);
+        };
+
+        window.addEventListener("keydown", function(event)
+        {
+            // Esc cycles the three views (editor -> game -> Lua code editor). The browser owns this
+            // key globally — while the Ace overlay is open the engine tick is paused and can't see
+            // it — so drive the whole cycle from here. stopPropagation keeps Ace from also acting on it.
+            if (event.keyCode === 27) // Esc
+            {
+                // ...except while the Ace search box is up: there Esc means "close the search box",
+                // so let Ace have the key instead of leaving the code editor entirely.
+                if (mono8AceOpen && mono8Ace && mono8Ace.searchBox && mono8Ace.searchBox.active)
+                    return;
+                event.preventDefault();
+                event.stopPropagation();
+                mono8CycleState();
+                return;
+            }
+
+            // While the code editor is open, let it receive keys normally (arrows/space move the
+            // caret, typing works) — don't apply the iframe scroll guard below.
+            if (mono8AceOpen)
+            {
+                // Ctrl+S is swallowed so the browser's Save dialog doesn't pop while editing,
+                // and Ctrl+F/Ctrl+H so the browser's find bar doesn't shadow Ace's search box.
+                // preventDefault only kills the browser action — Ace still receives the key.
+                if ((event.ctrlKey || event.metaKey) && [83, 70, 72].indexOf(event.keyCode) > -1)
+                    event.preventDefault();
+                return;
+            }
+
+            // Prevent Arrows Keys and Spacebar scrolling the outer page
+            // when running inside an iframe. e.g: itch.io embedding.
+            if ([32, 37, 38, 39, 40].indexOf(event.keyCode) > -1)
+                event.preventDefault();
+            // Swallow Ctrl+S so the browser's "save page" dialog doesn't pop over the canvas
+            // (the cartridge is saved from the menu-bar Save button, not a hotkey).
+            if ((event.ctrlKey || event.metaKey) && event.keyCode === 83)
+                event.preventDefault();
+        }, true);
+        window.addEventListener("wheel", function(event)
+        {
+            // Let the code editor scroll normally when it's open (and the pointer is over it).
+            if (mono8AceOpen)
+                return;
+            // Prevent Mousewheel scrolling the outer page
+            // when running inside an iframe. e.g: itch.io embedding.
+            event.preventDefault();
+        }, { passive: false });
+    </script>
+</body>
+
+</html>

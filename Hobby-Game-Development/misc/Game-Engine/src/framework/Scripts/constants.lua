@@ -1,0 +1,3 @@
+﻿const = {
+	maxPage = 7
+}

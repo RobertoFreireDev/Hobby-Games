@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="../abstraction/abstraction.csproj" Id="c828adb6-7e34-4307-a64c-f6f02700eb61" />
+  <Project Path="../game/game.csproj" Id="b6c04403-65d6-44ae-a548-ba50f454d42c" />
+  <Project Path="npico8.csproj" />
+</Solution>
