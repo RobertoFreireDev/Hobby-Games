@@ -1,0 +1,18 @@
+{
+  "id": "plat_hole_16x32",
+  "kind": "object",
+  "type": "platform",
+  "name": "Invisible hole 16x32",
+  "notes": "Invisible and solid, 16 x 32 px from its top-left: a hole in the ground: walking monsters stop at its edge, Gustling flies over it (its body doesn't collide with platforms). appear_if (set per instance) removes it when the way opens.",
+  "body": "body_block_16x32",
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "unlocked",
+        "op": ">=",
+        "value": 0
+      }
+    }
+  ]
+}

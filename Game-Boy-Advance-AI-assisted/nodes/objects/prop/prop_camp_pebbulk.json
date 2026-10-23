@@ -1,0 +1,29 @@
+{
+  "id": "prop_camp_pebbulk",
+  "kind": "object",
+  "type": "prop",
+  "name": "Pebbulk at the campfire",
+  "notes": "Pebbulk on the intro screen. It only shows once it is unlocked (unlocked >= 9) and sits on the half circle behind the fire: its seat depends on how many monsters are unlocked, all of them spread evenly from left to right in roster order, so with 9 unlocked it takes seat 9. It always looks at the fire (view per number unlocked: 9: left). When it is shiny it shimmers through the rainbow, like everywhere else.",
+  "body": "body_camp_pebbulk",
+  "logic": [
+    {
+      "behavior": "spot_by_count",
+      "params": {
+        "var": "unlocked",
+        "need": 9,
+        "spots": [
+          [
+            77,
+            -8
+          ]
+        ],
+        "frames": 3,
+        "shiny_var": "shiny",
+        "shiny_slot": 8
+      }
+    }
+  ],
+  "children": [
+    "body_camp_pebbulk"
+  ]
+}

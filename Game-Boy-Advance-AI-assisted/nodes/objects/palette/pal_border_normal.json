@@ -1,0 +1,16 @@
+{
+  "id": "pal_border_normal",
+  "kind": "object",
+  "type": "palette",
+  "name": "Normal world border colors",
+  "notes": "Colors of the Normal world's forest canopy: a dark outline, four leaf greens from a bright rim to the crowns' shaded side, and the deep shadow between the crowns.",
+  "colors": [
+    "#000000",
+    "#183020",
+    "#d0f090",
+    "#98d860",
+    "#68b048",
+    "#3e8a38",
+    "#204828"
+  ]
+}

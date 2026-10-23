@@ -1,0 +1,36 @@
+{
+  "id": "anim_splashell_idle_up",
+  "kind": "object",
+  "type": "animation",
+  "name": "Splashell idle up",
+  "notes": "Splashell standing still facing up (its back): it breathes (sinks 1 px and back). Loops.",
+  "sprite": "spr_splashell",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "up",
+      "ticks": 24
+    },
+    {
+      "frame": "up_breathe",
+      "ticks": 20
+    },
+    {
+      "frame": "up",
+      "ticks": 24
+    },
+    {
+      "frame": "up_breathe",
+      "ticks": 20
+    },
+    {
+      "frame": "up",
+      "ticks": 12
+    },
+    {
+      "frame": "up_breathe",
+      "ticks": 20
+    }
+  ],
+  "events": []
+}

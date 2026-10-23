@@ -1,0 +1,44 @@
+{
+  "id": "anim_camp_furrbit",
+  "kind": "object",
+  "type": "animation",
+  "name": "Furrbit resting by the fire",
+  "notes": "Furrbit's idle loop (breathing, blinking) at its first seat. spot_by_count shows the same loop in the frames of the seat the number of unlocked monsters gives it.",
+  "sprite": "spr_camp_furrbit",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "n1_0",
+      "ticks": 24
+    },
+    {
+      "frame": "n1_1",
+      "ticks": 20
+    },
+    {
+      "frame": "n1_0",
+      "ticks": 24
+    },
+    {
+      "frame": "n1_1",
+      "ticks": 20
+    },
+    {
+      "frame": "n1_0",
+      "ticks": 12
+    },
+    {
+      "frame": "n1_2",
+      "ticks": 6
+    },
+    {
+      "frame": "n1_0",
+      "ticks": 10
+    },
+    {
+      "frame": "n1_1",
+      "ticks": 20
+    }
+  ],
+  "events": []
+}

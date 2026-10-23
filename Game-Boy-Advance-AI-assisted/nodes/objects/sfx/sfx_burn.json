@@ -1,0 +1,41 @@
+{
+  "id": "sfx_burn",
+  "kind": "object",
+  "type": "sfx",
+  "name": "Burn",
+  "notes": "A bramble wall flares up and crackles away.",
+  "channel": "noise",
+  "priority": 2,
+  "steps": [
+    {
+      "pitch": 5,
+      "ticks": 3,
+      "volume": 15
+    },
+    {
+      "pitch": 4,
+      "ticks": 4,
+      "volume": 14
+    },
+    {
+      "pitch": 6,
+      "ticks": 3,
+      "volume": 13
+    },
+    {
+      "pitch": 4,
+      "ticks": 5,
+      "volume": 12
+    },
+    {
+      "pitch": 5,
+      "ticks": 6,
+      "volume": 9
+    },
+    {
+      "pitch": 6,
+      "ticks": 6,
+      "volume": 6
+    }
+  ]
+}

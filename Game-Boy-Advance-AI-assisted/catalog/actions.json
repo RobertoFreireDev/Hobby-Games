@@ -1,0 +1,204 @@
+{
+  "_notes": "Every action usable in an action list: { \"do\": \"<action>\", ...params }. 'sentence' is how the visualizer reads it aloud; {param} is replaced by the value. Actions run in order; wait and the fades pause the list.",
+  "goto_scene": {
+    "description": "Switch to another scene.",
+    "sentence": "Go to scene {scene}",
+    "params": {
+      "scene":  {"type": "node:scene", "required": true, "description": "Scene to go to."}
+    }
+  },
+  "fade_in": {
+    "description": "Fade the screen in from black. The list waits until the fade ends.",
+    "sentence": "Fade in from black over {ticks} ticks",
+    "params": {
+      "ticks":  {"type": "ticks", "default": 20, "description": "Fade length."}
+    }
+  },
+  "fade_out": {
+    "description": "Fade the screen out to black. The list waits until the fade ends.",
+    "sentence": "Fade out to black over {ticks} ticks",
+    "params": {
+      "ticks":  {"type": "ticks", "default": 20, "description": "Fade length."}
+    }
+  },
+  "wait": {
+    "description": "Pause this action list.",
+    "sentence": "Wait {ticks} ticks",
+    "params": {
+      "ticks":  {"type": "ticks", "required": true, "description": "How long to wait."}
+    }
+  },
+  "play_sfx": {
+    "description": "Play a sound effect.",
+    "sentence": "Play sound {sfx}",
+    "params": {
+      "sfx":  {"type": "node:sfx", "required": true, "description": "Sound to play."}
+    }
+  },
+  "play_music": {
+    "description": "Start a song (keeps playing if it is already the current song).",
+    "sentence": "Play music {music}",
+    "params": {
+      "music":  {"type": "node:music", "required": true, "description": "Song to play."}
+    }
+  },
+  "stop_music": {
+    "description": "Stop the music.",
+    "sentence": "Stop the music",
+    "params": {}
+  },
+  "set_var": {
+    "description": "Set a game variable. On a list variable, set the slot 'index' picks, or every slot without 'index'.",
+    "sentence": "Set {var} to {value}",
+    "params": {
+      "var":    {"type": "var", "required": true, "list": true, "description": "Variable to change."},
+      "value":  {"type": "int", "default": 0, "description": "New value (true/false for flags)."},
+      "from":   {"type": "var", "default": "", "description": "Copy this other variable's value instead of 'value'. Empty = use 'value'."},
+      "index":  {"type": "var", "default": "", "description": "When 'var' is a list: the variable whose value picks the slot (0 = first; outside the list = nothing happens). Empty = every slot."}
+    }
+  },
+  "add_var": {
+    "description": "Add to a game variable (use a negative number to subtract). On a list variable, add to the slot 'index' picks, or to every slot without 'index'.",
+    "sentence": "Add {value} to {var}",
+    "params": {
+      "var":      {"type": "var", "required": true, "list": true, "description": "Variable to change."},
+      "value":    {"type": "int", "default": 0, "description": "Amount to add (negative to subtract)."},
+      "from":     {"type": "var", "default": "", "description": "Add this other variable's value instead of 'value'. Empty = use 'value'."},
+      "max_var":  {"type": "var", "default": "", "description": "Never go above this other variable (health up to max health). Empty = no limit."},
+      "index":    {"type": "var", "default": "", "description": "When 'var' is a list: the variable whose value picks the slot (0 = first; outside the list = nothing happens). Empty = every slot."}
+    }
+  },
+  "reset_vars": {
+    "description": "Put every game variable back to its starting value (for a new game).",
+    "sentence": "Reset all game variables to their starting values",
+    "params": {}
+  },
+  "random_var": {
+    "description": "Set a game variable to a random whole number between 'min' and 'max', both included (each equally likely): e.g. pick the world of a new run.",
+    "sentence": "Set {var} to a random number from {min} to {max}",
+    "params": {
+      "var": { "type": "var", "required": true, "description": "Variable to change." },
+      "min": { "type": "int", "default": 0, "description": "Smallest value it can get." },
+      "max": { "type": "int", "required": true, "description": "Largest value it can get (at least 'min')." }
+    }
+  },
+  "if_var": {
+    "description": "Check a game variable against a number or another variable and run one of two lists.",
+    "sentence": "If {var} {op} {value}",
+    "params": {
+      "var":    {"type": "var", "required": true, "list": true, "description": "Variable to check (a list needs 'index')."},
+      "op":     {"type": "choice", "default": "==", "options": ["==", "!=", "<", "<=", ">", ">="], "description": "Comparison."},
+      "value":  {"type": "int", "default": 0, "description": "Value to compare with."},
+      "from":   {"type": "var", "default": "", "description": "Compare with this other variable's value instead of 'value'. Empty = use 'value'."},
+      "index":  {"type": "var", "default": "", "description": "When 'var' is a list: the variable whose value picks the slot checked (0 = first; outside the list reads 0)."},
+      "then":   {"type": "actions", "default": [], "description": "Runs when the check is true."},
+      "else":   {"type": "actions", "default": [], "description": "Runs when the check is false."}
+    }
+  },
+  "if_chance": {
+    "description": "Roll the dice: run one list with the given chance, the other list otherwise (random drops).",
+    "sentence": "With a {percent}% chance",
+    "params": {
+      "percent":  {"type": "int", "required": true, "description": "Chance of running 'then', 0-100."},
+      "then":     {"type": "actions", "default": [], "description": "Runs when the roll succeeds."},
+      "else":     {"type": "actions", "default": [], "description": "Runs otherwise."}
+    }
+  },
+  "show_dialog": {
+    "description": "Open a dialog box. The game pauses until it closes.",
+    "sentence": "Show dialog {dialog}",
+    "params": {
+      "dialog":  {"type": "node:dialog", "required": true, "description": "Dialog to show."}
+    }
+  },
+  "open_menu": {
+    "description": "Open a menu. The game pauses until it closes.",
+    "sentence": "Open menu {menu}",
+    "params": {
+      "menu":  {"type": "node:menu", "required": true, "description": "Menu to open."}
+    }
+  },
+  "close_menu": {
+    "description": "Close the open menu.",
+    "sentence": "Close the menu",
+    "params": {}
+  },
+  "spawn": {
+    "description": "Create an object (or a particle burst). Position is relative to the object running the action, or to the scene when 'relative' is false.",
+    "sentence": "Spawn {object} at ({x}, {y})",
+    "params": {
+      "object":    {"type": "node:spawnable", "required": true, "description": "Object or particle to create."},
+      "x":         {"type": "int", "default": 0, "description": "X position (pixels)."},
+      "y":         {"type": "int", "default": 0, "description": "Y position (pixels)."},
+      "relative":  {"type": "bool", "default": true, "description": "Position is relative to the object running the action."}
+    }
+  },
+  "destroy_self": {
+    "description": "Remove the object running this action.",
+    "sentence": "Remove this object",
+    "params": {}
+  },
+  "shake_camera": {
+    "description": "Shake the screen.",
+    "sentence": "Shake the camera for {ticks} ticks (strength {strength})",
+    "params": {
+      "ticks":     {"type": "ticks", "default": 20, "description": "How long."},
+      "strength":  {"type": "int", "default": 2, "description": "How far it moves (pixels)."}
+    }
+  },
+  "save_game": {
+    "description": "Save every game variable to the cartridge (needs game.save = true).",
+    "sentence": "Save the game",
+    "params": {}
+  },
+  "load_game": {
+    "description": "Load the saved game variables, if there is a save (needs game.save = true).",
+    "sentence": "Load the saved game",
+    "params": {}
+  },
+  "call": {
+    "description": "Run a custom C function from src/game/ (last resort).",
+    "sentence": "Run custom code {function}",
+    "params": {
+      "function":  {"type": "string", "required": true, "description": "Name of the C function: void name(Actor *self)."}
+    }
+  },
+  "show_hud": {
+    "description": "Show a HUD, replacing the one on screen (text that appears after an intro).",
+    "sentence": "Show HUD {hud}",
+    "params": {
+      "hud":  {"type": "node:hud", "required": true, "description": "HUD to show."}
+    }
+  },
+  "flash_screen": {
+    "description": "Light the whole screen up white, fading back over a few ticks (a camera flash).",
+    "sentence": "Flash the screen white for {ticks} ticks",
+    "params": {
+      "ticks":  {"type": "ticks", "default": 12, "description": "How long the flash fades."}
+    }
+  },
+  "cover_screen": {
+    "description": "Cover the world with a drifting pattern for a while (a sandstorm): only the HUD stays readable. No icon or 0 ticks removes the cover.",
+    "sentence": "Cover the screen with {icon} for {ticks} ticks",
+    "params": {
+      "icon":   {"type": "node:icon", "default": "", "description": "8x8 or 16x16 pattern repeated over the screen."},
+      "ticks":  {"type": "ticks", "default": 300, "description": "How long it stays."}
+    }
+  },
+  "float_text": {
+    "description": "Pop up a few words over the object running the action; they float up and vanish (LV UP!). Uses the floating-text font of game.battle.",
+    "sentence": "Float \"{text}\" over this object",
+    "params": {
+      "text":     {"type": "text", "required": true, "description": "Words to show (up to 15 characters)."},
+      "palette":  {"type": "node:palette", "default": "", "description": "Colors of the words. Empty = the font's."},
+      "height":   {"type": "int", "default": 26, "description": "Pixels above the object's origin (its feet)."}
+    }
+  },
+  "pause_world": {
+    "description": "Freeze the world for a moment, as an open menu does: actors, physics, animations, particles and floating words hold still, while the HUD, music, sounds, camera and other action lists go on. The list waits until the pause ends (a beat before the level-up cards, so the player sees what happened).",
+    "sentence": "Freeze the world for {ticks} ticks (the HUD keeps going)",
+    "params": {
+      "ticks":  {"type": "ticks", "required": true, "description": "How long the world holds still."}
+    }
+  }
+}

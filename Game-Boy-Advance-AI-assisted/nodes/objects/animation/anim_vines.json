@@ -1,0 +1,16 @@
+{
+  "id": "anim_vines",
+  "kind": "object",
+  "type": "animation",
+  "name": "Vines",
+  "notes": "Vines, standing still.",
+  "sprite": "spr_vines",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "vines",
+      "ticks": 60
+    }
+  ],
+  "events": []
+}

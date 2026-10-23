@@ -1,0 +1,30 @@
+{
+  "id": "prop_intro",
+  "kind": "object",
+  "type": "prop",
+  "name": "Intro START",
+  "notes": "Invisible: START (only the first press counts) fades the campfire out and opens the menu.",
+  "logic": [
+    {
+      "behavior": "button_actions",
+      "params": {
+        "button": "START",
+        "once": true,
+        "on_press": [
+          {
+            "do": "play_sfx",
+            "sfx": "sfx_confirm"
+          },
+          {
+            "do": "fade_out",
+            "ticks": 20
+          },
+          {
+            "do": "goto_scene",
+            "scene": "scn_menu"
+          }
+        ]
+      }
+    }
+  ]
+}

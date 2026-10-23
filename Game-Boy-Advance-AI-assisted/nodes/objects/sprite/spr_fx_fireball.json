@@ -1,0 +1,42 @@
+{
+  "id": "spr_fx_fireball",
+  "kind": "object",
+  "type": "sprite",
+  "name": "Fire Spin effect",
+  "notes": "Fire Spin's fireballs flying out in a ring: a round fireball that shrinks as it flies. Every frame keeps a 1 px empty border, so the picture is never cut at the edge of its sprite.",
+  "palette": "pal_fx",
+  "width": 8,
+  "height": 8,
+  "frames": {
+    "f0": [
+      "........",
+      "..5445..",
+      ".543345.",
+      ".432234.",
+      ".432234.",
+      ".543345.",
+      "..5445..",
+      "........"
+    ],
+    "f1": [
+      "........",
+      "...55...",
+      "..4334..",
+      ".532235.",
+      ".532235.",
+      "..4334..",
+      "...55...",
+      "........"
+    ],
+    "f2": [
+      "........",
+      "........",
+      "...44...",
+      "..4334..",
+      "..4334..",
+      "...44...",
+      "........",
+      "........"
+    ]
+  }
+}

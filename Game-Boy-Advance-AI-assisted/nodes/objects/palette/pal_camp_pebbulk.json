@@ -1,0 +1,25 @@
+{
+  "id": "pal_camp_pebbulk",
+  "kind": "object",
+  "type": "palette",
+  "name": "Pebbulk by the fire colors",
+  "notes": "Pebbulk's colors in the campfire's light (15 colors for all its seats): warmer and darker than in the game, bright on the side facing the fire.",
+  "colors": [
+    "#000000",
+    "#101010",
+    "#ffd59c",
+    "#736a5a",
+    "#ac947b",
+    "#393131",
+    "#949c39",
+    "#5a7b29",
+    "#bdc541",
+    "#5a524a",
+    "#d5ac7b",
+    "#395a20",
+    "#183110",
+    "#948362",
+    "#292020",
+    "#739429"
+  ]
+}

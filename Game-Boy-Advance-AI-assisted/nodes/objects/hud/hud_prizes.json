@@ -1,0 +1,68 @@
+{
+  "id": "hud_prizes",
+  "kind": "object",
+  "type": "hud",
+  "name": "Items won text",
+  "notes": "YOU WON 3 ITEMS! and THEY BOOST YOUR NEXT RUN at the top, then one row per item (prize_1-3): its name, and under it its boost in the words its floor item floats (Swift Feather +5% SPEED, Power Gem +5% POWER, Aim Charm -3% MISS, Mist Orb +5% DODGE, Quick Hourglass -5% RECHARGE). The item pictures are drawn left of the names by the scene (prop_prize_*). A blinking PRESS START at the bottom. 0 = no item: the row stays empty.",
+  "font": "font_default",
+  "elements": [
+    {
+      "kind": "text",
+      "x": 120,
+      "y": 16,
+      "text": "YOU WON 3 ITEMS!",
+      "align": "center"
+    },
+    {
+      "kind": "text",
+      "x": 120,
+      "y": 32,
+      "text": "THEY BOOST YOUR NEXT RUN",
+      "align": "center"
+    },
+    {
+      "kind": "text",
+      "x": 72,
+      "y": 56,
+      "text": "{prize_1||SWIFT FEATHER|POWER GEM|AIM CHARM|MIST ORB|QUICK HOURGLASS}"
+    },
+    {
+      "kind": "text",
+      "x": 72,
+      "y": 64,
+      "text": "{prize_1||+5% SPEED|+5% POWER|-3% MISS|+5% DODGE|-5% RECHARGE}"
+    },
+    {
+      "kind": "text",
+      "x": 72,
+      "y": 80,
+      "text": "{prize_2||SWIFT FEATHER|POWER GEM|AIM CHARM|MIST ORB|QUICK HOURGLASS}"
+    },
+    {
+      "kind": "text",
+      "x": 72,
+      "y": 88,
+      "text": "{prize_2||+5% SPEED|+5% POWER|-3% MISS|+5% DODGE|-5% RECHARGE}"
+    },
+    {
+      "kind": "text",
+      "x": 72,
+      "y": 104,
+      "text": "{prize_3||SWIFT FEATHER|POWER GEM|AIM CHARM|MIST ORB|QUICK HOURGLASS}"
+    },
+    {
+      "kind": "text",
+      "x": 72,
+      "y": 112,
+      "text": "{prize_3||+5% SPEED|+5% POWER|-3% MISS|+5% DODGE|-5% RECHARGE}"
+    },
+    {
+      "kind": "text",
+      "x": 120,
+      "y": 152,
+      "text": "PRESS START",
+      "align": "center",
+      "blink": 30
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "id": "anim_log_bridge",
+  "kind": "object",
+  "type": "animation",
+  "name": "Log bridge",
+  "notes": "Log bridge, standing still.",
+  "sprite": "spr_log_bridge",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "logs",
+      "ticks": 60
+    }
+  ],
+  "events": []
+}

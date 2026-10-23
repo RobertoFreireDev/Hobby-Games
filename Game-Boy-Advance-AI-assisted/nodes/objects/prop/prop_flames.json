@@ -1,0 +1,59 @@
+{
+  "id": "prop_flames",
+  "kind": "object",
+  "type": "prop",
+  "name": "Wall of flames",
+  "notes": "Flames across the Crater's path, past the Meadow's east opening. Solid. A WATER move that touches them puts them out in a puff of steam, for good (gate_3, saved); any other move thuds.",
+  "body": "body_flames",
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "gate_3",
+        "op": "==",
+        "value": 0
+      }
+    },
+    {
+      "behavior": "move_switch",
+      "params": {
+        "types": [
+          "water"
+        ],
+        "on_open": [
+          {
+            "do": "set_var",
+            "var": "gate_3",
+            "value": 1
+          },
+          {
+            "do": "save_game"
+          },
+          {
+            "do": "play_sfx",
+            "sfx": "sfx_douse"
+          },
+          {
+            "do": "spawn",
+            "object": "ptc_gate_steam",
+            "x": 0,
+            "y": -12,
+            "relative": true
+          },
+          {
+            "do": "destroy_self"
+          }
+        ],
+        "on_wrong": [
+          {
+            "do": "play_sfx",
+            "sfx": "sfx_thud"
+          }
+        ]
+      }
+    }
+  ],
+  "children": [
+    "body_flames"
+  ]
+}

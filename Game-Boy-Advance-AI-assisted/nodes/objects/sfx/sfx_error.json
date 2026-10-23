@@ -1,0 +1,26 @@
+{
+  "id": "sfx_error",
+  "kind": "object",
+  "type": "sfx",
+  "name": "Error buzz",
+  "notes": "Two short, flat buzzes at full volume: you pressed B but move 2 is still locked (it unlocks at level 4).",
+  "channel": "square2",
+  "duty": 1,
+  "priority": 2,
+  "steps": [
+    {
+      "note": "D4",
+      "ticks": 3,
+      "volume": 15
+    },
+    {
+      "note": "..",
+      "ticks": 2
+    },
+    {
+      "note": "D4",
+      "ticks": 7,
+      "volume": 15
+    }
+  ]
+}

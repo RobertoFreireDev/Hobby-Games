@@ -1,0 +1,20 @@
+{
+  "id": "anim_sprout",
+  "kind": "object",
+  "type": "animation",
+  "name": "Sprout",
+  "notes": "Sprout, standing still and flickering.",
+  "sprite": "spr_sprout",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "sprout",
+      "ticks": 30
+    },
+    {
+      "frame": "sway",
+      "ticks": 30
+    }
+  ],
+  "events": []
+}

@@ -1,0 +1,29 @@
+{
+  "id": "body_vines",
+  "kind": "object",
+  "type": "body",
+  "name": "Vines body",
+  "notes": "Vines drawn around a trapped monster: its feet on the monster's feet; not solid.",
+  "origin": [
+    16,
+    27
+  ],
+  "hitbox": {
+    "x": -8,
+    "y": -15,
+    "w": 16,
+    "h": 16
+  },
+  "physics": {
+    "gravity": false,
+    "solid": false,
+    "collides_with": []
+  },
+  "animations": {
+    "idle": "anim_vines"
+  },
+  "default_animation": "idle",
+  "children": [
+    "anim_vines"
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "id": "mov_gust",
+  "kind": "object",
+  "type": "move",
+  "name": "Gust",
+  "notes": "Gustling's move 1 (A). A gust of wind blows straight ahead of the user, 3 tiles long; every monster the swirls touch is hurt. Charge: 3 s. Wild Gustlings use it every 4 s.",
+  "title": "GUST",
+  "monster_type": "flying",
+  "shape": "beam",
+  "range": 3,
+  "power": 10,
+  "accuracy": 95,
+  "charge": 180,
+  "effect": "ptc_fx_gust",
+  "effect_at": "axis",
+  "travel": "anim_travel_gust",
+  "sfx": "sfx_mv_wind",
+  "children": [
+    "spr_fx_gust",
+    "ptc_fx_gust",
+    "anim_travel_gust"
+  ]
+}

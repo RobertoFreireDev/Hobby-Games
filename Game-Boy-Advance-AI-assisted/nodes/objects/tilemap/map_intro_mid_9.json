@@ -1,0 +1,35 @@
+{
+  "id": "map_intro_mid_9",
+  "kind": "object",
+  "type": "tilemap",
+  "name": "Intro cave (mid, 9)",
+  "notes": "The middle (tunnel, walls, monsters) band of the intro's cave picture, with 9 monsters at the fire. The picture is split into three bands on layers 3, 2 and 1 (top, middle, bottom) because one layer holds at most 255 different tiles and the whole screen needs about 600.",
+  "tileset": "ts_intro_mid_9",
+  "layer": 2,
+  "parallax": 1,
+  "rows": [
+    "..............................",
+    "..............................",
+    "..............................",
+    "..............................",
+    "..............................",
+    "..............................",
+    "..............................",
+    "!\"#$%&'()*+,-/0123456789:;<=>?",
+    "@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]",
+    "^_`abcdefghijklmnopqrstuvwxyz{",
+    "|}~ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖØÙÚÛ",
+    "ÜÝÞßàáâãäåæçèéêëìíîïðñòóôõöøùú",
+    "ûüýþÿΑΒΓΔΕΖΗΘΙΚΛΜΝΞΟΠΡΣΤΥΦΧΨΩα",
+    "βγδεζηθικλμνξοπρςστυφχψωАБВГДЕ",
+    "..............................",
+    "..............................",
+    "..............................",
+    "..............................",
+    "..............................",
+    ".............................."
+  ],
+  "children": [
+    "ts_intro_mid_9"
+  ]
+}

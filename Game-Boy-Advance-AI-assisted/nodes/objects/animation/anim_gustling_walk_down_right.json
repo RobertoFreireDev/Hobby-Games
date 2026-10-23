@@ -1,0 +1,28 @@
+{
+  "id": "anim_gustling_walk_down_right",
+  "kind": "object",
+  "type": "animation",
+  "name": "Gustling walk down-right",
+  "notes": "Gustling flying along facing down-right (its front, turned to the right): quicker wing beats than when it hovers (raised 5 ticks, level 4, down 5, level 4), feet tucked away, its body at the same height the whole time. Loops.",
+  "sprite": "spr_gustling",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "down_right_wings_up",
+      "ticks": 5
+    },
+    {
+      "frame": "down_right",
+      "ticks": 4
+    },
+    {
+      "frame": "down_right_wings_down",
+      "ticks": 5
+    },
+    {
+      "frame": "down_right",
+      "ticks": 4
+    }
+  ],
+  "events": []
+}

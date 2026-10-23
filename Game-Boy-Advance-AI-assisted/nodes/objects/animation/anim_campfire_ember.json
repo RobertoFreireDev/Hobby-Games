@@ -1,0 +1,28 @@
+{
+  "id": "anim_campfire_ember",
+  "kind": "object",
+  "type": "animation",
+  "name": "Campfire spark cooling",
+  "notes": "A spark rising from the fire cools from yellow to dark red over its life (60 ticks).",
+  "sprite": "spr_campfire_ember",
+  "loop": false,
+  "frames": [
+    {
+      "frame": "e1",
+      "ticks": 14
+    },
+    {
+      "frame": "e2",
+      "ticks": 16
+    },
+    {
+      "frame": "e3",
+      "ticks": 16
+    },
+    {
+      "frame": "e4",
+      "ticks": 14
+    }
+  ],
+  "events": []
+}

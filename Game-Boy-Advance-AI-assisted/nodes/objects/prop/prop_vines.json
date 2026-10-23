@@ -1,0 +1,21 @@
+{
+  "id": "prop_vines",
+  "kind": "object",
+  "type": "prop",
+  "name": "Trapping vines",
+  "notes": "Vines wrapped around a trapped monster (drawn over it, listed before it). They vanish the moment it is freed (appear_if, per place).",
+  "body": "body_vines",
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "unlocked",
+        "op": ">=",
+        "value": 0
+      }
+    }
+  ],
+  "children": [
+    "body_vines"
+  ]
+}

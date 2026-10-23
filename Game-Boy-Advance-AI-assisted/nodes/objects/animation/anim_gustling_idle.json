@@ -1,0 +1,76 @@
+{
+  "id": "anim_gustling_idle",
+  "kind": "object",
+  "type": "animation",
+  "name": "Gustling idle side",
+  "notes": "Gustling hovering in place facing sideways: it flaps its wings (raised 8 ticks, level 6, down 8, level 6) with its feet tucked away, and its body stays at the same height (no bobbing), and blinks now and then. Loops.",
+  "sprite": "spr_gustling",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "side_wings_up",
+      "ticks": 8
+    },
+    {
+      "frame": "side",
+      "ticks": 6
+    },
+    {
+      "frame": "side_wings_down",
+      "ticks": 8
+    },
+    {
+      "frame": "side",
+      "ticks": 6
+    },
+    {
+      "frame": "side_wings_up",
+      "ticks": 8
+    },
+    {
+      "frame": "side",
+      "ticks": 6
+    },
+    {
+      "frame": "side_wings_down",
+      "ticks": 8
+    },
+    {
+      "frame": "side",
+      "ticks": 6
+    },
+    {
+      "frame": "side_wings_up",
+      "ticks": 8
+    },
+    {
+      "frame": "side",
+      "ticks": 6
+    },
+    {
+      "frame": "side_wings_down",
+      "ticks": 8
+    },
+    {
+      "frame": "side",
+      "ticks": 6
+    },
+    {
+      "frame": "side_wings_up",
+      "ticks": 8
+    },
+    {
+      "frame": "side_blink",
+      "ticks": 6
+    },
+    {
+      "frame": "side_wings_down",
+      "ticks": 8
+    },
+    {
+      "frame": "side",
+      "ticks": 6
+    }
+  ],
+  "events": []
+}

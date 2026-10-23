@@ -1,0 +1,25 @@
+{
+  "id": "pal_camp_gustling",
+  "kind": "object",
+  "type": "palette",
+  "name": "Gustling by the fire colors",
+  "notes": "Gustling's colors in the campfire's light (15 colors for all its seats): warmer and darker than in the game, bright on the side facing the fire.",
+  "colors": [
+    "#000000",
+    "#181018",
+    "#ffffc5",
+    "#6a839c",
+    "#f67318",
+    "#cdb494",
+    "#314a6a",
+    "#413131",
+    "#ffbd31",
+    "#bdd5d5",
+    "#f6d5ac",
+    "#9cb4bd",
+    "#f67b6a",
+    "#52627b",
+    "#9c9c8b",
+    "#312929"
+  ]
+}

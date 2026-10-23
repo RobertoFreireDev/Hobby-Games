@@ -1,0 +1,22 @@
+{
+  "id": "ptc_gate_shatter",
+  "kind": "object",
+  "type": "particle",
+  "name": "Crystal shards",
+  "notes": "Sparks flying as the storm crystal shatters.",
+  "animation": "anim_fx_spark",
+  "mode": "burst",
+  "count": 12,
+  "lifetime": 20,
+  "speed": [
+    0.8,
+    1.6
+  ],
+  "angle": [
+    0,
+    359
+  ],
+  "gravity": 0,
+  "on_top": true,
+  "even": true
+}

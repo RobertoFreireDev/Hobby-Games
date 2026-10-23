@@ -1,0 +1,23 @@
+{
+  "id": "mov_solar_beam",
+  "kind": "object",
+  "type": "move",
+  "name": "Solar Beam",
+  "notes": "Sproutle's move 3 (R). A beam of sunlight shoots 6 tiles straight ahead of the user; every monster it touches is hurt. Charge: 40 s.",
+  "title": "SOLAR BEAM",
+  "monster_type": "grass",
+  "shape": "beam",
+  "range": 6,
+  "power": 40,
+  "accuracy": 100,
+  "charge": 2400,
+  "effect": "ptc_fx_solar",
+  "effect_at": "axis",
+  "travel": "anim_travel_solar_beam",
+  "sfx": "sfx_mv_grass",
+  "children": [
+    "spr_fx_solar",
+    "ptc_fx_solar",
+    "anim_travel_solar_beam"
+  ]
+}

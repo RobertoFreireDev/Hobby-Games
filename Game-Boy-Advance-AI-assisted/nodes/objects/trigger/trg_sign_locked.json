@@ -1,0 +1,50 @@
+{
+  "id": "trg_sign_locked",
+  "kind": "object",
+  "type": "trigger",
+  "name": "Locked WAVES sign zone",
+  "notes": "The area around the locked WAVES sign (10 px on every side of it): while the monster is in it, 'spot' is 10 (the head label says WAVES) and 'near' is 2 (the bottom line says how many monster types are still to free, from 'unlocked': 8 MONSTER TYPES LEFT ... 1 MONSTER TYPE LEFT). A or B do nothing there. Gone once all 9 monsters are freed (appear_if).",
+  "zone": {
+    "w": 36,
+    "h": 36
+  },
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "unlocked",
+        "op": "<",
+        "value": 9
+      }
+    },
+    {
+      "behavior": "trigger_zone",
+      "params": {
+        "on_enter": [
+          {
+            "do": "set_var",
+            "var": "spot",
+            "value": 10
+          },
+          {
+            "do": "set_var",
+            "var": "near",
+            "value": 2
+          }
+        ],
+        "on_exit": [
+          {
+            "do": "set_var",
+            "var": "spot",
+            "value": 0
+          },
+          {
+            "do": "set_var",
+            "var": "near",
+            "value": 0
+          }
+        ]
+      }
+    }
+  ]
+}

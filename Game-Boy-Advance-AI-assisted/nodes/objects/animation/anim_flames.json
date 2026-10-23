@@ -1,0 +1,20 @@
+{
+  "id": "anim_flames",
+  "kind": "object",
+  "type": "animation",
+  "name": "Wall of flames",
+  "notes": "Wall of flames, standing still and flickering.",
+  "sprite": "spr_flames",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "flames_1",
+      "ticks": 8
+    },
+    {
+      "frame": "flames_2",
+      "ticks": 8
+    }
+  ],
+  "events": []
+}

@@ -1,0 +1,623 @@
+{
+  "id": "plr_menu",
+  "kind": "object",
+  "type": "player",
+  "name": "Menu monster",
+  "notes": "The monster that walks the menu map: the current pick ('chosen', Furrbit the Normal type on a fresh save), in its own look (a shiny one shimmers). The D-pad walks it in 8 directions over the 7 x 7 screens of the map (the camera shows one whole screen and jumps to the next when its middle crosses an edge). It is a level-7 monster with all 3 moves: outside the Green Meadow A, B and R fire them (map_moves), with HP like a level-7 monster in a run (108, Furrbit 120, shiny 132 / 149, +5 per garden HP UP: map_hp_max) and the garden's POWER UPs (map_power), +20% power when shiny; floor items, won items and waves cards belong to the runs. The fights follow the run rules (type chart, MISS, statuses, the walking dodge, each species' traits, the low-HP beep). At 0 HP it faints: it blinks out, the screen fades and it wakes up in the Meadow with full HP (the menu scene loads again; nothing opened is lost). In the Meadow A or B by a sign picks it (CLASSIC starts the classic run, WAVES the waves run once all 9 monsters are freed, CLEAR SAVE asks), the sign's name shows over its head, R does nothing, and walking back into the Meadow refills its HP. It walks out of the cave on its own (enter_ticks) after the picker.",
+  "logic": [
+    {
+      "behavior": "monster",
+      "params": {
+        "species_var": "chosen",
+        "hp_var": "map_hp",
+        "hp_max_var": "map_hp_max",
+        "level_var": "map_level",
+        "power_var": "map_power",
+        "shadow": "spr_shadow",
+        "dodge_walk": 20,
+        "dodge_away": 30,
+        "dodge_ticks": 6,
+        "shiny_var": "shiny",
+        "shiny_power": 20,
+        "shiny_hp": 40,
+        "shiny_flash_palette": "pal_flash_red",
+        "shiny_flashes": 3,
+        "low_hp_sfx": "sfx_low_hp",
+        "low_hp_every": 60,
+        "on_away": [
+          {
+            "do": "set_var",
+            "var": "map_hp_max",
+            "value": 108
+          },
+          {
+            "do": "if_var",
+            "var": "chosen",
+            "op": "==",
+            "value": 0,
+            "then": [
+              {
+                "do": "set_var",
+                "var": "map_hp_max",
+                "value": 120
+              }
+            ]
+          },
+          {
+            "do": "if_var",
+            "var": "shiny",
+            "index": "chosen",
+            "op": "==",
+            "value": 1,
+            "then": [
+              {
+                "do": "set_var",
+                "var": "map_hp_max",
+                "value": 132
+              },
+              {
+                "do": "if_var",
+                "var": "chosen",
+                "op": "==",
+                "value": 0,
+                "then": [
+                  {
+                    "do": "set_var",
+                    "var": "map_hp_max",
+                    "value": 149
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "do": "if_var",
+            "var": "hp_ups",
+            "op": ">=",
+            "value": 1,
+            "then": [
+              {
+                "do": "add_var",
+                "var": "map_hp_max",
+                "value": 5
+              }
+            ]
+          },
+          {
+            "do": "if_var",
+            "var": "hp_ups",
+            "op": ">=",
+            "value": 2,
+            "then": [
+              {
+                "do": "add_var",
+                "var": "map_hp_max",
+                "value": 5
+              }
+            ]
+          },
+          {
+            "do": "if_var",
+            "var": "hp_ups",
+            "op": ">=",
+            "value": 3,
+            "then": [
+              {
+                "do": "add_var",
+                "var": "map_hp_max",
+                "value": 5
+              }
+            ]
+          },
+          {
+            "do": "if_var",
+            "var": "hp_ups",
+            "op": ">=",
+            "value": 4,
+            "then": [
+              {
+                "do": "add_var",
+                "var": "map_hp_max",
+                "value": 5
+              }
+            ]
+          },
+          {
+            "do": "if_var",
+            "var": "hp_ups",
+            "op": ">=",
+            "value": 5,
+            "then": [
+              {
+                "do": "add_var",
+                "var": "map_hp_max",
+                "value": 5
+              }
+            ]
+          },
+          {
+            "do": "set_var",
+            "var": "map_hp",
+            "from": "map_hp_max"
+          },
+          {
+            "do": "set_var",
+            "var": "map_power",
+            "value": 0
+          },
+          {
+            "do": "if_var",
+            "var": "power_ups",
+            "op": ">=",
+            "value": 1,
+            "then": [
+              {
+                "do": "add_var",
+                "var": "map_power",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "do": "if_var",
+            "var": "power_ups",
+            "op": ">=",
+            "value": 2,
+            "then": [
+              {
+                "do": "add_var",
+                "var": "map_power",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "do": "if_var",
+            "var": "power_ups",
+            "op": ">=",
+            "value": 3,
+            "then": [
+              {
+                "do": "add_var",
+                "var": "map_power",
+                "value": 2
+              }
+            ]
+          },
+          {
+            "do": "if_var",
+            "var": "power_ups",
+            "op": ">=",
+            "value": 4,
+            "then": [
+              {
+                "do": "add_var",
+                "var": "map_power",
+                "value": 1
+              }
+            ]
+          },
+          {
+            "do": "if_var",
+            "var": "power_ups",
+            "op": ">=",
+            "value": 5,
+            "then": [
+              {
+                "do": "add_var",
+                "var": "map_power",
+                "value": 2
+              }
+            ]
+          }
+        ],
+        "on_death": [
+          {
+            "do": "wait",
+            "ticks": 60
+          },
+          {
+            "do": "fade_out",
+            "ticks": 40
+          },
+          {
+            "do": "wait",
+            "ticks": 40
+          },
+          {
+            "do": "goto_scene",
+            "scene": "scn_menu"
+          }
+        ]
+      }
+    },
+    {
+      "behavior": "topdown_controller",
+      "params": {
+        "speed": 1.0,
+        "eight_way": true,
+        "enter_ticks": 40,
+        "enter_dir": "down",
+        "solid_props": true
+      }
+    },
+    {
+      "behavior": "head_label",
+      "params": {
+        "var": "spot",
+        "words": "|CLASSIC|CLEAR SAVE|WAVES|||||||WAVES",
+        "font": "font_float",
+        "palette": "pal_txt_white"
+      }
+    },
+    {
+      "behavior": "button_actions",
+      "params": {
+        "button": "A_OR_B",
+        "on_press": [
+          {
+            "do": "if_var",
+            "var": "spot",
+            "op": "==",
+            "value": 2,
+            "then": [
+              {
+                "do": "open_menu",
+                "menu": "menu_clear_save"
+              }
+            ]
+          },
+          {
+            "do": "if_var",
+            "var": "spot",
+            "op": "==",
+            "value": 3,
+            "then": [
+              {
+                "do": "if_var",
+                "var": "unlocked",
+                "op": ">=",
+                "value": 9,
+                "then": [
+                  {
+                    "do": "set_var",
+                    "var": "mode",
+                    "value": 1
+                  },
+                  {
+                    "do": "set_var",
+                    "var": "spot",
+                    "value": 9
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "do": "if_var",
+            "var": "spot",
+            "op": "==",
+            "value": 1,
+            "then": [
+              {
+                "do": "set_var",
+                "var": "mode",
+                "value": 0
+              },
+              {
+                "do": "set_var",
+                "var": "spot",
+                "value": 9
+              }
+            ]
+          },
+          {
+            "do": "if_var",
+            "var": "spot",
+            "op": "==",
+            "value": 9,
+            "then": [
+              {
+                "do": "set_var",
+                "var": "entry",
+                "from": "chosen"
+              },
+              {
+                "do": "if_var",
+                "var": "mode",
+                "op": "==",
+                "value": 1,
+                "then": [
+                  {
+                    "do": "add_var",
+                    "var": "entry",
+                    "value": 9
+                  }
+                ]
+              },
+              {
+                "do": "reset_vars"
+              },
+              {
+                "do": "random_var",
+                "var": "world",
+                "min": 0,
+                "max": 8
+              },
+              {
+                "do": "set_var",
+                "var": "used1",
+                "from": "prize_1"
+              },
+              {
+                "do": "if_var",
+                "var": "prize_1",
+                "op": "==",
+                "value": 1,
+                "then": [
+                  {
+                    "do": "add_var",
+                    "var": "boost_speed",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "do": "if_var",
+                "var": "prize_1",
+                "op": "==",
+                "value": 2,
+                "then": [
+                  {
+                    "do": "add_var",
+                    "var": "boost_power",
+                    "value": 5
+                  }
+                ]
+              },
+              {
+                "do": "if_var",
+                "var": "prize_1",
+                "op": "==",
+                "value": 3,
+                "then": [
+                  {
+                    "do": "add_var",
+                    "var": "boost_aim",
+                    "value": 3
+                  }
+                ]
+              },
+              {
+                "do": "if_var",
+                "var": "prize_1",
+                "op": "==",
+                "value": 4,
+                "then": [
+                  {
+                    "do": "add_var",
+                    "var": "boost_dodge",
+                    "value": 5
+                  }
+                ]
+              },
+              {
+                "do": "if_var",
+                "var": "prize_1",
+                "op": "==",
+                "value": 5,
+                "then": [
+                  {
+                    "do": "add_var",
+                    "var": "boost_charge",
+                    "value": 5
+                  }
+                ]
+              },
+              {
+                "do": "set_var",
+                "var": "prize_1",
+                "value": 0
+              },
+              {
+                "do": "set_var",
+                "var": "used2",
+                "from": "prize_2"
+              },
+              {
+                "do": "if_var",
+                "var": "prize_2",
+                "op": "==",
+                "value": 1,
+                "then": [
+                  {
+                    "do": "add_var",
+                    "var": "boost_speed",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "do": "if_var",
+                "var": "prize_2",
+                "op": "==",
+                "value": 2,
+                "then": [
+                  {
+                    "do": "add_var",
+                    "var": "boost_power",
+                    "value": 5
+                  }
+                ]
+              },
+              {
+                "do": "if_var",
+                "var": "prize_2",
+                "op": "==",
+                "value": 3,
+                "then": [
+                  {
+                    "do": "add_var",
+                    "var": "boost_aim",
+                    "value": 3
+                  }
+                ]
+              },
+              {
+                "do": "if_var",
+                "var": "prize_2",
+                "op": "==",
+                "value": 4,
+                "then": [
+                  {
+                    "do": "add_var",
+                    "var": "boost_dodge",
+                    "value": 5
+                  }
+                ]
+              },
+              {
+                "do": "if_var",
+                "var": "prize_2",
+                "op": "==",
+                "value": 5,
+                "then": [
+                  {
+                    "do": "add_var",
+                    "var": "boost_charge",
+                    "value": 5
+                  }
+                ]
+              },
+              {
+                "do": "set_var",
+                "var": "prize_2",
+                "value": 0
+              },
+              {
+                "do": "set_var",
+                "var": "used3",
+                "from": "prize_3"
+              },
+              {
+                "do": "if_var",
+                "var": "prize_3",
+                "op": "==",
+                "value": 1,
+                "then": [
+                  {
+                    "do": "add_var",
+                    "var": "boost_speed",
+                    "value": 1
+                  }
+                ]
+              },
+              {
+                "do": "if_var",
+                "var": "prize_3",
+                "op": "==",
+                "value": 2,
+                "then": [
+                  {
+                    "do": "add_var",
+                    "var": "boost_power",
+                    "value": 5
+                  }
+                ]
+              },
+              {
+                "do": "if_var",
+                "var": "prize_3",
+                "op": "==",
+                "value": 3,
+                "then": [
+                  {
+                    "do": "add_var",
+                    "var": "boost_aim",
+                    "value": 3
+                  }
+                ]
+              },
+              {
+                "do": "if_var",
+                "var": "prize_3",
+                "op": "==",
+                "value": 4,
+                "then": [
+                  {
+                    "do": "add_var",
+                    "var": "boost_dodge",
+                    "value": 5
+                  }
+                ]
+              },
+              {
+                "do": "if_var",
+                "var": "prize_3",
+                "op": "==",
+                "value": 5,
+                "then": [
+                  {
+                    "do": "add_var",
+                    "var": "boost_charge",
+                    "value": 5
+                  }
+                ]
+              },
+              {
+                "do": "set_var",
+                "var": "prize_3",
+                "value": 0
+              },
+              {
+                "do": "save_game"
+              },
+              {
+                "do": "play_sfx",
+                "sfx": "sfx_confirm"
+              },
+              {
+                "do": "fade_out",
+                "ticks": 20
+              },
+              {
+                "do": "if_var",
+                "var": "mode",
+                "op": "==",
+                "value": 1,
+                "then": [
+                  {
+                    "do": "goto_scene",
+                    "scene": "scn_waves"
+                  }
+                ],
+                "else": [
+                  {
+                    "do": "goto_scene",
+                    "scene": "scn_run"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "behavior": "move_buttons",
+      "params": {
+        "level_var": "map_level",
+        "gauge_1": "g1",
+        "gauge_2": "g2",
+        "gauge_3": "g3",
+        "locked_sfx": "sfx_error",
+        "miss_sfx": "sfx_miss",
+        "enable_var": "map_moves"
+      }
+    },
+    {
+      "behavior": "camera_target",
+      "params": {}
+    }
+  ]
+}

@@ -1,0 +1,47 @@
+{
+  "id": "item_shiny_seed",
+  "kind": "object",
+  "type": "pickup",
+  "name": "Shiny seed",
+  "notes": "Classic run only: what the Alpha leaves where it fainted when its species is unlocked and not shiny yet (see enm_alpha). It shimmers through the rainbow with golden sparkles rising from it, the Alpha's sparkles, so it never looks like the run's plain seed. If it would land on a solid tile it moves to the nearest clear spot. Only the player picks it up (the seed chime); a second later the screen fades to the victory screen, where the Alpha's species becomes shiny for good and is saved, and the shiny screen shows it after the items screen. The run waits for it: it doesn't end until the seed is picked up (or the run is quit or restarted from the pause menu, which loses it: the next Alpha of that species leaves it again).",
+  "body": "body_shiny_seed",
+  "logic": [
+    {
+      "behavior": "free_spot",
+      "params": {}
+    },
+    {
+      "behavior": "spawn_particles",
+      "params": {
+        "particle": "ptc_sparkle",
+        "when": "always",
+        "offset_y": -8
+      }
+    },
+    {
+      "behavior": "collectible",
+      "params": {
+        "on_collect": [
+          {
+            "do": "wait",
+            "ticks": 60
+          },
+          {
+            "do": "fade_out",
+            "ticks": 30
+          },
+          {
+            "do": "goto_scene",
+            "scene": "scn_victory"
+          }
+        ]
+      }
+    }
+  ],
+  "sounds": {
+    "collect": "sfx_seed"
+  },
+  "children": [
+    "body_shiny_seed"
+  ]
+}

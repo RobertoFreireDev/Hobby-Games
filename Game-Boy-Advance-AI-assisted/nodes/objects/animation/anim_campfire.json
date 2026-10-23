@@ -1,0 +1,44 @@
+{
+  "id": "anim_campfire",
+  "kind": "object",
+  "type": "animation",
+  "name": "Campfire burning",
+  "notes": "The flames flicker: 4 frames, 7 ticks each, in an uneven order so it never looks like a short loop.",
+  "sprite": "spr_campfire",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "burn_0",
+      "ticks": 7
+    },
+    {
+      "frame": "burn_1",
+      "ticks": 6
+    },
+    {
+      "frame": "burn_2",
+      "ticks": 8
+    },
+    {
+      "frame": "burn_3",
+      "ticks": 6
+    },
+    {
+      "frame": "burn_1",
+      "ticks": 7
+    },
+    {
+      "frame": "burn_0",
+      "ticks": 6
+    },
+    {
+      "frame": "burn_3",
+      "ticks": 8
+    },
+    {
+      "frame": "burn_2",
+      "ticks": 6
+    }
+  ],
+  "events": []
+}

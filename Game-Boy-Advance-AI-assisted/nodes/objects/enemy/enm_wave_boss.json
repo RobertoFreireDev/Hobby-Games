@@ -1,0 +1,148 @@
+{
+  "id": "enm_wave_boss",
+  "kind": "object",
+  "type": "enemy",
+  "name": "Wave boss",
+  "notes": "The Alpha of the waves mode: it joins the last wave (wave 10) with its 24 monsters, coming in from the dark like them. A random species (never the player's), in its rare Alpha colors with a golden crown and sparkles, level 14 with 500 HP; its move 1 hits 1.5x harder and it uses all 3 of its moves like the classic Alpha (an attack every 3.3 s: move 3 when recharged, else move 2, else move 1; moves 2 and 3 recharge twice as slowly as the player's and are ready when it arrives). It is always hostile (it never waits its turn) and never gives up. When it appears it roars, the screen shakes and the boss theme starts. It gives 60 XP; the run is won when it and every other monster of the last wave have fainted. Like every wave monster, when it faints it has a 25% chance to drop one of the classic run's 5 floor items, picked at random (Swift Feather, Power Gem, Aim Charm, Mist Orb or Quick Hourglass: the item_waves_* pickups), at most 3 of each per run: a faint that rolls an item already dropped 3 times drops nothing. The item lands at its feet, or on the nearest lit floor when it fainted in the dark edge; only the player can pick it up. Matchup tag: its level tag is yellow when the player's type is super effective on it (the x1.5! color), grey when it resists the player's type (the x0.75 color), else cyan. Spotted: when it turns hostile a yellow '!' pops up over its head (above the level tag) and its cry plays; if that happens out of sight, they wait until it walks into view. Knock-out freeze: when it faints the whole world stops for 2/3 s (pause_world), the killing blow's red flash and number held still, then it blinks out and the rest of its on_death runs.",
+  "logic": [
+    {
+      "behavior": "monster",
+      "params": {
+        "random": true,
+        "avoid_var": "chosen",
+        "flash_palette": "pal_flash_red",
+        "flash_ticks": 4,
+        "flashes": 3,
+        "home_var": "world",
+        "alpha": true,
+        "hp": 500,
+        "power": 150,
+        "crown": "spr_crown",
+        "shadow": "spr_shadow",
+        "aura": "ptc_sparkle",
+        "level_tag": 180,
+        "level_tag_reset": 300,
+        "level_tag_margin": 32,
+        "level_tag_text": "LV",
+        "level_tag_palette": "pal_txt_cyan",
+        "xp_reward": 60,
+        "kills_var": "kills",
+        "walls": false,
+        "level": 14,
+        "on_death": [
+          {
+            "do": "pause_world",
+            "ticks": 40
+          },
+          {
+            "do": "if_chance",
+            "percent": 25,
+            "then": [
+              {
+                "do": "random_var",
+                "var": "drop_kind",
+                "min": 0,
+                "max": 4
+              },
+              {
+                "do": "if_var",
+                "var": "drops",
+                "index": "drop_kind",
+                "op": "<",
+                "value": 3,
+                "then": [
+                  {
+                    "do": "add_var",
+                    "var": "drops",
+                    "index": "drop_kind",
+                    "value": 1
+                  },
+                  {
+                    "do": "if_var",
+                    "var": "drop_kind",
+                    "op": "==",
+                    "value": 0,
+                    "then": [
+                      {
+                        "do": "spawn",
+                        "object": "item_waves_swift_feather"
+                      }
+                    ]
+                  },
+                  {
+                    "do": "if_var",
+                    "var": "drop_kind",
+                    "op": "==",
+                    "value": 1,
+                    "then": [
+                      {
+                        "do": "spawn",
+                        "object": "item_waves_power_gem"
+                      }
+                    ]
+                  },
+                  {
+                    "do": "if_var",
+                    "var": "drop_kind",
+                    "op": "==",
+                    "value": 2,
+                    "then": [
+                      {
+                        "do": "spawn",
+                        "object": "item_waves_aim_charm"
+                      }
+                    ]
+                  },
+                  {
+                    "do": "if_var",
+                    "var": "drop_kind",
+                    "op": "==",
+                    "value": 3,
+                    "then": [
+                      {
+                        "do": "spawn",
+                        "object": "item_waves_mist_orb"
+                      }
+                    ]
+                  },
+                  {
+                    "do": "if_var",
+                    "var": "drop_kind",
+                    "op": "==",
+                    "value": 4,
+                    "then": [
+                      {
+                        "do": "spawn",
+                        "object": "item_waves_quick_hourglass"
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        ],
+        "level_tag_matchup": true,
+        "alert_text": "!",
+        "alert_palette": "pal_txt_yellow",
+        "alert_cry": true
+      }
+    },
+    {
+      "behavior": "monster_ai",
+      "params": {
+        "speed": 0.5,
+        "chase_speed": 0.85,
+        "sight": 7,
+        "give_up": 99,
+        "max_hostile": 25,
+        "charge": 200,
+        "moves": 3,
+        "moves_power": 100,
+        "moves_charge": 200,
+        "spread": 1,
+        "hunt": true
+      }
+    }
+  ]
+}

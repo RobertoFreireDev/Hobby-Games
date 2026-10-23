@@ -1,0 +1,16 @@
+{
+  "id": "anim_vine_bridge",
+  "kind": "object",
+  "type": "animation",
+  "name": "Vine bridge (across)",
+  "notes": "Vine bridge (across), standing still.",
+  "sprite": "spr_vine_bridge",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "vine_h",
+      "ticks": 60
+    }
+  ],
+  "events": []
+}

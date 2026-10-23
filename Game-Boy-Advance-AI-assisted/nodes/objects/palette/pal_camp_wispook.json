@@ -1,0 +1,25 @@
+{
+  "id": "pal_camp_wispook",
+  "kind": "object",
+  "type": "palette",
+  "name": "Wispook by the fire colors",
+  "notes": "Wispook's colors in the campfire's light (15 colors for all its seats): warmer and darker than in the game, bright on the side facing the fire.",
+  "colors": [
+    "#000000",
+    "#101010",
+    "#ffe6bd",
+    "#7b6a73",
+    "#c59c94",
+    "#523152",
+    "#f67362",
+    "#ffcdac",
+    "#392929",
+    "#ffffd5",
+    "#946a83",
+    "#ffa483",
+    "#624173",
+    "#a4838b",
+    "#e6b4a4",
+    "#5a4162"
+  ]
+}

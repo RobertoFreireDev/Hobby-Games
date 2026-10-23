@@ -1,0 +1,29 @@
+{
+  "id": "body_sign_grey",
+  "kind": "object",
+  "type": "body",
+  "name": "Greyed-out sign body",
+  "notes": "The locked WAVES sign: the same shape, place and solid collision box as a wooden sign (body_sign), drawn in greys (the sign's 'sign_grey' picture).",
+  "origin": [
+    8,
+    15
+  ],
+  "hitbox": {
+    "x": -8,
+    "y": -15,
+    "w": 16,
+    "h": 16
+  },
+  "physics": {
+    "gravity": false,
+    "solid": true,
+    "collides_with": []
+  },
+  "animations": {
+    "idle": "anim_sign_grey"
+  },
+  "default_animation": "idle",
+  "children": [
+    "anim_sign_grey"
+  ]
+}

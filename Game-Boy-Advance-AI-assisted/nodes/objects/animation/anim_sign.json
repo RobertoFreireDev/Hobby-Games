@@ -1,0 +1,16 @@
+{
+  "id": "anim_sign",
+  "kind": "object",
+  "type": "animation",
+  "name": "Wooden sign",
+  "notes": "The sign standing still (one picture).",
+  "sprite": "spr_sign",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "sign",
+      "ticks": 60
+    }
+  ],
+  "events": []
+}

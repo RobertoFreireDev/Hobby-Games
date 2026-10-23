@@ -1,0 +1,29 @@
+{
+  "id": "mon_gustling",
+  "kind": "object",
+  "type": "species",
+  "name": "Gustling",
+  "notes": "Gustling: a round blue chick with a white face and belly, an orange beak and a head crest. Type FLYING: it always flies, wings flapping and feet tucked away, in every animation (the look), and that makes it harder to hit: every move aimed at it, the player's, a wild monster's or the Alpha's, in every mode, has 10 % less accuracy (evasion 10: a 100 % move hits 90 %, a 95 % move 85 %; ground zones and status-only moves still never miss). Moves: Gust (A), Peck (B) and Fly (R). Walks at 80 % speed: its move 1 (Gust) reaches 3 tiles, and the farther a monster's move 1 reaches, the slower it walks. It can be the player, and the 8 species that aren't picked live on the map.",
+  "title": "GUSTLING",
+  "monster_type": "flying",
+  "speed": 80,
+  "evasion": 10,
+  "body": "body_gustling",
+  "alpha_palette": "pal_alpha_gustling",
+  "portrait": "spr_gustling_portrait",
+  "cry": "sfx_cry_gustling",
+  "moves": [
+    "mov_gust",
+    "mov_peck",
+    "mov_fly"
+  ],
+  "children": [
+    "body_gustling",
+    "spr_gustling_portrait",
+    "pal_alpha_gustling",
+    "sfx_cry_gustling",
+    "mov_gust",
+    "mov_peck",
+    "mov_fly"
+  ]
+}

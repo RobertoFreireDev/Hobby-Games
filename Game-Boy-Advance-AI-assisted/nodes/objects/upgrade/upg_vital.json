@@ -1,0 +1,35 @@
+{
+  "id": "upg_vital",
+  "kind": "object",
+  "type": "upgrade",
+  "name": "Vital Seed",
+  "notes": "Vital Seed: +5 maximum HP (and 5 HP back, so a full bar stays full), up to 5 times (+25). Offered on the waves mode's level-up menu (menu_power); its level is kept in 'up_vital' (back to 0 each run). The card doesn't say 'healed': the level-up that opens the menu already heals fully.",
+  "category": "item",
+  "title": "VITAL SEED",
+  "icon": "icon_upg_vital",
+  "var": "up_vital",
+  "max_level": 5,
+  "descriptions": [
+    "+5 MAX HP.",
+    "+5 MAX HP (+10 IN ALL)",
+    "+5 MAX HP (+15 IN ALL)",
+    "+5 MAX HP (+20 IN ALL)",
+    "+5 MAX HP (+25 IN ALL)"
+  ],
+  "on_pick": [
+    {
+      "do": "add_var",
+      "var": "hp_max",
+      "value": 5
+    },
+    {
+      "do": "add_var",
+      "var": "hp",
+      "value": 5,
+      "max_var": "hp_max"
+    }
+  ],
+  "children": [
+    "icon_upg_vital"
+  ]
+}

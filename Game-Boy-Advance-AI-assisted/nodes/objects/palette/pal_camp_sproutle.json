@@ -1,0 +1,25 @@
+{
+  "id": "pal_camp_sproutle",
+  "kind": "object",
+  "type": "palette",
+  "name": "Sproutle by the fire colors",
+  "notes": "Sproutle's colors in the campfire's light (15 colors for all its seats): warmer and darker than in the game, bright on the side facing the fire.",
+  "colors": [
+    "#000000",
+    "#ffff6a",
+    "#392929",
+    "#629c29",
+    "#f69439",
+    "#945220",
+    "#bdee41",
+    "#ffffcd",
+    "#ffac8b",
+    "#416a20",
+    "#f6d55a",
+    "#181818",
+    "#a4bd4a",
+    "#738341",
+    "#ff8373",
+    "#c57b39"
+  ]
+}

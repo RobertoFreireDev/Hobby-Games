@@ -1,0 +1,23 @@
+{
+  "id": "mov_night_shade",
+  "kind": "object",
+  "type": "move",
+  "name": "Night Shade",
+  "notes": "Wispook's move 2 (B). Dark shadows rise along a line 3 tiles long in front of the user; every monster they touch is hurt. Charge: 10 s.",
+  "title": "NIGHT SHADE",
+  "monster_type": "ghost",
+  "shape": "beam",
+  "range": 3,
+  "power": 18,
+  "accuracy": 90,
+  "charge": 600,
+  "effect": "ptc_fx_shade",
+  "effect_at": "axis",
+  "travel": "anim_travel_night_shade",
+  "sfx": "sfx_mv_ghost",
+  "children": [
+    "spr_fx_shade",
+    "ptc_fx_shade",
+    "anim_travel_night_shade"
+  ]
+}

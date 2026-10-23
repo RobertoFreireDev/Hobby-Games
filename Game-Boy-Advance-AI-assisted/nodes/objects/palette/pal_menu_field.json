@@ -1,0 +1,20 @@
+{
+  "id": "pal_menu_field",
+  "kind": "object",
+  "type": "palette",
+  "name": "Menu field colors",
+  "notes": "Colors of the menu map's ground (ts_menu_field): 1-6 are the meadow's own (pal_ground_normal's outline, white, tip highlight, grass, tufts and shade, at the same numbers, so the field's grass is the Normal world's), 7-10 the garden bed's soil, darkest to lightest: exactly pal_garden's soil browns, so the plants' little dug holes (drawn by the plot sprites) match the bed under them pixel for pixel.",
+  "colors": [
+    "#000000",
+    "#203020",
+    "#f8f8f0",
+    "#c8f080",
+    "#98d858",
+    "#58a838",
+    "#2c6c28",
+    "#201810",
+    "#4a2c18",
+    "#7a4c28",
+    "#a87444"
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "id": "scn_boot",
+  "kind": "scene",
+  "type": "intro",
+  "name": "Boot",
+  "notes": "The very first scene when the game is switched on: a black frame that loads the saved progress, then opens the campfire intro. It exists because the intro picks its picture and its monsters' seats from 'unlocked' while it loads, before its own start actions could load the save.",
+  "backdrop": "#000000",
+  "music": null,
+  "camera": {
+    "x": 0,
+    "y": 0,
+    "bounds": "none"
+  },
+  "instances": [],
+  "on_start": [
+    {
+      "do": "load_game"
+    },
+    {
+      "do": "goto_scene",
+      "scene": "scn_intro"
+    }
+  ]
+}

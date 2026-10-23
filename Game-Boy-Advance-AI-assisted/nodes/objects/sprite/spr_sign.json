@@ -1,0 +1,48 @@
+{
+  "id": "spr_sign",
+  "kind": "object",
+  "type": "sprite",
+  "name": "Wooden sign",
+  "notes": "A small wooden signboard on two short legs, the same size as a monster on the map (16 x 16): a brown frame lit at the top-left, a pale panel with dark marks like writing, a soft shadow on the grass under it. In the meadow's colors (pal_ground_normal). The menu map's three mode signs use it. A second picture, 'sign_grey', is the same sign in the stone greys of the same palette: the locked WAVES sign.",
+  "palette": "pal_ground_normal",
+  "width": 16,
+  "height": 16,
+  "frames": {
+    "sign": [
+      "................",
+      "..111111111111..",
+      ".18888888888891.",
+      "18899999999999e1",
+      "189eeeeeeeeee9e1",
+      "189e7777777789e1",
+      "189e7ee7eee789e1",
+      "189e7777777789e1",
+      "189e7e7ee7e789e1",
+      "189e7777777789e1",
+      "18998888888899e1",
+      "1eeeeeeeeeeeeee1",
+      ".11111111111111.",
+      "..1ee1....1ee1..",
+      ".61ee1666661ee16",
+      "..6116.....6116."
+    ],
+    "sign_grey": [
+      "................",
+      "..111111111111..",
+      ".1ddddddddddde1.",
+      "1ddeeeeeeeeeeee1",
+      "1deeeeeeeeeeeee1",
+      "1deeccccccccdee1",
+      "1deeceeceeecdee1",
+      "1deeccccccccdee1",
+      "1deececeececdee1",
+      "1deeccccccccdee1",
+      "1deeddddddddeee1",
+      "1eeeeeeeeeeeeee1",
+      ".11111111111111.",
+      "..1ee1....1ee1..",
+      ".61ee1666661ee16",
+      "..6116.....6116."
+    ]
+  }
+}

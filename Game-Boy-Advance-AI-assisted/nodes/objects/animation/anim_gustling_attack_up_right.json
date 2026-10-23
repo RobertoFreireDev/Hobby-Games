@@ -1,0 +1,24 @@
+{
+  "id": "anim_gustling_attack_up_right",
+  "kind": "object",
+  "type": "animation",
+  "name": "Gustling attack up-right",
+  "notes": "Gustling using a move facing up-right (its back, turned to the right): wings raised for 3 ticks, a hard downstroke for 8, then wings level. Same length as before (15 ticks); it only changes the look.",
+  "sprite": "spr_gustling",
+  "loop": false,
+  "frames": [
+    {
+      "frame": "up_right_wings_up",
+      "ticks": 3
+    },
+    {
+      "frame": "up_right_wings_down",
+      "ticks": 8
+    },
+    {
+      "frame": "up_right",
+      "ticks": 4
+    }
+  ],
+  "events": []
+}

@@ -1,0 +1,41 @@
+{
+  "id": "hud_select",
+  "kind": "object",
+  "type": "hud",
+  "name": "Monster picker text",
+  "notes": "Shown while the monster is in the cave choosing another one (prop_picker): the yellow arrows on both sides of the monster's portrait (Left / Right browse), the monster's name under it in the menus' white letters and, on the line below, its type ('TYPE: WATER') in the thin gold info letters of the menu map's bottom line (font_info, drawn as sprites). Nothing else: no best time, no PRESS START.",
+  "font": "font_default",
+  "elements": [
+    {
+      "kind": "icon",
+      "x": 32,
+      "y": 56,
+      "icon": "icon_arrow_l"
+    },
+    {
+      "kind": "icon",
+      "x": 192,
+      "y": 56,
+      "icon": "icon_arrow_r"
+    },
+    {
+      "kind": "text",
+      "x": 120,
+      "y": 96,
+      "text": "{chosen.name}",
+      "align": "center"
+    },
+    {
+      "kind": "text",
+      "x": 120,
+      "y": 104,
+      "text": "TYPE: {chosen.type}",
+      "align": "center",
+      "font": "font_info"
+    }
+  ],
+  "children": [
+    "icon_arrow_l",
+    "icon_arrow_r"
+  ]
+}

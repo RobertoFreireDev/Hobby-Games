@@ -1,0 +1,36 @@
+{
+  "id": "sfx_melt",
+  "kind": "object",
+  "type": "sfx",
+  "name": "Melt",
+  "notes": "The boulder hisses and bubbles away.",
+  "channel": "noise",
+  "priority": 2,
+  "steps": [
+    {
+      "pitch": 3,
+      "ticks": 4,
+      "volume": 14
+    },
+    {
+      "pitch": 2,
+      "ticks": 6,
+      "volume": 12
+    },
+    {
+      "pitch": 3,
+      "ticks": 6,
+      "volume": 10
+    },
+    {
+      "pitch": 2,
+      "ticks": 8,
+      "volume": 7
+    },
+    {
+      "pitch": 3,
+      "ticks": 6,
+      "volume": 4
+    }
+  ]
+}

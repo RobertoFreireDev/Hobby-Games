@@ -1,0 +1,42 @@
+{
+  "id": "spr_fx_note",
+  "kind": "object",
+  "type": "sprite",
+  "name": "Growl effect",
+  "notes": "Growl's musical notes flying outward: a note in yellow, then white, then fading grey. Every frame keeps a 1 px empty border, so the picture is never cut at the edge of its sprite.",
+  "palette": "pal_fx",
+  "width": 8,
+  "height": 8,
+  "frames": {
+    "f0": [
+      "........",
+      "....11..",
+      "....131.",
+      "....111.",
+      "..1111..",
+      ".1331...",
+      "..11....",
+      "........"
+    ],
+    "f1": [
+      "........",
+      "....11..",
+      "....121.",
+      "....111.",
+      "..1111..",
+      ".1221...",
+      "..11....",
+      "........"
+    ],
+    "f2": [
+      "........",
+      "....11..",
+      "....1c1.",
+      "....111.",
+      "..1111..",
+      ".1cc1...",
+      "..11....",
+      "........"
+    ]
+  }
+}

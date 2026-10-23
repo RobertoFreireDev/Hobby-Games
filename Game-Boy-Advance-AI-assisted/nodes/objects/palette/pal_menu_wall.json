@@ -1,0 +1,24 @@
+{
+  "id": "pal_menu_wall",
+  "kind": "object",
+  "type": "palette",
+  "name": "Menu mountain wall colors",
+  "notes": "Colors of the menu map's mountain wall (ts_menu_wall): 1 = the cave's black, 2-9 = the brown rock from its darkest crevices to its sunlit edges (close to the intro cave's own browns, since the cave leads there; 5-7 are also the cave's earth floor spilling out onto the grass), 10-14 = the meadow's greens (pal_ground_normal's grass, blade marks, deep, light and outline), for the tall grass at the foot of the wall and the lawn growing over the earth's edges.",
+  "colors": [
+    "#000000",
+    "#100808",
+    "#2a140a",
+    "#4a2410",
+    "#6a3918",
+    "#8b5a24",
+    "#a8783a",
+    "#c5a452",
+    "#e0c070",
+    "#f4dc98",
+    "#98d858",
+    "#58a838",
+    "#2c6c28",
+    "#c8f080",
+    "#203020"
+  ]
+}

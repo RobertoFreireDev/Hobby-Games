@@ -1,0 +1,21 @@
+{
+  "id": "npc_hedge",
+  "kind": "object",
+  "type": "npc",
+  "name": "Haunted hedge",
+  "notes": "The haunted hedge across the Jungle's west path to the Haunted Hollow. Solid for every monster but Wispook, who floats through it (its body doesn't collide with npcs). It withers once Pebbulk is freed (appear_if unlocked < 9).",
+  "body": "body_hedge",
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "unlocked",
+        "op": "<",
+        "value": 9
+      }
+    }
+  ],
+  "children": [
+    "body_hedge"
+  ]
+}

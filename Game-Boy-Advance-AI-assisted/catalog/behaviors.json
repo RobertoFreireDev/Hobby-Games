@@ -1,0 +1,499 @@
+{
+  "_notes": "Every behavior an object can list in its logic[]. Each one is src/behaviors/<name>.c/.h. Param types: int, fixed, bool, ticks, button, var, node:<type>, actions, points, choice (one of options), string (a C function name), text (words shown on screen).",
+  "platformer_controller": {
+    "description": "Side-view control: run left/right with the D-pad, jump with a button, climb ladders with up/down. Picks the idle, run, jump, fall and climb animations.",
+    "params": {
+      "speed":         {"type": "fixed", "default": 1.5, "description": "Top running speed (pixels per tick)."},
+      "acceleration":  {"type": "fixed", "default": 0.25, "description": "How fast it speeds up and slows down (pixels per tick, each tick)."},
+      "jump_height":   {"type": "int", "default": 40, "description": "How high a full jump goes (pixels). Letting go of the button early makes a smaller hop."},
+      "jump_button":   {"type": "button", "default": "A", "description": "Button that jumps."},
+      "climb_speed":   {"type": "fixed", "default": 1.0, "description": "Speed on ladders (pixels per tick)."}
+    }
+  },
+  "topdown_controller": {
+    "description": "Top-down control: walk in any direction with the D-pad (no gravity). Faces any of 8 directions and picks the matching idle / walk animations (idle_up, walk_down_left...); letting go of a diagonal keeps facing it, even when one button is lifted a few ticks before the other. A monster (monster behavior) walks at its species' speed: speed x the species' speed percent, and holds still while paralyzed or frozen.",
+    "params": {
+      "speed":      {"type": "fixed", "default": 1.0, "description": "Walking speed (pixels per tick)."},
+      "eight_way":  {"type": "bool", "default": true, "description": "Allow diagonal movement."},
+      "speed_var":  {"type": "var", "default": "", "description": "Each point of this game variable adds speed_step % speed (speed upgrades). Empty = no bonus."},
+      "speed_step": {"type": "int", "default": 10, "description": "Percent of speed each point of speed_var adds (10 = +10% per point). 1-100."},
+      "enter_ticks": {"type": "ticks", "default": 0, "description": "When it appears it first walks on its own for this many ticks toward enter_dir, the D-pad doing nothing meanwhile (a monster walking out of a cave). 0 = the D-pad steers it at once."},
+      "enter_dir":  {"type": "choice", "default": "down", "options": ["down", "up", "left", "right"], "description": "Which way it walks on its own while enter_ticks last."},
+      "solid_props": {"type": "bool", "default": false, "description": "Solid props (physics.solid: the menu map's signs) stop it like walls, even when its body doesn't list 'prop'. Off = only what its body collides with."}
+    }
+  },
+  "sword_attack": {
+    "description": "Top-down sword: press the button to swing in the direction the actor faces. It stops while swinging and plays its attack animation. Anything with health inside the blade is hurt and pushed away.",
+    "params": {
+      "button":    {"type": "button", "default": "B", "description": "Button that swings the sword."},
+      "damage":    {"type": "int", "default": 1, "description": "Health removed per hit."},
+      "reach":     {"type": "int", "default": 14, "description": "How far the blade reaches past the body (pixels)."},
+      "width":     {"type": "int", "default": 12, "description": "How wide the blade's hit area is (pixels)."},
+      "ticks":     {"type": "ticks", "default": 14, "description": "How long one swing lasts (ticks). Make the attack animation about this long."},
+      "cooldown":  {"type": "ticks", "default": 6, "description": "Extra wait after a swing before the next one (ticks)."},
+      "hits":      {"type": "choice", "default": "enemy", "options": ["enemy", "enemy_and_prop", "any"], "description": "What the blade hurts: enemies only, enemies and props (bushes, pots), or anything with health."},
+      "var":       {"type": "var", "default": "", "description": "Only works while this game variable is not 0 (for example, after getting the sword). Empty = always works."}
+    }
+  },
+  "wander": {
+    "description": "Top-down: walks around at random (up, down, left or right), resting now and then. Turns when it bumps into something.",
+    "params": {
+      "speed":        {"type": "fixed", "default": 0.5, "description": "Walking speed (pixels per tick)."},
+      "min_ticks":    {"type": "ticks", "default": 30, "description": "Shortest walk in one direction (ticks)."},
+      "max_ticks":    {"type": "ticks", "default": 90, "description": "Longest walk in one direction (ticks)."},
+      "pause_ticks":  {"type": "ticks", "default": 30, "description": "Rest between walks (ticks). 0 = never rests."},
+      "distance":     {"type": "int", "default": 0, "description": "Heads back when it gets this many pixels away from where it was placed. 0 = roams anywhere."}
+    }
+  },
+  "locked_door": {
+    "description": "A door that opens when the player walks up to it with a key: uses one key, runs its actions and disappears (its 'die' animation plays as the opening). Give the body physics.solid so it blocks the way.",
+    "params": {
+      "var":      {"type": "var", "required": true, "description": "Game variable that counts the keys."},
+      "consume":  {"type": "bool", "default": true, "description": "Use up one key when it opens."},
+      "range":    {"type": "int", "default": 2, "description": "How close the player must stand (pixels of gap)."},
+      "on_open":  {"type": "actions", "default": [], "description": "What happens when it opens."}
+    }
+  },
+  "patrol": {
+    "description": "Walks left and right on its own, turning around at walls, at ledge edges, or after a set distance.",
+    "params": {
+      "speed":          {"type": "fixed", "default": 0.5, "description": "Walking speed (pixels per tick)."},
+      "distance":       {"type": "int", "default": 0, "description": "Never walk farther than this many pixels from the start (either side). 0 = only turn at walls and edges."},
+      "turn_at_edges":  {"type": "bool", "default": true, "description": "Turn around instead of walking off a ledge."},
+      "start_left":     {"type": "bool", "default": false, "description": "Start walking to the left instead of the right."}
+    }
+  },
+  "chase_player": {
+    "description": "Moves toward the player when the player comes close, and stops when the player is far away. With 'vertical' it also faces up and down (top-down games).",
+    "params": {
+      "speed":     {"type": "fixed", "default": 0.75, "description": "Chasing speed (pixels per tick)."},
+      "range":     {"type": "int", "default": 80, "description": "Starts chasing when the player is this close (pixels)."},
+      "vertical":  {"type": "bool", "default": false, "description": "Also chase up and down (for flying things with no gravity)."}
+    }
+  },
+  "follow_path": {
+    "description": "Moves along a list of points (relative to where it was placed), pausing at each point.",
+    "params": {
+      "points":  {"type": "points", "default": [[0, 0], [64, 0]], "description": "Points to visit, in pixels from the starting position."},
+      "speed":   {"type": "fixed", "default": 0.5, "description": "Travel speed (pixels per tick)."},
+      "mode":    {"type": "choice", "default": "ping_pong", "options": ["ping_pong", "loop", "once"], "description": "ping_pong = go back and forth; loop = from the last point travel back to the first and repeat; once = stop at the last point."},
+      "wait":    {"type": "ticks", "default": 30, "description": "Pause at each point (ticks)."}
+    }
+  },
+  "solid_platform": {
+    "description": "Other things can stand on it and are carried when it moves.",
+    "params": {
+      "one_way":  {"type": "bool", "default": true, "description": "Only solid from above (you can jump up through it)."}
+    }
+  },
+  "health": {
+    "description": "Can be hurt and can die. Blinks and is briefly invincible after a hit. Spikes and falling off the map also hurt. Side view: knocked sideways and falls off the screen when it dies. Top-down (no gravity): pushed straight away from the hit and vanishes in place.",
+    "params": {
+      "var":               {"type": "var", "default": "", "description": "Game variable that holds the health (shared with the HUD). Empty = private health."},
+      "max":               {"type": "int", "default": 1, "description": "Starting health when no variable is used."},
+      "invincible_ticks":  {"type": "ticks", "default": 60, "description": "Invincibility time after being hurt (ticks)."},
+      "knockback":         {"type": "fixed", "default": 1.5, "description": "How far a hit pushes it back (pixels per tick)."},
+      "spikes":            {"type": "bool", "default": true, "description": "Spike tiles (hazard) hurt it. Turn off for monsters that should walk over spikes safely."},
+      "on_hurt":           {"type": "actions", "default": [], "description": "What happens on every hit."},
+      "on_death":          {"type": "actions", "default": [], "description": "What happens when health reaches 0."}
+    }
+  },
+  "damage_on_touch": {
+    "description": "Hurts whoever touches it (if they have health). Does not hurt someone who stomps it from above when it is stompable. With stun_ticks, a hit that lands stuns it: it stands still and hurts no one for a while (so it can't keep chasing and biting).",
+    "params": {
+      "amount":  {"type": "int", "default": 1, "description": "Health removed per hit."},
+      "hurts":   {"type": "choice", "default": "player", "options": ["player", "enemy", "any"], "description": "Who it hurts."},
+      "stun_ticks": {"type": "ticks", "default": 0, "description": "After it hurts someone it is stunned this long: swarm, chase_player, patrol and wander hold still and it does no touch damage. 0 = never stunned."}
+    }
+  },
+  "stompable": {
+    "description": "Defeated when the player lands on top of it. The player bounces off.",
+    "params": {
+      "bounce":    {"type": "fixed", "default": 3.0, "description": "Upward speed given to the player who stomps it (pixels per tick)."},
+      "on_stomp":  {"type": "actions", "default": [], "description": "What happens when it is stomped."}
+    }
+  },
+  "collectible": {
+    "description": "The player picks it up by touching it: adds to a game variable, plays the 'collect' sound and disappears.",
+    "params": {
+      "var":         {"type": "var", "default": "", "description": "Game variable to add to. Empty = none."},
+      "amount":      {"type": "int", "default": 1, "description": "How much to add."},
+      "on_collect":  {"type": "actions", "default": [], "description": "What happens when picked up."},
+      "as_player":   {"type": "bool", "default": false, "description": "on_collect runs as the player who picked it up instead of as the item, so float_text pops up over the player (+10% SPEED)."}
+    }
+  },
+  "random_spot": {
+    "description": "When it appears, it moves to a spot picked at random: where it was placed in the scene, or one of its other spots, each as likely, so it lies somewhere else every time (floor items). Put it first in the logic list. Give each object its own spots so two never land on the same one. The validator checks that every spot is inside the collision map and off solid and hazard tiles, and warns when one is under the tree tops (an 'over' layer): for scene instances and for the ones a scene's on_start spawns at a fixed spot (a coin).",
+    "params": {
+      "spots":       {"type": "points", "required": true, "description": "The other places it may appear, as [x, y] scene pixels (where its origin goes: an item's feet), up to 32."}
+    }
+  },
+  "free_spot": {
+    "description": "When it appears with its hitbox on a solid tile, it moves to the nearest spot where its whole hitbox is inside the map and clear of solid tiles, so the player can reach it: an item a monster drops while walking in over an arena's dark edge lands on the floor at the edge instead. Where it appears clear, it stays. Put it first in the logic list.",
+    "params": {
+      "reach":       {"type": "int", "default": 64, "description": "Farthest it may move, in pixels (8-128). With no clear spot that close, it stays where it appeared."}
+    }
+  },
+  "trigger_zone": {
+    "description": "Runs actions when the player walks into (or out of) its zone. With as_player they run as the player (destroy_self then removes the player: it walked into a cave).",
+    "params": {
+      "on_enter":  {"type": "actions", "default": [], "description": "What happens when the player enters."},
+      "on_exit":   {"type": "actions", "default": [], "description": "What happens when the player leaves."},
+      "once":      {"type": "bool", "default": false, "description": "Only fire the first time."},
+      "as_player": {"type": "bool", "default": false, "description": "on_enter and on_exit run as the player instead of as the zone (spawn is relative to the player, destroy_self removes the player)."}
+    }
+  },
+  "talk": {
+    "description": "When the player stands next to it and presses the button, a dialog opens.",
+    "params": {
+      "dialog":       {"type": "node:dialog", "required": true, "description": "Dialog to show."},
+      "button":       {"type": "button", "default": "B", "description": "Button that starts the talk."},
+      "range":        {"type": "int", "default": 12, "description": "How close the player must stand (pixels of gap between them, sideways or up/down)."},
+      "face_player":  {"type": "bool", "default": true, "description": "Turn to look at the player."}
+    }
+  },
+  "camera_target": {
+    "description": "The camera follows this object.",
+    "params": {}
+  },
+  "spawn_particles": {
+    "description": "Emits particles from this object: all the time, when landing, when jumping or while running.",
+    "params": {
+      "particle":  {"type": "node:particle", "required": true, "description": "Particle emitter to use."},
+      "when":      {"type": "choice", "default": "always", "options": ["always", "land", "jump", "run"], "description": "When to emit."},
+      "offset_x":  {"type": "int", "default": 0, "description": "Emit point, pixels right of the object's origin."},
+      "offset_y":  {"type": "int", "default": 0, "description": "Emit point, pixels below the object's origin."}
+    }
+  },
+  "weapon": {
+    "description": "Auto-firing weapon: every few ticks it launches projectile objects by itself (no button). Its level is a game variable: 0 = not owned yet. Each level above 1 fires faster and hits harder, and every few levels one more projectile joins the volley.",
+    "params": {
+      "level_var":           {"type": "var", "required": true, "description": "Game variable with the weapon's level (0 = not owned, so it does nothing)."},
+      "projectile":          {"type": "node:actor", "required": true, "description": "Object launched (give it the projectile behavior)."},
+      "aim":                 {"type": "choice", "default": "nearest", "options": ["nearest", "facing", "random", "around", "orbit"], "description": "nearest = at the closest enemy; facing = the way the owner walks (or faces); random = any direction; around = evenly in every direction; orbit = shots circle the owner, evenly spaced."},
+      "cooldown":            {"type": "ticks", "default": 60, "description": "Wait between volleys at level 1 (ticks)."},
+      "cooldown_per_level":  {"type": "ticks", "default": 4, "description": "Each level above 1 shortens the wait by this many ticks."},
+      "min_cooldown":        {"type": "ticks", "default": 10, "description": "The wait never gets shorter than this (ticks)."},
+      "count":               {"type": "int", "default": 1, "description": "Projectiles per volley at level 1."},
+      "extra_every":         {"type": "int", "default": 2, "description": "One more projectile every this many levels (2 = levels 3, 5...). 0 = never."},
+      "damage_per_level":    {"type": "int", "default": 2, "description": "Each level above 1 adds this much damage to every projectile."},
+      "spread":              {"type": "int", "default": 12, "description": "Degrees between the projectiles of one volley (nearest / facing aim)."},
+      "range":               {"type": "int", "default": 160, "description": "nearest aim: only fires when an enemy is this close (pixels)."},
+      "haste_var":           {"type": "var", "default": "", "description": "Each point of this game variable shortens the wait by 8% (cooldown items). Empty = none."},
+      "sound":               {"type": "node:sfx", "default": "", "description": "Sound played with each volley. Empty = silent."}
+    }
+  },
+  "projectile": {
+    "description": "A shot launched by a weapon: flies straight (or circles its owner), hurts the enemies it touches and vanishes after its lifetime or after hitting enough enemies. Give its body physics.collides_with [\"enemy\"]. An enemy that is still blinking from a hit is not hurt again (the shot flies on).",
+    "params": {
+      "speed":      {"type": "fixed", "default": 2.0, "description": "Flying speed (pixels per tick). Not used when orbiting."},
+      "lifetime":   {"type": "ticks", "default": 60, "description": "Vanishes after this many ticks. 0 = never (orbiting shots of a permanent weapon)."},
+      "damage":     {"type": "int", "default": 10, "description": "Damage per hit at weapon level 1 (the weapon adds its level bonus)."},
+      "pierce":     {"type": "int", "default": 1, "description": "Enemies it can hurt before vanishing. 0 = unlimited."},
+      "motion":     {"type": "choice", "default": "straight", "options": ["straight", "orbit"], "description": "straight = flies in the launch direction; orbit = circles the owner."},
+      "radius":     {"type": "int", "default": 28, "description": "orbit: distance from the owner's middle (pixels)."},
+      "spin":       {"type": "int", "default": 4, "description": "orbit: degrees turned per tick (bigger = faster)."},
+      "power_var":  {"type": "var", "default": "", "description": "Each point of this game variable adds 10% damage (might items). Empty = none."}
+    }
+  },
+  "aura": {
+    "description": "Damaging field around its owner: every few ticks it hurts and pushes away every enemy within a radius. Its level is a game variable (0 = not owned); each level above 1 widens it and hits harder.",
+    "params": {
+      "level_var":         {"type": "var", "required": true, "description": "Game variable with the aura's level (0 = not owned)."},
+      "radius":            {"type": "int", "default": 24, "description": "Reach at level 1 (pixels from the owner's middle)."},
+      "radius_per_level":  {"type": "int", "default": 4, "description": "Extra reach per level above 1 (pixels)."},
+      "damage":            {"type": "int", "default": 5, "description": "Damage per pulse at level 1."},
+      "damage_per_level":  {"type": "int", "default": 2, "description": "Extra damage per level above 1."},
+      "every":             {"type": "ticks", "default": 40, "description": "Ticks between pulses."},
+      "particle":          {"type": "node:particle", "default": "", "description": "Particles shown on each pulse (a ring of sparks). Empty = invisible."},
+      "power_var":         {"type": "var", "default": "", "description": "Each point of this game variable adds 10% damage. Empty = none."},
+      "haste_var":         {"type": "var", "default": "", "description": "Each point of this game variable makes pulses 8% more frequent. Empty = none."}
+    }
+  },
+  "swarm": {
+    "description": "Horde movement (top-down): walks straight at the player from any direction and nudges away from others of its kind so crowds spread out. Members left far behind jump ahead of the player, off screen, so the horde keeps up.",
+    "params": {
+      "speed":   {"type": "fixed", "default": 0.5, "description": "Walking speed (pixels per tick)."},
+      "leash":   {"type": "int", "default": 220, "description": "Moved ahead of the player when farther than this (pixels; up/down uses 3/4 of it). 0 = never."},
+      "wobble":  {"type": "bool", "default": false, "description": "Weave from side to side while flying in (bats, ghosts)."}
+    }
+  },
+  "magnet": {
+    "description": "A pickup (XP gem, coin) that flies to the player once the player comes within range, speeding up until it is caught.",
+    "params": {
+      "range":         {"type": "int", "default": 24, "description": "Starts flying when the player is this close (pixels)."},
+      "range_var":     {"type": "var", "default": "", "description": "Each point of this game variable adds 12 pixels of range (magnet items). Empty = none."},
+      "acceleration":  {"type": "fixed", "default": 0.2, "description": "Speed gained each tick while flying (pixels per tick)."},
+      "max_speed":     {"type": "fixed", "default": 4.0, "description": "Top flying speed (pixels per tick)."},
+      "pull_after":    {"type": "ticks", "default": 0, "description": "Flies to the player on its own after lying around this long, wherever it is (nothing is lost and actor slots free up). 0 = never."}
+    }
+  },
+  "spawn_wave": {
+    "description": "Brings in enemies just off screen around the camera during a time window of the run (read from a seconds variable). Use several (on an invisible director prop) to script a whole run: who comes, when, how many.",
+    "params": {
+      "object":     {"type": "node:actor", "required": true, "description": "What to spawn."},
+      "clock_var":  {"type": "var", "required": true, "description": "Game variable counting the run's seconds (see run_clock)."},
+      "start":      {"type": "int", "default": 0, "description": "First second of the window."},
+      "end":        {"type": "int", "default": 0, "description": "Stops at this second. 0 = never stops."},
+      "every":      {"type": "ticks", "default": 60, "description": "Ticks between spawns."},
+      "count":      {"type": "int", "default": 1, "description": "How many appear each time."},
+      "max_alive":  {"type": "int", "default": 20, "description": "Never more than this many of this object alive at once."},
+      "formation":  {"type": "choice", "default": "scatter", "options": ["scatter", "group", "ring"], "description": "scatter = each one on a random side; group = a pack from one side; ring = a circle around the player that closes in."},
+      "reserve":    {"type": "int", "default": 24, "description": "Keeps this many actor slots free for shots, gems and coins (the wave waits)."},
+      "once":       {"type": "bool", "default": false, "description": "Spawn only once (a boss)."},
+      "on_spawn":   {"type": "actions", "default": [], "description": "What happens the first time it spawns (warning, boss music...)."}
+    }
+  },
+  "run_clock": {
+    "description": "Counts play time: adds 1 to a seconds variable every 60 ticks and keeps minutes / seconds variables for a mm:ss display, and runs on_minute each time a whole minute has passed (a boss that grows stronger the longer the run takes). Stops while a menu pauses the game, or when its stop variable is set.",
+    "params": {
+      "total_var":    {"type": "var", "required": true, "description": "Game variable counting seconds since the run started."},
+      "minutes_var":  {"type": "var", "default": "", "description": "Game variable set to the whole minutes. Empty = none."},
+      "seconds_var":  {"type": "var", "default": "", "description": "Game variable set to the seconds within the minute (0-59). Empty = none."},
+      "stop_var":     {"type": "var", "default": "", "description": "The clock stops while this game variable is not 0 (the run is won or lost). Empty = never stops."},
+      "on_minute":    {"type": "actions", "default": [], "description": "What happens each time the clock reaches a whole minute (1:00, 2:00, ...), run as the object with the clock."}
+    }
+  },
+  "level_up": {
+    "description": "Experience levels: when the XP variable reaches what the next level needs, that XP is spent, the level goes up and the actions run (for example: open the level-up menu). Needed XP = first + growth x (level - 1).",
+    "params": {
+      "xp_var":        {"type": "var", "required": true, "description": "Game variable holding the XP collected toward the next level."},
+      "level_var":     {"type": "var", "required": true, "description": "Game variable holding the current level (start it at 1)."},
+      "progress_var":  {"type": "var", "default": "", "description": "Game variable kept at 0-100 = progress to the next level (for an XP bar). Empty = none."},
+      "first":         {"type": "int", "default": 5, "description": "XP needed to go from level 1 to 2."},
+      "growth":        {"type": "int", "default": 6, "description": "Extra XP needed for each level after that."},
+      "on_level_up":   {"type": "actions", "default": [], "description": "What happens on each level gained."}
+    }
+  },
+  "button_actions": {
+    "description": "When a button is pressed, run actions (for example: START opens the pause menu). Does nothing while a menu or dialog is open. With once, only the first press counts.",
+    "params": {
+      "button":   {"type": "button", "default": "START", "description": "Button to watch."},
+      "on_press": {"type": "actions", "default": [], "description": "What happens when the button is pressed."},
+      "once":     {"type": "bool", "default": false, "description": "Only the first press counts: later presses do nothing (a START that leaves the screen, so pressing it again during the fade can't run it twice)."}
+    }
+  },
+  "monster": {
+    "description": "A creature of a monster-battle game. It takes its look, type and 3 moves from a species node, and has a level and hit points. Moves that hit it use the type chart (game.battle) for damage, can MISS, flash it (white, or its own flash_palette, once or a few times), push it back 2 px (not into a wall or another monster) and may paralyze or poison it; floating words show what happened. A paralyzed monster (the player's too) zaps when it happens, then stops dead in its pose, trembles, flickers yellow and has sparks crackling over it (game.battle par_effect) until it can move again. When its hit points run out it faints (flashes and blinks out). With level_tag, a wild monster shows its level over its head for a few seconds when it comes into view (level_tag_matchup colors it by the type matchup), and with alert_text a word ('!') and its cry pop up over it when it spots the player. A monster with level_var reads its level from that variable every tick (a boss that grows stronger while it sleeps). Boost variables can raise its damage (power_var) and accuracy (aim_var) and make moves miss it more (dodge_var). In its home world (home_var: the world's type is its own type) it hits harder, walks faster and its moves recharge sooner (home_power, home_speed, home_charge), and on_home runs when it appears (on_away when it appears anywhere else). Moving makes it harder to hit (dodge_walk, dodge_away): a move that can miss loses accuracy against it when it walked in the last moment (0.1 s) before the move was used, and more when it walked diagonally away from the move's user. The player's version keeps hit points, level and XP in game variables and levels up (each level up raises its maximum hit points and heals it to full); low_hp_sfx beeps while its hit points are low. A shiny monster (shiny_var) shimmers through the rainbow, hits harder (shiny_power), starts a run with more hit points (shiny_hp) and can flash in its own colors when hit (shiny_flash_palette, shiny_flashes).",
+    "params": {
+      "species":      {"type": "node:species", "default": "", "description": "Its species. Empty = use species_var or random."},
+      "species_var":  {"type": "var", "default": "", "description": "Game variable holding the species number (order of the species nodes, from 0): the player's pick. Empty = use 'species'."},
+      "random":       {"type": "bool", "default": false, "description": "Pick a random species when it appears (never the one in avoid_var)."},
+      "avoid_var":    {"type": "var", "default": "", "description": "Game variable holding a species number to stay out of: a monster of that species does not appear at all (the player's own kind), and a random one picks another. Empty = none."},
+      "species_out_var": {"type": "var", "default": "", "description": "Game variable set to its species number (order of the species nodes, from 0) when it appears: which species a random one turned out to be (the Alpha's), so actions can ask, e.g. in its on_death. Empty = none."},
+      "level":        {"type": "int", "default": 1, "description": "Level, for damage (when level_var is empty)."},
+      "hp":           {"type": "int", "default": 30, "description": "Hit points (when hp_var is empty)."},
+      "power":        {"type": "int", "default": 100, "description": "Damage of its moves, in percent (an Alpha hits harder: 150)."},
+      "power_var":    {"type": "var", "default": "", "description": "Game variable added to 'power' (percent): a damage boost for all its moves, ground zones included (10 = +10%). Empty = none."},
+      "aim_var":      {"type": "var", "default": "", "description": "Game variable added to the accuracy of its moves (percent points): 5 = a 95% move hits 100% of the time. Ground zones never miss anyway. Empty = none."},
+      "dodge_var":    {"type": "var", "default": "", "description": "Game variable taken off the accuracy of the moves that hit it (percent points): 10 = a 95% move hits only 85% of the time, and even a 100% move can miss. Ground zones never miss. Empty = none."},
+      "dodge_walk":   {"type": "int", "default": 0, "description": "Walking dodge: accuracy points taken off a move that hits it when it walked at all during the last dodge_ticks ticks before the hit (10 = a 95% move hits 85% of the time while it walks). Only moves that can miss: ground zones and status-only moves never miss. 0-100; 0 = off."},
+      "dodge_away":   {"type": "int", "default": 0, "description": "Extra points on top of dodge_walk when on one of those ticks it walked away from the move's user on both axes: diagonally away from it (user on the right and a bit lower: walking left and up). On an axis where their middles are level, either way counts. 20 = with dodge_walk 10, a 95% move hits 65% of the time. 0-100; 0 = off."},
+      "dodge_ticks":  {"type": "ticks", "default": 6, "description": "How far back the walking dodge looks, up to the moment the move is used (6 ticks = 0.1 s). 1-16."},
+      "home_var":     {"type": "var", "default": "", "description": "Game variable holding the world's type: its number in game.battle.types (0 = the first). When it is this monster's own type, the monster is at home for as long as it lives (checked when it appears): its moves do home_power % more damage, it walks home_speed % faster and every move recharges home_charge % sooner, on top of its other boosts. Empty = never at home."},
+      "home_power":   {"type": "int", "default": 10, "description": "At home: extra damage of all its moves, ground zones included, in percent (10 = x1.1). 0-100."},
+      "home_speed":   {"type": "int", "default": 10, "description": "At home: extra walking speed, in percent (10 = x1.1). 0-100."},
+      "home_charge":  {"type": "int", "default": 10, "description": "At home: percent cut from the recharge time of all its moves (10 = x0.9; for a wild monster also the wait between its attacks). 0-90."},
+      "on_home":      {"type": "actions", "default": [], "description": "Runs once, as this monster, when it appears at home: e.g. words over the player listing the bonus, one after the other."},
+      "on_away":      {"type": "actions", "default": [], "description": "Runs once, as this monster, when it appears away from home (not at home, or no home_var): the other half of on_home, e.g. words over the player listing boosts it starts the run with."},
+      "alpha":        {"type": "bool", "default": false, "description": "Draw it in its species' Alpha colors."},
+      "crown":        {"type": "node:sprite", "default": "", "description": "Sprite drawn over its head, its 2 frames shimmering (the Alpha's crown); hidden while a Fly move keeps the monster up (only its shadow shows). Empty = none."},
+      "shiny_var":    {"type": "var", "list": true, "default": "", "description": "List variable with one flag per species (nodes.json order, from 0): when its species' slot is set, this monster is shiny. All its animations then shimmer through the rainbow (8 hues, a new one every 4 ticks, half and half with its own colors; its outline stays dark; its moves' effects keep their colors), its moves hit shiny_power % harder and, as the player's monster at the start of a run, it starts with shiny_hp % more hit points. Empty = never shiny."},
+      "shiny_power":  {"type": "int", "default": 20, "description": "A shiny monster's extra damage on all its moves, in percent points added to 'power' (20 = 100 % becomes 120 %), before its boosts. 0-100."},
+      "shiny_hp":     {"type": "int", "default": 40, "description": "A shiny player's monster's extra starting hit points, in percent of its starting max HP (after its species' hp_bonus): 40 = 60 becomes 84, Furrbit's 72 becomes 101. Added to hp_max_var and hp_var at the start of a run, like hp_bonus. 0-100."},
+      "shiny_flash_palette": {"type": "node:palette", "default": "", "description": "Colors a shiny monster flashes when it is hit, instead of flash_palette (red stands out over the rainbow). Empty = flash_palette."},
+      "shiny_flashes": {"type": "int", "default": 0, "description": "How many times a shiny monster flashes for one hit (3 = the wild monsters' red blink-blink-blink). 0 = 'flashes'. 0-10."},
+      "aura":         {"type": "node:particle", "default": "", "description": "Sparkles that keep rising around it. Empty = none."},
+      "flash_palette": {"type": "node:palette", "default": "", "description": "Colors it flashes when a move hits it (wild monsters blink red, so a hit is easy to see). Empty = game.battle.flash_palette."},
+      "flash_ticks":  {"type": "ticks", "default": 4, "description": "How long each hit flash lasts (and the gap between two flashes)."},
+      "flashes":      {"type": "int", "default": 1, "description": "How many times it flashes for one hit (3 = a clear red blink-blink-blink). Poison and toxic damage flash it too; a killing blow's flashes play out before it blinks out, and a paralyzed monster's yellow flicker waits for them."},
+      "shadow":       {"type": "node:sprite", "default": "", "description": "Shown on the ground instead of its body while it flies. Empty = nothing shows."},
+      "armor":        {"type": "int", "default": 0, "description": "Thick armor: every blow it takes does this much less damage, at least 1 (999 = every blow does 1); poison and toxic hurt it as usual. Like a Harden that never ends, without the flicker. 0 = none."},
+      "walls":        {"type": "bool", "default": true, "description": "Solid tiles stop it. Off = it walks through them (monsters coming in over the dark edge of an arena that holds the player in); the other monsters still block it."},
+      "level_tag":    {"type": "ticks", "default": 0, "description": "When it comes into view (its whole body at least level_tag_margin px inside the screen, below the HUD's top panel), its level (level_tag_text and the number, battle font) shows over its head for this many ticks, following it. A move reaching it (hit, miss or status) or poison damage takes it away at once. It shows again only after the monster was out of that view for more than level_tag_reset ticks. 0 = never."},
+      "level_tag_reset": {"type": "ticks", "default": 300, "description": "Out of the tag view (see level_tag) for longer than this, the monster counts as unseen again: the next time it comes into view its level tag shows again. Shorter trips out of view don't repeat it."},
+      "level_tag_margin": {"type": "int", "default": 32, "description": "Pixels the tag view is shrunk by on every side (the top one measured from below the HUD's top panel), so the tag over its head is always fully on screen, even for a monster coming down from the top. 0-60."},
+      "level_tag_text": {"type": "text", "default": "LV", "description": "Written before the level number on the tag (1-4 characters of the battle font)."},
+      "level_tag_palette": {"type": "node:palette", "default": "", "description": "Colors of the level tag. Empty = the battle font's own colors."},
+      "level_tag_matchup": {"type": "bool", "default": false, "description": "Color the level tag by how the player's type fares against this monster's (game.battle.chart, the player's species type attacking): in the x1.5! word's colors (texts.super) when the player's moves are super effective on it, in the x0.75 word's (texts.weak) when it resists them, else in level_tag_palette. So the player learns the type chart by playing."},
+      "alert_text":   {"type": "text", "default": "", "description": "Word that pops up over its head (battle font, floating up like the battle words) when its monster_ai turns hostile, i.e. it spotted the player: '!'. Above its crown, and above its level tag while that shows (or is about to: not shown yet on this visit to the view). It waits until the monster's body is at least 16 px inside the view below the HUD, so a hunter that turned hostile out of sight gets it when it walks in. Once each time it turns hostile. Empty = none."},
+      "alert_palette": {"type": "node:palette", "default": "", "description": "Colors of alert_text. Empty = the battle font's own colors."},
+      "alert_cry":    {"type": "bool", "default": false, "description": "Its species' cry plays with alert_text."},
+      "low_hp_sfx":   {"type": "node:sfx", "default": "", "description": "The player: this sound plays every low_hp_every ticks while its hit points (hp_var) are a quarter of its max (hp_max_var) or less, the HUD bar's red; the first one the moment they drop there. Give it priority 0 so it never cuts another sound. Empty = none."},
+      "low_hp_every": {"type": "ticks", "default": 60, "description": "Ticks between two low_hp_sfx beeps. 10-600."},
+      "xp_reward":   {"type": "int", "default": 20, "description": "XP the player gets when this monster faints."},
+      "kills_var":    {"type": "var", "default": "", "description": "Game variable that goes up by 1 when this monster faints. Empty = none."},
+      "hp_var":       {"type": "var", "default": "", "description": "Game variable holding its hit points (the player's, shown on the HUD). Empty = private hit points."},
+      "hp_max_var":   {"type": "var", "default": "", "description": "Game variable holding its maximum hit points (raised on level up, when the hit points are also refilled to it)."},
+      "level_var":    {"type": "var", "default": "", "description": "Game variable holding its level, read every tick (a wild monster's level can change while it lives). Empty = the 'level' param."},
+      "xp_var":       {"type": "var", "default": "", "description": "Game variable collecting its XP (the player): reaching the next total levels it up. Empty = no leveling."},
+      "xp_pct_var":   {"type": "var", "default": "", "description": "Game variable kept at 0-100 = progress to the next level (for an XP bar). Empty = none."},
+      "xp_per_hit":   {"type": "int", "default": 2, "description": "XP this monster (the player) gets for every hit that damages a wild monster, poison and ground damage included."},
+      "xp_first":     {"type": "int", "default": 40, "description": "Total XP needed for level 2."},
+      "xp_step":      {"type": "int", "default": 50, "description": "Extra total XP for each level after that (level 3 = first + step, ...)."},
+      "xp_grow":      {"type": "int", "default": 0, "description": "Each level costs this much more XP than the one before (a curve that steepens: total for level L + 1 = first + step x (L - 1) + grow x (L - 1) x L / 2). 0 = every level costs the same 'step'."},
+      "level_by_level": {"type": "bool", "default": false, "description": "Gain at most one level per tick, so actions that open a level-up menu (on_level_up) show it once for every level, one after the other. Off = all the levels the XP pays for at once."},
+      "max_level":    {"type": "int", "default": 10, "description": "Highest level."},
+      "hp_per_level": {"type": "int", "default": 8, "description": "Each level up adds this to the maximum hit points, then refills the hit points to the new maximum (a full heal, so fighting pays off)."},
+      "on_level_up":  {"type": "actions", "default": [], "description": "What happens on each level gained."},
+      "on_hurt":      {"type": "actions", "default": [], "description": "What happens each time a move hurts it (not a miss, not poison): e.g. a small screen shake when the player is hit."},
+      "on_death":     {"type": "actions", "default": [], "description": "What happens when it faints."}
+    }
+  },
+  "monster_ai": {
+    "description": "A wild monster's mind (top-down): it wanders and rests around where it was placed. When the player comes within sight it turns hostile (only a few at once), walks up to it and attacks every `charge` ticks with its species' first move (a boss with `moves` 3 also uses moves 2 and 3; when no move reaches the player from where it stands, it steps closer). If the player gets far away it walks back home. It keeps at least `spread` tiles from the other wild monsters: it steers away from closer ones and walks around one in its way, and next to the player it slides sideways around it, so a pack spreads out instead of queueing. It holds still while paralyzed or frozen. With wake_var it sleeps until that variable reaches wake_at.",
+    "params": {
+      "speed":        {"type": "fixed", "default": 0.5, "description": "Walking speed while wandering or going home (pixels per tick), times its species' speed percent."},
+      "chase_speed":  {"type": "fixed", "default": 0.75, "description": "Speed while chasing the player (pixels per tick), times its species' speed percent."},
+      "roam":         {"type": "int", "default": 32, "description": "Wanders up to this many pixels from home."},
+      "sight":        {"type": "int", "default": 5, "description": "Turns hostile when the player is this many tiles away or closer."},
+      "give_up":      {"type": "int", "default": 10, "description": "Goes home when the player is farther than this many tiles."},
+      "max_hostile":  {"type": "int", "default": 3, "description": "At most this many monsters are hostile at the same time; others keep wandering until one faints or gives up."},
+      "charge":       {"type": "ticks", "default": 240, "description": "Ticks between two attacks (the first attack comes after half of it)."},
+      "moves":        {"type": "int", "default": 1, "description": "How many of its species' moves it uses: 1 = move 1 only; 2 adds move 2; 3 adds move 3 (a boss). Moves 2 and 3 each recharge on their own timer (moves_charge), and are ready the first time it fights. Each attack is its highest ready move that reaches the player (move 3, then 2), else move 1. A move it uses on itself (Fly) never decides where it stands."},
+      "moves_power":  {"type": "int", "default": 0, "description": "Damage of its moves 2 and 3, in percent (100 = a normal monster's), instead of its monster power. 0 = its monster power, like move 1."},
+      "moves_charge": {"type": "int", "default": 100, "description": "Recharge time of its moves 2 and 3, in percent of the player's (the move's charge): 200 = twice as slow. 100-900."},
+      "moves_ready":  {"type": "bool", "default": true, "description": "Its moves 2 and 3 are ready the first time it fights (a boss opens with them). Off = they start recharging when it appears."},
+      "hunt":         {"type": "bool", "default": false, "description": "A hunter (waves of monsters coming in from the map's edge): it has no home and never gives up. While max_hostile others are already hostile it walks up to the player and waits `sight` tiles away, looking at it; as soon as there is room it turns hostile and attacks. Off = it lives around where it was placed."},
+      "spread":       {"type": "int", "default": 1, "description": "Tiles of room it keeps between its body and other wild monsters' bodies (0 = off)."},
+      "wake_var":     {"type": "var", "default": "", "description": "Sleeps until this game variable reaches wake_at (a boss waiting for the others to fall). Empty = always awake."},
+      "wake_at":      {"type": "int", "default": 0, "description": "Value of wake_var that wakes it."},
+      "sleep_effect": {"type": "node:particle", "default": "", "description": "Particles shown now and then while it sleeps (a Z). Empty = none."},
+      "on_wake":      {"type": "actions", "default": [], "description": "What happens when it wakes up."}
+    }
+  },
+  "move_buttons": {
+    "description": "The player's 3 moves (from its species) on buttons. Each move recharges on its own timer (the move node's charge) from the moment it is unlocked: move 2 and move 3 unlock at a level. A fires move 1 when charged, B fires move 2 and R fires move 3, each on a single press (pressing a button whose move is still charging does nothing). A ready move always goes off and uses its charge, even with nothing in reach (aiming is the player's job): its effect plays straight ahead. HUD gauges read the charges through variables. Sounds: a button whose move is still locked plays 'locked_sfx', and so does any move button while the monster is paralyzed or frozen; a move that went off at nothing plays 'miss_sfx'; what a move hits sounds by its type (game.battle.player_hit_sounds).",
+    "params": {
+      "level_var":         {"type": "var", "required": true, "description": "Game variable with the player's level."},
+      "unlock_2":          {"type": "int", "default": 4, "description": "Level that unlocks move 2."},
+      "unlock_3":          {"type": "int", "default": 7, "description": "Level that unlocks move 3."},
+      "button_1":          {"type": "button", "default": "A", "description": "Button for move 1."},
+      "button_2":          {"type": "button", "default": "B", "description": "Button for move 2."},
+      "button_3":          {"type": "button", "default": "R", "description": "Button for move 3."},
+      "gauge_1":           {"type": "var", "default": "", "description": "Game variable showing move 1's charge: 0 locked, 1 empty .. 5 full, 6 = the flash when it just became full."},
+      "gauge_2":           {"type": "var", "default": "", "description": "Same for move 2."},
+      "gauge_3":           {"type": "var", "default": "", "description": "Same for move 3."},
+      "unlocked_var":      {"type": "var", "default": "", "description": "Game variable set to how many moves are unlocked (1-3). Empty = none."},
+      "on_unlock":         {"type": "actions", "default": [], "description": "What happens when a move unlocks (NEW MOVE!)."},
+      "locked_sfx":        {"type": "node:sfx", "default": "", "description": "Sound when a move's button is pressed but the move is still locked, or while the monster is paralyzed or frozen (an error buzz). Empty = silent."},
+      "miss_sfx":          {"type": "node:sfx", "default": "", "description": "Sound when a charged move goes off but reaches nothing (it still uses its charge). Empty = silent."},
+      "charge_var":        {"type": "var", "default": "", "description": "Game variable with a percent cut from every move's recharge time (10 = each move recharges in 90% of its time; at most 90). Empty = none."},
+      "enable_var":        {"type": "var", "default": "", "description": "The buttons fire moves only while this game variable isn't 0 (the menu map's Green Meadow sets it to 0, so A and B pick the signs there instead); the moves keep recharging meanwhile. Empty = always."}
+    }
+  },
+  "species_select": {
+    "description": "Shows the big portrait of the species whose number is in a variable, bobbing gently, centered on the actor. With 'browse', Left / Right change the variable (wrapping around): the portrait slides out, the new one slides in and plays its cry. The pick button runs the pick actions once (start the run). With 'unlocked_var', only the first species can be picked: the others still show, as dark silhouettes, and the pick button buzzes on them. With 'passes' 2 the list of species shows twice in a row (each species again: a second game mode), Left / Right going through all of it in a loop; the pass shown is kept in 'pass_var', and the second pass stays locked as a whole until 'pass_unlock_var' reaches 'pass_unlock_at'. If something else changes the variable (progress cleared), the portrait switches to it at once. With 'shiny_var', a shiny species' portrait shimmers through the rainbow.",
+    "params": {
+      "var":           {"type": "var", "required": true, "description": "Game variable with the species number (order of the species nodes, from 0)."},
+      "unlocked_var":  {"type": "var", "default": "", "description": "Game variable with how many species can be picked, counting from the first (2 = the first two). The rest are locked. Only the first pass: the later ones use pass_unlock_var. Empty = every species."},
+      "locked_var":    {"type": "var", "default": "", "description": "Game variable set to 0 while the entry shown can be picked, else 1 + its pass: 1 = a species of the first pass not unlocked yet, 2 = the second pass, still locked (HUD text can change with it). Empty = none."},
+      "passes":        {"type": "int", "default": 1, "description": "How many times the list of species repeats (2 = every species twice: a second game mode with the same monsters). Needs pass_var."},
+      "pass_var":      {"type": "var", "default": "", "description": "Game variable with the pass shown (0 = the first). Browsing past the last species of a pass goes on to the next pass, and from the last pass back to the first. Empty = one pass."},
+      "entry_var":     {"type": "var", "default": "", "description": "Game variable kept at the position of the entry shown in the whole list: pass x species count + species number (a list variable such as the best times can then keep one value per entry). Empty = none."},
+      "pass_unlock_var": {"type": "var", "default": "", "description": "Game variable that unlocks the passes after the first: they stay locked (silhouettes, the pick button buzzes) while it is below pass_unlock_at. Empty = always open."},
+      "pass_unlock_at": {"type": "int", "default": 0, "description": "Value of pass_unlock_var that opens the later passes."},
+      "locked_palette": {"type": "node:palette", "default": "", "description": "Colors of a locked species' portrait (a silhouette), in the portrait's color slots. Empty = its own colors."},
+      "shiny_var":     {"type": "var", "list": true, "default": "", "description": "List variable with one flag per species (nodes.json order, from 0): the portrait of a species whose slot is set shimmers through the rainbow, like a shiny monster in the world (a locked one stays a silhouette). Empty = none."},
+      "locked_sound":  {"type": "node:sfx", "default": "", "description": "Sound when the pick button is pressed on a locked species. Empty = silent."},
+      "browse":        {"type": "bool", "default": true, "description": "Left / Right choose another species. Off = only shows it."},
+      "button":        {"type": "button", "default": "START", "description": "Button that picks."},
+      "slide":         {"type": "int", "default": 40, "description": "How far the portrait slides when changing (pixels)."},
+      "slide_ticks":   {"type": "ticks", "default": 6, "description": "How long each half of the slide takes (ticks)."},
+      "bob":           {"type": "int", "default": 2, "description": "How far the portrait bobs up and down (pixels)."},
+      "cry_on_start":  {"type": "bool", "default": true, "description": "Play the species' cry when it appears (locked species stay silent)."},
+      "move_sound":    {"type": "node:sfx", "default": "", "description": "Sound when Left / Right is pressed. Empty = only the cry."},
+      "on_pick":       {"type": "actions", "default": [], "description": "What happens when the button is pressed."}
+    }
+  },
+  "monster_waves": {
+    "description": "Runs a monster-battle run in waves (put it on an invisible director prop). Each wave's monsters appear on the map's outer edge (the dark band around an arena), out of the camera's view when they can, and walk in to hunt the player. Wave w brings count + count_add x (w - 1) monsters (rounded, at most max_count), each at a random level from level + level_add x (w - 1) up to level_spread more, with hp + hp_per_level x level hit points. From wave object_2_from on they are object_2 instead of object (and object_3 from object_3_from): versions that use more moves. The last wave also brings the boss, first. With max_alive, only that many are out at once and the rest of the wave walks in as others faint. When every monster of a wave has fainted, the next wave comes after 'pause' ticks; when the last one is cleared, on_clear runs (victory). The wave number and the monsters still to defeat are kept in variables for the HUD.",
+    "params": {
+      "waves":         {"type": "int", "default": 10, "description": "How many waves the run has."},
+      "object":        {"type": "node:actor", "required": true, "description": "The wave monster (give it the monster behavior with random species and walls off, and monster_ai with hunt)."},
+      "object_2":      {"type": "node:actor", "default": "", "description": "The monster from wave object_2_from on (e.g. one that also uses move 2). Empty = always 'object'."},
+      "object_2_from": {"type": "int", "default": 0, "description": "First wave that brings object_2. 0 = never."},
+      "object_3":      {"type": "node:actor", "default": "", "description": "The monster from wave object_3_from on (e.g. all 3 moves). Empty = none."},
+      "object_3_from": {"type": "int", "default": 0, "description": "First wave that brings object_3. 0 = never."},
+      "count":         {"type": "int", "default": 3, "description": "Monsters in wave 1."},
+      "count_add":     {"type": "fixed", "default": 2.0, "description": "Monsters added with each wave (decimals allowed: 2.3 = 3, 5, 8, 10, 12...)."},
+      "max_count":     {"type": "int", "default": 24, "description": "Never more monsters in one wave than this (the boss comes on top)."},
+      "max_alive":     {"type": "int", "default": 0, "description": "At most this many of the wave's monsters (boss included) are out at once; the rest walk in as others faint. 0 = no limit (a big wave all at once can slow the game down)."},
+      "level":         {"type": "int", "default": 1, "description": "Lowest level in wave 1."},
+      "level_add":     {"type": "fixed", "default": 1.0, "description": "How much the lowest level rises with each wave."},
+      "level_spread":  {"type": "int", "default": 2, "description": "Each monster's level is the wave's lowest level plus 0 up to this, at random."},
+      "hp":            {"type": "int", "default": 16, "description": "Hit points of a monster, before its level."},
+      "hp_per_level":  {"type": "int", "default": 7, "description": "Hit points added per level (level 5: hp + 5 x this)."},
+      "boss":          {"type": "node:actor", "default": "", "description": "The boss that joins the last wave. Empty = none."},
+      "boss_level":    {"type": "int", "default": 14, "description": "The boss's level."},
+      "boss_hp":       {"type": "int", "default": 500, "description": "The boss's hit points."},
+      "wave_var":      {"type": "var", "default": "", "description": "Game variable set to the wave being fought (1 = the first; 0 before it comes). Empty = none."},
+      "left_var":      {"type": "var", "default": "", "description": "Game variable kept at how many monsters of this wave are still to defeat (boss included). Empty = none."},
+      "start_delay":   {"type": "ticks", "default": 60, "description": "Wait before the first wave."},
+      "pause":         {"type": "ticks", "default": 180, "description": "Wait between a cleared wave and the next."},
+      "on_wave":       {"type": "actions", "default": [], "description": "Runs as the player when each wave starts (words over it, a horn)."},
+      "on_boss":       {"type": "actions", "default": [], "description": "Runs as the player when the boss appears (its roar, the boss music)."},
+      "on_clear":      {"type": "actions", "default": [], "description": "Runs when the last wave is cleared (the run is won)."}
+    }
+  },
+  "spot_by_count": {
+    "description": "When it appears, a count variable picks where it stands and how it looks: with count = need + k it moves to spot k of its list (past the end = the last spot) and shows its animation k x 'frames' frames further on in its sprite sheet, so a sheet can hold the same animation drawn once per spot (lit from another side). Below 'need' it stays hidden. The intro's monsters sit around the fire this way: the more are unlocked, the closer together they sit. With 'shiny_var', a monster whose species is shiny shimmers through the rainbow.",
+    "params": {
+      "var":    {"type": "var", "required": true, "description": "The count (e.g. 'unlocked')."},
+      "need":   {"type": "int", "default": 1, "description": "Shown only when the count is at least this."},
+      "spots":  {"type": "points", "default": [], "description": "Where it stands for count = need, need + 1, ... as [x, y] pixels from where it was placed. Empty = stays where it was placed."},
+      "frames": {"type": "int", "default": 0, "description": "Frames of its sprite sheet per spot: its animation shows k x this many frames further on. 0 = always the animation's own frames."},
+      "shiny_var": {"type": "var", "list": true, "default": "", "description": "List variable with one flag per species (nodes.json order, from 0): when slot 'shiny_slot' is set, it shimmers through the rainbow in its own colors, like a shiny monster in the world. Empty = never."},
+      "shiny_slot": {"type": "int", "default": 0, "description": "Which slot of 'shiny_var' is its own (the species it shows, from 0)."}
+    }
+  },
+  "head_label": {
+    "description": "A word over its head while a variable picks one: 'words' is a list split by '|' and the variable's value picks one (0 = the first); an empty word, or a value outside the list, shows nothing. Drawn with a font's glyphs as sprites just above its picture, it follows it exactly and stays while the world is paused (under a menu). The menu map's monster shows the name of the sign it stands by this way.",
+    "params": {
+      "var":     {"type": "var", "required": true, "description": "Picks the word (e.g. 'spot': which sign it stands by, 0 = none)."},
+      "words":   {"type": "text", "required": true, "description": "The words split by '|', for values 0, 1, 2, ... (e.g. '|CLASSIC|CLEAR SAVE|WAVES': nothing for 0). Each 1-15 characters of the font."},
+      "font":    {"type": "node:font", "required": true, "description": "Its letters, drawn as sprites (like the battle's floating-word font; the game may use MAX_SPRITE_FONTS such fonts)."},
+      "palette": {"type": "node:palette", "default": "", "description": "Its colors. Empty = the font's."},
+      "gap":     {"type": "int", "default": 1, "description": "Pixels between the top of its picture and the bottom of the word."}
+    }
+  },
+  "drop_in": {
+    "description": "Falls in from above and bounces before settling (a title logo). It moves itself, or a whole background layer: with 'layer' 1-3 that layer's tilemap drops instead (use an invisible prop).",
+    "params": {
+      "height":   {"type": "int", "default": 120, "description": "Starts this many pixels above its place."},
+      "gravity":  {"type": "fixed", "default": 0.5, "description": "Speed gained each tick while falling (pixels per tick)."},
+      "bounce":   {"type": "fixed", "default": 0.45, "description": "How much of its speed a bounce keeps (0-1)."},
+      "bounces":  {"type": "int", "default": 2, "description": "How many times it bounces before settling."},
+      "delay":    {"type": "ticks", "default": 0, "description": "Waits this long before falling."},
+      "layer":    {"type": "int", "default": 0, "description": "0 = moves this actor; 1-3 = moves that background layer."},
+      "sound":    {"type": "node:sfx", "default": "", "description": "Played on each bounce. Empty = silent."}
+    }
+  },
+  "frame_by_var": {
+    "description": "A variable picks which of its pictures it shows, every tick: the value 'first' shows its animation as drawn, each 1 more shows it 'frames' frames further on in its sprite sheet (below 'first' = the first picture, past the last of its 'steps' pictures = the last one), so it changes the moment the variable does. The menu's garden plots show their soil, growing plant or ripe item this way.",
+    "params": {
+      "var":    {"type": "var", "required": true, "description": "Picks the picture (e.g. 'plot_1': what grows in the first plot)."},
+      "first":  {"type": "int", "default": 0, "description": "The value that shows its animation as drawn (the first picture)."},
+      "steps":  {"type": "int", "default": 2, "description": "How many pictures there are (values past the last show the last)."},
+      "frames": {"type": "int", "default": 1, "description": "Frames of its sprite sheet per picture (its animation's length)."}
+    }
+  },
+  "appear_if": {
+    "description": "When it appears it checks one game variable against a value (or another variable) and, if the check fails, it is removed at once, unseen, before anything else of it starts: so a scene can hold things that only show at some point of the game (a gate until it is opened, a guard until its monster is freed, the WAVES sign once every monster is unlocked). It checks again every tick and goes the moment the check fails (a trapped monster's vines vanish when it is freed). List it first in the logic; several of them must all pass.",
+    "params": {
+      "var":   {"type": "var", "required": true, "description": "The variable checked (e.g. 'gate_2': is the bramble burnt?)."},
+      "op":    {"type": "choice", "default": "==", "options": ["==", "!=", "<", "<=", ">", ">="], "description": "How it compares: it stays when 'var op value' is true."},
+      "value": {"type": "int", "default": 0, "description": "The value it compares with (when 'from' is empty)."},
+      "from":  {"type": "var", "default": "", "description": "Compare with this variable's value instead of 'value'. Empty = use 'value'."}
+    }
+  },
+  "move_switch": {
+    "description": "Something only a move of the right type changes (a bramble wall that fire burns, flames that water puts out, a sprout that grass grows into a bridge). When the effect of one of the player's moves touches it (the same test as a move hitting a monster: its picture comes within 2 px of the hitbox; a ground zone each time it would hurt), a move of one of its types counts a hit, and after 'hits' hits on_open runs as this object (it plays its sound and particles, sets its gate variable, saves and removes itself); a move of any other type runs on_wrong instead (a dull thud). The player's monster bumps into it when it is solid. Moves of wild monsters never touch it.",
+    "params": {
+      "types":    {"type": "types", "required": true, "description": "The monster types (game.battle.types) whose moves open it, e.g. [\"fire\"]."},
+      "hits":     {"type": "int", "default": 1, "description": "How many touches of the right type it takes (1-9)."},
+      "on_open":  {"type": "actions", "default": [], "description": "Runs as this object once the right moves touched it 'hits' times."},
+      "on_wrong": {"type": "actions", "default": [], "description": "Runs as this object each time a move of another type touches it."}
+    }
+  }
+}

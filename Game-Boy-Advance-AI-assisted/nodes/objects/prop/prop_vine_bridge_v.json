@@ -1,0 +1,21 @@
+{
+  "id": "prop_vine_bridge_v",
+  "kind": "object",
+  "type": "prop",
+  "name": "Vine bridge (down)",
+  "notes": "A bridge of woven vines across a ravine, north to south. Shows once its way is open.",
+  "body": "body_vine_bridge_v",
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "unlocked",
+        "op": ">=",
+        "value": 0
+      }
+    }
+  ],
+  "children": [
+    "body_vine_bridge_v"
+  ]
+}

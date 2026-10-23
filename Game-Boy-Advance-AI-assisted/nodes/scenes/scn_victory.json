@@ -1,0 +1,362 @@
+{
+  "id": "scn_victory",
+  "kind": "scene",
+  "type": "credits",
+  "name": "Victory",
+  "notes": "YOU SURVIVED! over the meadow, with the winning monster bobbing, the final time, level and kills. The run's time is checked against this monster's best time (best_time[chosen]): if it never won before, or this run was faster, it becomes the new best and the screen says NEW BEST TIME! (with a jingle), otherwise it shows the best time to beat. A win no longer unlocks a monster: they are freed on the menu map. The progress is saved at once. When the run's Alpha left a shiny seed and it was picked up (new_shiny is its species), this screen makes that monster shiny for good and saves it with the rest; the shiny screen (scn_shiny), after the items screen, shows it. A winner that already was shiny shimmers here too. Every win also gives 3 items for the next run, picked at random, never the same one twice (3 different of the 5 floor items: prize_1-3), replacing any not used yet, and saves them with the rest; START opens the items screen (scn_prizes), which shows them and then goes on to the shiny screen or the menu. The run counts as finished for the garden (run_ended, saved with the rest, with the seed if it was picked up): when the menu opens next, every plant in the garden grows one step and the seed is planted. After the items screen (and the shiny screen) it goes back to the menu.",
+  "backdrop": "#58a8f0",
+  "music": "mus_victory",
+  "camera": {
+    "x": 0,
+    "y": 0,
+    "bounds": "none"
+  },
+  "instances": [
+    {
+      "id": "sky",
+      "object": "map_sky"
+    },
+    {
+      "id": "hud",
+      "object": "hud_victory"
+    },
+    {
+      "id": "trophy",
+      "object": "prop_trophy",
+      "x": 120,
+      "y": 60
+    }
+  ],
+  "on_start": [
+    {
+      "do": "set_var",
+      "var": "new_mon",
+      "value": -1
+    },
+    {
+      "do": "set_var",
+      "var": "new_best",
+      "value": 0
+    },
+    {
+      "do": "if_var",
+      "var": "best_time",
+      "index": "chosen",
+      "op": "<",
+      "value": 0,
+      "then": [
+        {
+          "do": "set_var",
+          "var": "best_time",
+          "index": "chosen",
+          "from": "time"
+        },
+        {
+          "do": "set_var",
+          "var": "new_best",
+          "value": 1
+        }
+      ],
+      "else": [
+        {
+          "do": "if_var",
+          "var": "best_time",
+          "index": "chosen",
+          "op": ">",
+          "from": "time",
+          "then": [
+            {
+              "do": "set_var",
+              "var": "best_time",
+              "index": "chosen",
+              "from": "time"
+            },
+            {
+              "do": "set_var",
+              "var": "new_best",
+              "value": 1
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "do": "random_var",
+      "var": "prize_roll",
+      "min": 0,
+      "max": 9
+    },
+    {
+      "do": "if_var",
+      "var": "prize_roll",
+      "op": "==",
+      "value": 0,
+      "then": [
+        {
+          "do": "set_var",
+          "var": "prize_1",
+          "value": 1
+        },
+        {
+          "do": "set_var",
+          "var": "prize_2",
+          "value": 2
+        },
+        {
+          "do": "set_var",
+          "var": "prize_3",
+          "value": 3
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "prize_roll",
+      "op": "==",
+      "value": 1,
+      "then": [
+        {
+          "do": "set_var",
+          "var": "prize_1",
+          "value": 1
+        },
+        {
+          "do": "set_var",
+          "var": "prize_2",
+          "value": 2
+        },
+        {
+          "do": "set_var",
+          "var": "prize_3",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "prize_roll",
+      "op": "==",
+      "value": 2,
+      "then": [
+        {
+          "do": "set_var",
+          "var": "prize_1",
+          "value": 1
+        },
+        {
+          "do": "set_var",
+          "var": "prize_2",
+          "value": 2
+        },
+        {
+          "do": "set_var",
+          "var": "prize_3",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "prize_roll",
+      "op": "==",
+      "value": 3,
+      "then": [
+        {
+          "do": "set_var",
+          "var": "prize_1",
+          "value": 1
+        },
+        {
+          "do": "set_var",
+          "var": "prize_2",
+          "value": 3
+        },
+        {
+          "do": "set_var",
+          "var": "prize_3",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "prize_roll",
+      "op": "==",
+      "value": 4,
+      "then": [
+        {
+          "do": "set_var",
+          "var": "prize_1",
+          "value": 1
+        },
+        {
+          "do": "set_var",
+          "var": "prize_2",
+          "value": 3
+        },
+        {
+          "do": "set_var",
+          "var": "prize_3",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "prize_roll",
+      "op": "==",
+      "value": 5,
+      "then": [
+        {
+          "do": "set_var",
+          "var": "prize_1",
+          "value": 1
+        },
+        {
+          "do": "set_var",
+          "var": "prize_2",
+          "value": 4
+        },
+        {
+          "do": "set_var",
+          "var": "prize_3",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "prize_roll",
+      "op": "==",
+      "value": 6,
+      "then": [
+        {
+          "do": "set_var",
+          "var": "prize_1",
+          "value": 2
+        },
+        {
+          "do": "set_var",
+          "var": "prize_2",
+          "value": 3
+        },
+        {
+          "do": "set_var",
+          "var": "prize_3",
+          "value": 4
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "prize_roll",
+      "op": "==",
+      "value": 7,
+      "then": [
+        {
+          "do": "set_var",
+          "var": "prize_1",
+          "value": 2
+        },
+        {
+          "do": "set_var",
+          "var": "prize_2",
+          "value": 3
+        },
+        {
+          "do": "set_var",
+          "var": "prize_3",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "prize_roll",
+      "op": "==",
+      "value": 8,
+      "then": [
+        {
+          "do": "set_var",
+          "var": "prize_1",
+          "value": 2
+        },
+        {
+          "do": "set_var",
+          "var": "prize_2",
+          "value": 4
+        },
+        {
+          "do": "set_var",
+          "var": "prize_3",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "prize_roll",
+      "op": "==",
+      "value": 9,
+      "then": [
+        {
+          "do": "set_var",
+          "var": "prize_1",
+          "value": 3
+        },
+        {
+          "do": "set_var",
+          "var": "prize_2",
+          "value": 4
+        },
+        {
+          "do": "set_var",
+          "var": "prize_3",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "new_shiny",
+      "op": ">=",
+      "value": 0,
+      "then": [
+        {
+          "do": "set_var",
+          "var": "shiny",
+          "index": "new_shiny",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "do": "set_var",
+      "var": "run_ended",
+      "value": 1
+    },
+    {
+      "do": "save_game"
+    },
+    {
+      "do": "fade_in",
+      "ticks": 20
+    },
+    {
+      "do": "if_var",
+      "var": "new_best",
+      "op": "==",
+      "value": 1,
+      "then": [
+        {
+          "do": "wait",
+          "ticks": 20
+        },
+        {
+          "do": "play_sfx",
+          "sfx": "sfx_new_move"
+        }
+      ]
+    }
+  ]
+}

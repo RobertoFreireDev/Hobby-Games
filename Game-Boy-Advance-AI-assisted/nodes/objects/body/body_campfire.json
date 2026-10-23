@@ -1,0 +1,30 @@
+{
+  "id": "body_campfire",
+  "kind": "object",
+  "type": "body",
+  "name": "Campfire body",
+  "notes": "The fire pit's look: 16x16 (a small campfire next to the monsters), its origin at the middle of the stone ring's bottom.",
+  "origin": [
+    8,
+    14
+  ],
+  "hitbox": {
+    "x": -6,
+    "y": -3,
+    "w": 12,
+    "h": 3
+  },
+  "physics": {
+    "gravity": false,
+    "solid": false,
+    "collides_with": []
+  },
+  "animations": {
+    "idle": "anim_campfire"
+  },
+  "default_animation": "idle",
+  "children": [
+    "spr_campfire",
+    "anim_campfire"
+  ]
+}

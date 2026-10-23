@@ -1,0 +1,18 @@
+{
+  "id": "prop_block_32x16",
+  "kind": "object",
+  "type": "prop",
+  "name": "Invisible block 32x16",
+  "notes": "Invisible and solid, 32 x 16 px from its top-left: a ravine (or the part of one a bridge will span): every monster stops at it. appear_if (set per instance) removes it when the way opens.",
+  "body": "body_block_32x16",
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "unlocked",
+        "op": ">=",
+        "value": 0
+      }
+    }
+  ]
+}

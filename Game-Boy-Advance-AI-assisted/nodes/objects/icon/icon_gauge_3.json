@@ -1,0 +1,26 @@
+{
+  "id": "icon_gauge_3",
+  "kind": "object",
+  "type": "icon",
+  "name": "Charge gauge: 2/4",
+  "notes": "HUD charge circle of a move: half full (the right half).",
+  "palette": "pal_ui",
+  "pixels": [
+    ".....11111......",
+    "...113344411....",
+    "..133dd444441...",
+    ".13dddd4444441..",
+    ".13dddd4444441..",
+    "13ddddd444444a1.",
+    "13ddddd444444a1.",
+    "13ddddd444444a1.",
+    "13ddddd444444a1.",
+    "13ddddd444444a1.",
+    ".13dddd44444a1..",
+    ".13dddd44444a1..",
+    "..1dddd444aa1...",
+    "...11ddaaa11....",
+    ".....11111......",
+    "................"
+  ]
+}

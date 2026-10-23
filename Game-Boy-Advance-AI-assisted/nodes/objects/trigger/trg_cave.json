@@ -1,0 +1,35 @@
+{
+  "id": "trg_cave",
+  "kind": "object",
+  "type": "trigger",
+  "name": "Cave entrance",
+  "notes": "A strip 4 px tall across the cave entrance in the mountain wall, placed 8 px down from the top of the screen: the monster's top reaches it once the monster is all inside the dark of the cave, and a monster coming back out (placed by the picker with its top at 13 px) starts clear of it. When the monster gets there it disappears into the cave (the actions run as the monster, so destroy_self removes it), the map's HUD gives way to the picker's (hud_select: the arrows, the monster's name and type) and the monster picker (prop_picker) appears in the middle of the screen.",
+  "zone": {
+    "w": 32,
+    "h": 4
+  },
+  "logic": [
+    {
+      "behavior": "trigger_zone",
+      "params": {
+        "as_player": true,
+        "on_enter": [
+          {
+            "do": "spawn",
+            "object": "prop_picker",
+            "x": 840,
+            "y": 544,
+            "relative": false
+          },
+          {
+            "do": "show_hud",
+            "hud": "hud_select"
+          },
+          {
+            "do": "destroy_self"
+          }
+        ]
+      }
+    }
+  ]
+}

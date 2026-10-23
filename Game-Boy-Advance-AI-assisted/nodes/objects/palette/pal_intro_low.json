@@ -1,0 +1,25 @@
+{
+  "id": "pal_intro_low",
+  "kind": "object",
+  "type": "palette",
+  "name": "Intro cave colors (low)",
+  "notes": "The 15 colors of the bottom (floor, fire) band of the intro's cave picture (tile rows 14-19), picked from every version of it (1 to 9 monsters at the fire) so they all share one palette. Warm browns and oranges: the cave lit by the campfire.",
+  "colors": [
+    "#000000",
+    "#201008",
+    "#ffff5a",
+    "#ff7b31",
+    "#9c4118",
+    "#622910",
+    "#ffb441",
+    "#ffffa4",
+    "#cd5a20",
+    "#4a2010",
+    "#ff9439",
+    "#ffde4a",
+    "#7b3918",
+    "#ac5220",
+    "#ffff7b",
+    "#ee6a29"
+  ]
+}

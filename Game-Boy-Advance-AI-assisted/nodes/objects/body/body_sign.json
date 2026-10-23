@@ -1,0 +1,30 @@
+{
+  "id": "body_sign",
+  "kind": "object",
+  "type": "body",
+  "name": "Wooden sign body",
+  "notes": "How a sign looks and its collision box: the whole 16 x 16 picture, its feet (the bottom middle) on the spot where it is placed. It is solid, so the menu monster bumps into it like a wall (its walker has solid_props on) and can't walk through it.",
+  "origin": [
+    8,
+    15
+  ],
+  "hitbox": {
+    "x": -8,
+    "y": -15,
+    "w": 16,
+    "h": 16
+  },
+  "physics": {
+    "gravity": false,
+    "solid": true,
+    "collides_with": []
+  },
+  "animations": {
+    "idle": "anim_sign"
+  },
+  "default_animation": "idle",
+  "children": [
+    "spr_sign",
+    "anim_sign"
+  ]
+}

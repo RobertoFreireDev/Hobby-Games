@@ -1,0 +1,45 @@
+{
+  "id": "prop_camp_sproutle",
+  "kind": "object",
+  "type": "prop",
+  "name": "Sproutle at the campfire",
+  "notes": "Sproutle on the intro screen. It only shows once it is unlocked (unlocked >= 5) and sits on the half circle behind the fire: its seat depends on how many monsters are unlocked, all of them spread evenly from left to right in roster order, so with 5 unlocked it takes seat 5. It always looks at the fire (view per number unlocked: 5: left, 6: down-left, 7: down-left, 8: down, 9: down). When it is shiny it shimmers through the rainbow, like everywhere else.",
+  "body": "body_camp_sproutle",
+  "logic": [
+    {
+      "behavior": "spot_by_count",
+      "params": {
+        "var": "unlocked",
+        "need": 5,
+        "spots": [
+          [
+            69,
+            -13
+          ],
+          [
+            43,
+            -24
+          ],
+          [
+            26,
+            -28
+          ],
+          [
+            13,
+            -30
+          ],
+          [
+            3,
+            -30
+          ]
+        ],
+        "frames": 3,
+        "shiny_var": "shiny",
+        "shiny_slot": 4
+      }
+    }
+  ],
+  "children": [
+    "body_camp_sproutle"
+  ]
+}

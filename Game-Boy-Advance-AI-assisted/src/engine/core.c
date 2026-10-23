@@ -1,0 +1,94 @@
+// core.c - boot and the main loop.
+#include <tonc_irq.h>
+#include <tonc_bios.h>
+#include <tonc_memmap.h>
+#include <tonc_memdef.h>
+#include "core.h"
+#include "fixed.h"
+#include "data.h"
+#include "input.h"
+#include "vars.h"
+#include "scene.h"
+#include "actor.h"
+#include "physics.h"
+#include "anim.h"
+#include "particles.h"
+#include "floattext.h"
+#include "camera.h"
+#include "bg.h"
+#include "sprites.h"
+#include "shiny.h"
+#include "audio.h"
+#include "ui.h"
+#include "save.h"
+#include "actions.h"
+
+static u32 s_frame;
+static u32 s_rng = 0x2545F491;
+static int s_paused;
+
+u32 rng_next(void) {
+    u32 x = s_rng;
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    s_rng = x;
+    return x;
+}
+
+s32 rng_range(s32 lo, s32 hi) {
+    if (hi <= lo) return lo;
+    u32 span = (u32)(hi - lo + 1);
+    // Small ranges (all the game uses) scale 16 random bits with one multiply: the GBA has no
+    // divide instruction, and a % here cost ~100 cycles per particle, spawn and card.
+    if (span <= 0x10000) return lo + (s32)(((rng_next() >> 16) * span) >> 16);
+    return lo + (s32)(rng_next() % span);
+}
+
+u32 core_frame(void) { return s_frame; }
+int core_paused(void) { return s_paused; }
+
+void core_init(void) {
+    REG_WAITCNT = WS_STANDARD;      // faster cartridge reads (ROM 3/1 wait states + prefetch)
+    irq_init(NULL);
+    irq_add(II_VBLANK, NULL);
+    vars_init();
+    audio_init();
+    save_init();
+    scene_goto(g_game.start_scene);
+}
+
+void core_run(void) {
+    for (;;) {
+        // 1. VBlank: show what the previous frame prepared.
+        VBlankIntrWait();
+        sprites_vblank();
+        shiny_vblank();
+        bg_vblank();
+        scene_vblank();
+        s_frame++;
+        s_rng ^= s_frame;
+        // 2. Buttons.
+        input_update();
+        s_paused = ui_blocking() || scripts_pausing_world();
+        // 3. Scene (pending scene switch, action lists) and actor logic.
+        scene_update();
+        s_paused = ui_blocking() || scripts_pausing_world();
+        if (!s_paused) {
+            // 4. Movement and collisions.
+            physics_update();
+            // 5. Animations and particles.
+            anim_update();
+            particles_update();
+            ftext_update();
+        }
+        // 6. Camera.
+        camera_update();
+        // 7. HUD, menus, dialogs.
+        ui_update();
+        // 8. Music and sound effects.
+        audio_update();
+        // 9. Sprite list for the next VBlank.
+        sprites_build();
+    }
+}

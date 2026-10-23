@@ -1,0 +1,40 @@
+{
+  "id": "trg_hint",
+  "kind": "object",
+  "type": "trigger",
+  "name": "Gate hint zone",
+  "notes": "A zone by a gate on the menu map: while the monster stands in it, 'hint' holds the gate's number and the top of the screen says what opens it (ONLY FIRE CAN BURN THIS...). Placed per gate with its own appear_if (gone once the gate is open) and numbers.",
+  "zone": {
+    "w": 40,
+    "h": 40
+  },
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "unlocked",
+        "op": ">=",
+        "value": 0
+      }
+    },
+    {
+      "behavior": "trigger_zone",
+      "params": {
+        "on_enter": [
+          {
+            "do": "set_var",
+            "var": "hint",
+            "value": 1
+          }
+        ],
+        "on_exit": [
+          {
+            "do": "set_var",
+            "var": "hint",
+            "value": 0
+          }
+        ]
+      }
+    }
+  ]
+}

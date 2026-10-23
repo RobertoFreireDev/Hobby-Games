@@ -1,0 +1,25 @@
+{
+  "id": "pal_alpha_gustling",
+  "kind": "object",
+  "type": "palette",
+  "name": "Gustling Alpha colors",
+  "notes": "The rare colors Gustling wears when it is the Alpha (the boss of the run): the same slots as its sprite's palette, with Gustling's own 6 colors changed.",
+  "colors": [
+    "#000000",
+    "#202030",
+    "#f8f8f8",
+    "#b0e8f8",
+    "#68b0f0",
+    "#3870c0",
+    "#a8f0d0",
+    "#40b8a0",
+    "#207870",
+    "#fff0d0",
+    "#f8c870",
+    "#e08838",
+    "#f8e0d0",
+    "#f86868",
+    "#a82828",
+    "#f88898"
+  ]
+}

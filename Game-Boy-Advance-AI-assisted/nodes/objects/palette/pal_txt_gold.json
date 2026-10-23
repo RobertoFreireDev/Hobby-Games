@@ -1,0 +1,13 @@
+{
+  "id": "pal_txt_gold",
+  "kind": "object",
+  "type": "palette",
+  "name": "Info text colors",
+  "notes": "Colors of the info font (font_info): 1 = dark brown outline, 2 = cream upper half of the letters, 3 = gold lower half. Used by the menu map's bottom line (best times, items picked up) and the monster picker's type.",
+  "colors": [
+    "#000000",
+    "#2a1a0c",
+    "#fff8e0",
+    "#f0c050"
+  ]
+}

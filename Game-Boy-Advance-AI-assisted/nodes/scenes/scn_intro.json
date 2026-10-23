@@ -1,0 +1,153 @@
+{
+  "id": "scn_intro",
+  "kind": "scene",
+  "type": "intro",
+  "name": "Intro - campfire",
+  "notes": "Shown once each time the game is switched on, before the menu (coming back from a run goes straight to the menu). The monsters unlocked so far - only them, Furrbit alone at first, all 9 at the end - sit in a half circle on the floor of a cave, behind a campfire, all looking at it. Drawn in layers: the painted cave (after background.png), the shadows the monsters cast away from the fire, the monsters, the fire's warm light on the floor and walls, and the fire pit in front (after fire.png), sparks drifting up from it. The cave picture is painted once per number of unlocked monsters (light and shadows worked out in 3D for their seats) and picked by 'unlocked'; each monster is lit from the side facing the fire, and a shiny one shimmers through the rainbow. A quiet song plays; START fades to the menu.",
+  "backdrop": "#000000",
+  "music": "mus_campfire",
+  "camera": {
+    "x": 0,
+    "y": 0,
+    "bounds": "none"
+  },
+  "instances": [
+    {
+      "id": "cave_top",
+      "object": "map_intro_top_1",
+      "variants": {
+        "var": "unlocked",
+        "objects": [
+          "map_intro_top_1",
+          "map_intro_top_1",
+          "map_intro_top_1",
+          "map_intro_top_1",
+          "map_intro_top_4",
+          "map_intro_top_1",
+          "map_intro_top_6",
+          "map_intro_top_7",
+          "map_intro_top_6",
+          "map_intro_top_6"
+        ]
+      }
+    },
+    {
+      "id": "cave_mid",
+      "object": "map_intro_mid_1",
+      "variants": {
+        "var": "unlocked",
+        "objects": [
+          "map_intro_mid_1",
+          "map_intro_mid_1",
+          "map_intro_mid_2",
+          "map_intro_mid_3",
+          "map_intro_mid_4",
+          "map_intro_mid_5",
+          "map_intro_mid_6",
+          "map_intro_mid_7",
+          "map_intro_mid_8",
+          "map_intro_mid_9"
+        ]
+      }
+    },
+    {
+      "id": "cave_low",
+      "object": "map_intro_low_1",
+      "variants": {
+        "var": "unlocked",
+        "objects": [
+          "map_intro_low_1",
+          "map_intro_low_1",
+          "map_intro_low_2",
+          "map_intro_low_3",
+          "map_intro_low_4",
+          "map_intro_low_5",
+          "map_intro_low_6",
+          "map_intro_low_7",
+          "map_intro_low_8",
+          "map_intro_low_9"
+        ]
+      }
+    },
+    {
+      "id": "fire",
+      "object": "prop_campfire",
+      "x": 122,
+      "y": 136
+    },
+    {
+      "id": "furrbit",
+      "object": "prop_camp_furrbit",
+      "x": 122,
+      "y": 136
+    },
+    {
+      "id": "emberpup",
+      "object": "prop_camp_emberpup",
+      "x": 122,
+      "y": 136
+    },
+    {
+      "id": "splashell",
+      "object": "prop_camp_splashell",
+      "x": 122,
+      "y": 136
+    },
+    {
+      "id": "voltail",
+      "object": "prop_camp_voltail",
+      "x": 122,
+      "y": 136
+    },
+    {
+      "id": "sproutle",
+      "object": "prop_camp_sproutle",
+      "x": 122,
+      "y": 136
+    },
+    {
+      "id": "venomole",
+      "object": "prop_camp_venomole",
+      "x": 122,
+      "y": 136
+    },
+    {
+      "id": "gustling",
+      "object": "prop_camp_gustling",
+      "x": 122,
+      "y": 136
+    },
+    {
+      "id": "wispook",
+      "object": "prop_camp_wispook",
+      "x": 122,
+      "y": 136
+    },
+    {
+      "id": "pebbulk",
+      "object": "prop_camp_pebbulk",
+      "x": 122,
+      "y": 136
+    },
+    {
+      "id": "sparks",
+      "object": "ptc_campfire_embers",
+      "x": 122,
+      "y": 127
+    },
+    {
+      "id": "hud",
+      "object": "hud_intro"
+    },
+    {
+      "id": "start",
+      "object": "prop_intro"
+    }
+  ],
+  "on_start": [
+    {
+      "do": "fade_in",
+      "ticks": 40
+    }
+  ]
+}

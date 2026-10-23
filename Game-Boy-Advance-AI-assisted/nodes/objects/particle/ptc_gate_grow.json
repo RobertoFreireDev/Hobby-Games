@@ -1,0 +1,22 @@
+{
+  "id": "ptc_gate_grow",
+  "kind": "object",
+  "type": "particle",
+  "name": "Leaves",
+  "notes": "Leaves bursting out as a vine bridge grows.",
+  "animation": "anim_fx_leaf",
+  "mode": "burst",
+  "count": 10,
+  "lifetime": 24,
+  "speed": [
+    0.4,
+    1.0
+  ],
+  "angle": [
+    0,
+    359
+  ],
+  "gravity": 0,
+  "on_top": true,
+  "even": true
+}

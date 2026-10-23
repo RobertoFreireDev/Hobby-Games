@@ -1,0 +1,2280 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>GBA Node Visualizer</title>
+<!--
+  AI work visualizer (CLAUDE.md §10). One file, no dependencies, works from file://.
+  READ-ONLY: controls only change how you look at the data. Data comes from data.js
+  (written by tools/bundle.py). This file is one of the "four mirrors": every node type
+  has a preview function in PREVIEW below.
+-->
+<style>
+:root {
+  --bg: #15171c; --panel: #1d2027; --panel2: #252933; --line: #323745; --text: #e4e6eb;
+  --dim: #9aa1b1; --accent: #6cb4ff; --accent2: #ffcf5c; --bad: #ff6b6b; --good: #5fd38d; --warn: #f0b04a;
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body { background: var(--bg); color: var(--text); font: 13px/1.45 "Segoe UI", system-ui, sans-serif; display: flex; flex-direction: column; }
+a { color: var(--accent); text-decoration: none; cursor: pointer; }
+a:hover { text-decoration: underline; }
+button, select, input { font: inherit; color: var(--text); background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; padding: 3px 9px; }
+button { cursor: pointer; }
+button:hover { border-color: var(--accent); }
+button.on { background: #2d4a6b; border-color: var(--accent); }
+code, .mono { font-family: Consolas, "Cascadia Mono", monospace; font-size: 12px; }
+canvas { image-rendering: pixelated; image-rendering: crisp-edges; }
+header { display: flex; align-items: center; gap: 16px; padding: 8px 14px; background: var(--panel); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+header h1 { font-size: 17px; margin: 0; letter-spacing: .5px; }
+header .meta { color: var(--dim); }
+header .hint { margin-left: auto; color: var(--accent2); font-weight: 600; }
+.pill { padding: 2px 9px; border-radius: 99px; font-weight: 600; font-size: 12px; }
+.pill.ok { background: #1f4630; color: var(--good); }
+.pill.bad { background: #4a1f24; color: var(--bad); cursor: pointer; }
+#banner { display: none; background: #3a1d22; border-bottom: 1px solid #6b2a33; padding: 8px 14px; max-height: 30vh; overflow: auto; }
+#banner.show { display: block; }
+#banner li { color: #ffb3b3; }
+#banner .w li { color: #f3d29a; }
+main { flex: 1; display: grid; grid-template-columns: var(--lw, 300px) 1fr var(--rw, 360px); min-height: 0; }
+main.lc { --lw: 30px; }
+main.rc { --rw: 30px; }
+aside, #center { overflow: auto; min-height: 0; }
+aside { background: var(--panel); display: flex; flex-direction: column; }
+#left { border-right: 1px solid var(--line); }
+#right { border-left: 1px solid var(--line); }
+#props { padding: 12px 14px; overflow: auto; flex: 1; min-height: 0; }
+/* Sidebar head: title + collapse button. A collapsed sidebar shrinks to a thin rail. */
+.side-head { display: flex; align-items: center; gap: 6px; padding: 5px 8px; border-bottom: 1px solid var(--line); flex: none; }
+.side-head .st { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--dim); font-weight: 700; flex: 1; }
+.side-btn { padding: 0 7px; line-height: 20px; color: var(--dim); }
+#right .side-head { flex-direction: row-reverse; }
+aside.collapsed { overflow: hidden; cursor: pointer; }
+aside.collapsed > :not(.side-head) { display: none; }
+aside.collapsed .side-head { flex-direction: column; border-bottom: none; padding: 6px 0; height: 100%; }
+aside.collapsed .side-head .st { writing-mode: vertical-rl; flex: none; }
+aside.collapsed:hover { background: var(--panel2); }
+.sec { padding: 10px 12px; border-bottom: 1px solid var(--line); flex: none; }
+.sec h2 { font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--dim); margin: 0 0 8px; cursor: pointer; user-select: none; display: flex; align-items: center; gap: 4px; }
+.sec h2:hover { color: var(--text); }
+.sec h2::before { content: "▾"; width: 12px; }
+.sec.collapsed h2 { margin: 0; }
+.sec.collapsed h2::before { content: "▸"; }
+.sec.collapsed > :not(h2) { display: none; }
+.sec.grow:not(.collapsed) { flex: 1; min-height: 0; display: flex; flex-direction: column; border-bottom: none; }
+#left:has(#sec-tree.collapsed) #sec-nodes:not(.collapsed) { flex: 1; min-height: 0; display: flex; flex-direction: column; }
+#left:has(#sec-tree.collapsed) #list { max-height: none; flex: 1; }
+#search { width: 100%; margin-bottom: 8px; }
+.chips { display: flex; flex-wrap: wrap; gap: 4px; }
+.chip { font-size: 11px; padding: 1px 7px; border-radius: 99px; border: 1px solid var(--line); background: transparent; color: var(--dim); }
+.chip.on { background: #2d4a6b; color: var(--text); border-color: var(--accent); }
+#list { max-height: 38vh; overflow: auto; }
+.row { display: flex; align-items: center; gap: 7px; padding: 3px 6px; border-radius: 5px; cursor: pointer; white-space: nowrap; }
+.row:hover { background: var(--panel2); }
+.row.sel { background: #2d4a6b; }
+.row .ic { width: 18px; text-align: center; }
+.row .nm { overflow: hidden; text-overflow: ellipsis; }
+.row .id { color: var(--dim); font-size: 11px; margin-left: auto; font-family: Consolas, monospace; }
+#tree { flex: 1; overflow: auto; }
+.tnode { padding-left: 14px; }
+.tlabel { display: flex; align-items: center; gap: 4px; padding: 2px 4px; border-radius: 5px; cursor: pointer; white-space: nowrap; }
+.tlabel:hover { background: var(--panel2); }
+.tlabel.sel { background: #2d4a6b; }
+.tog { width: 14px; color: var(--dim); text-align: center; flex: none; }
+.tlabel .sub { color: var(--dim); font-size: 11px; }
+#center { padding: 14px 18px; }
+.empty { color: var(--dim); padding: 40px; text-align: center; font-size: 15px; }
+.card { background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 12px; margin-bottom: 14px; }
+.card h3 { margin: 0 0 10px; font-size: 13px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; }
+.toolbar { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; margin-bottom: 10px; }
+.toolbar label { color: var(--dim); }
+.frames { display: flex; flex-wrap: wrap; gap: 12px; }
+.frame { text-align: center; }
+.compass { display: grid; grid-template-columns: repeat(3, max-content); gap: 10px 14px; }
+.frame .cap { color: var(--dim); font-size: 11px; margin-top: 3px; }
+.frame canvas, .stage canvas { background: repeating-conic-gradient(#2a2e38 0% 25%, #22252d 0% 50%) 50% / 16px 16px; border: 1px solid var(--line); }
+.frame.cur canvas { outline: 2px solid var(--accent2); }
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+.swatch { border: 1px solid var(--line); border-radius: 8px; overflow: hidden; }
+.swatch .c { height: 46px; }
+.swatch .t { padding: 4px 7px; font-size: 11px; }
+.swatch .t b { color: var(--accent2); }
+.badge { display: inline-block; font-size: 10px; padding: 0 6px; border-radius: 99px; margin: 1px; background: #333a48; color: var(--dim); }
+.badge.solid { background: #5a2a2a; color: #ffb0b0; }
+.badge.one_way { background: #2a3f5a; color: #a8d0ff; }
+.badge.hazard { background: #5a4520; color: #ffd28a; }
+.badge.ladder { background: #24502f; color: #9ff0b5; }
+.badge.default { background: #2c3140; color: #8b93a6; }
+.badge.set { background: #2d4a6b; color: #cfe5ff; }
+.badge.over { background: #5a3d16; color: #ffd28a; }
+.pname { font-size: 18px; margin: 0 0 2px; }
+.pid { color: var(--dim); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+.notes { background: #23324a; border-left: 3px solid var(--accent); padding: 9px 11px; border-radius: 6px; margin: 12px 0; font-size: 14px; line-height: 1.5; }
+.kv { display: grid; grid-template-columns: max-content 1fr; gap: 3px 10px; margin: 4px 0; }
+.kv > .k { color: var(--dim); }
+.kv > .v { word-break: break-word; }
+.prop-sec { margin-top: 14px; }
+.prop-sec > h4 { margin: 0 0 6px; font-size: 11px; text-transform: uppercase; letter-spacing: 1.2px; color: var(--dim); }
+.bhv { border: 1px solid var(--line); border-radius: 8px; padding: 7px 9px; margin-bottom: 7px; background: var(--panel2); }
+.bhv .bn { font-weight: 700; color: var(--accent2); }
+.bhv .bd { color: var(--dim); font-size: 12px; margin: 2px 0 5px; }
+ul.acts { margin: 2px 0 2px 0; padding-left: 18px; }
+ul.acts li { margin: 1px 0; }
+.sw { display: inline-block; width: 12px; height: 12px; border-radius: 3px; border: 1px solid #0006; vertical-align: -2px; margin-right: 4px; }
+details summary { cursor: pointer; color: var(--dim); }
+pre.raw { background: #101216; padding: 8px; border-radius: 6px; overflow: auto; max-height: 50vh; font-size: 11px; }
+table.grid { border-collapse: collapse; font-family: Consolas, monospace; font-size: 11px; }
+table.grid td, table.grid th { border: 1px solid var(--line); padding: 1px 5px; text-align: center; min-width: 30px; }
+table.grid th { color: var(--dim); position: sticky; top: 0; background: var(--panel); }
+table.grid tr.cur td { background: #3c3416; }
+table.grid td.hold { color: #6b7385; }
+table.grid td.rest { color: #4a5060; }
+.tracker { max-height: 360px; overflow: auto; }
+.steps td { padding: 2px 8px; }
+.inst-table td { padding: 2px 6px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.stage { overflow: auto; max-width: 100%; }
+.small { font-size: 11px; color: var(--dim); }
+.warnline { color: var(--warn); }
+kbd { background: #333a48; border-radius: 4px; padding: 0 5px; font-size: 11px; }
+</style>
+</head>
+<body>
+<header>
+  <h1 id="title">GBA Node Visualizer</h1>
+  <span class="meta" id="gen"></span>
+  <span id="status"></span>
+  <span class="meta" id="counts"></span>
+  <span class="hint">Read-only — ask the AI to change anything.</span>
+</header>
+<div id="banner"></div>
+<main>
+  <aside id="left">
+    <div class="side-head"><span class="st">Browse</span><button class="side-btn" title="Collapse / expand this panel">◀</button></div>
+    <div class="sec" id="sec-nodes">
+      <h2 title="Collapse / expand">1 · Nodes</h2>
+      <input id="search" placeholder="Search name, id, type, tag…" autocomplete="off">
+      <div class="chips" id="kindchips"></div>
+      <div class="chips" id="typechips" style="margin-top:4px"></div>
+      <div id="list" style="margin-top:8px"></div>
+    </div>
+    <div class="sec grow" id="sec-tree">
+      <h2 title="Collapse / expand">2 · Tree</h2>
+      <div id="tree"></div>
+    </div>
+  </aside>
+  <section id="center"><div class="empty">Pick a node on the left.</div></section>
+  <aside id="right">
+    <div class="side-head"><span class="st">Properties</span><button class="side-btn" title="Collapse / expand this panel">▶</button></div>
+    <div id="props"><div class="empty">Properties appear here.</div></div>
+  </aside>
+</main>
+<script src="data.js"></script>
+<script>
+"use strict";
+// ======================================================================================
+// Data
+// ======================================================================================
+const D = window.GAME_DATA;
+const $ = (s, el) => (el || document).querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+function h(tag, attrs, ...kids) {
+  const el = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs || {})) {
+    if (k === "class") el.className = v;
+    else if (k === "html") el.innerHTML = v;
+    else if (k.startsWith("on")) el.addEventListener(k.slice(2), v);
+    else if (v !== undefined && v !== null && v !== false) el.setAttribute(k, v);
+  }
+  for (const kid of kids.flat(Infinity)) if (kid !== null && kid !== undefined && kid !== false) el.append(kid.nodeType ? kid : document.createTextNode(kid));
+  return el;
+}
+
+if (!D) {
+  document.body.innerHTML = '<div class="empty" style="margin-top:20vh">No data yet.<br><br><b>Run view.bat</b> (it writes visualizer/data.js and opens this page).</div>';
+  throw new Error("data.js missing");
+}
+
+const NODES = D.nodes || {};
+const INDEX = D.index || [];
+const IDX = {};
+INDEX.forEach(e => { IDX[e.id] = e; });
+const CAT = (D.catalog || {});
+const BEHAVIORS = CAT.behaviors || {};
+const ACTIONS = CAT.actions || {};
+const ENGINE = D.engine || {};
+const DERIVED = Object.assign({ dialogs: {}, menus: {}, upgrades: {}, upgrade_card: { icon_dx: 3, tag_dx: 15, text_w: 22 } }, D.derived || {});
+const VARS = ((D.game || {}).variables || []);
+const ACTOR_TYPES = ["player", "enemy", "npc", "prop", "platform", "pickup", "trigger"];
+
+const ICONS = {
+  intro: "🎬", title: "🏷️", level: "🗺️", inventory: "🎒", cutscene: "🎞️", game_over: "💀", credits: "📜",
+  palette: "🎨", sprite: "👾", tileset: "🧱", tilemap: "🗾", font: "🔤", icon: "🖼️", sfx: "🔊", music: "🎵",
+  animation: "🎞", particle: "✨", body: "🧍", player: "🕹️", enemy: "👹", npc: "🧙", prop: "🌳", platform: "🛗",
+  pickup: "🪙", trigger: "⚑", hud: "📊", menu: "📋", dialog: "💬", upgrade: "⬆️", species: "🐾", move: "💥"
+};
+const typeOf = id => (IDX[id] || {}).type;
+const kindOf = id => (IDX[id] || {}).kind;
+const iconOf = id => kindOf(id) === "scene" ? (ICONS[typeOf(id)] || "🎬") : (typeOf(id) === "menu" ? "📋" : ICONS[typeOf(id)] || "•");
+const nameOf = id => (NODES[id] && NODES[id].name) || id;
+
+// "Used by": every node that mentions this id anywhere in its JSON.
+const USED_BY = {};
+(function computeUsedBy() {
+  for (const [id, n] of Object.entries(NODES)) {
+    const seen = new Set();
+    (function walk(v, key) {
+      if (typeof v === "string") { if (v !== id && IDX[v] && key !== "id") seen.add(v); }
+      else if (Array.isArray(v)) v.forEach(x => walk(x, key));
+      else if (v && typeof v === "object") for (const [k, x] of Object.entries(v)) walk(x, k);
+    })(n, "");
+    for (const t of seen) (USED_BY[t] = USED_BY[t] || []).push(id);
+  }
+})();
+// Where game settings (nodes.json game.battle) name a node: id -> ["game.battle.sounds.hit", …].
+const GAME_USES = {};
+(function walk(v, path) {
+  if (typeof v === "string") { if (IDX[v]) (GAME_USES[v] = GAME_USES[v] || []).push(path); }
+  else if (v && typeof v === "object" && !Array.isArray(v)) for (const [k, x] of Object.entries(v)) walk(x, path + "." + k);
+})((D.game || {}).battle, "game.battle");
+
+// ======================================================================================
+// Pixels: palettes are quantized to 15-bit color exactly like the GBA.
+// ======================================================================================
+function q15(hex) {
+  if (typeof hex !== "string" || !/^#[0-9a-f]{6}$/i.test(hex)) return [255, 0, 255];
+  return [1, 3, 5].map(i => { const c5 = parseInt(hex.substr(i, 2), 16) >> 3; return (c5 << 3) | (c5 >> 2); });
+}
+function bgr555(hex) {
+  const v = [1, 3, 5].map(i => parseInt(hex.substr(i, 2), 16) >> 3);
+  return v[0] | (v[1] << 5) | (v[2] << 10);
+}
+const rgbCss = c => `rgb(${c[0]},${c[1]},${c[2]})`;
+// palId may be "pal_ui@2@#f8d038": that palette with color 2 changed (a menu text's letters, like
+// the recolored copies codegen makes), or "pal_mon_1@shiny@3": its shiny copy at hue step 3.
+function palColors(palId) {
+  const at = String(palId || "").split("@");
+  const p = NODES[at[0]];
+  const cols = (p && Array.isArray(p.colors)) ? p.colors.map(q15) : [];
+  while (cols.length < 16) cols.push([255, 0, 255]);
+  if (at.length === 3 && at[1] === "shiny") return shinyColors(cols, +at[2], p ? p.colors.length : 16);
+  if (at.length === 3) cols[+at[1]] = q15(at[2]);
+  return cols;
+}
+// A shiny monster's colors at hue step k (0-7), exactly as src/engine/shiny.c works them out: each
+// color half its own, half the fully bright rainbow hue k x 45 degrees, plus a lead of its
+// brightness x 8 units (of 1536 around the rainbow) so lighter colors run ahead; the darkest keep theirs.
+const SHINY_STEP = 4, SHINY_HUES = 8;
+const shinyHue = tick => Math.floor(tick / SHINY_STEP) & (SHINY_HUES - 1);
+function shinyColors(cols, k, count) {
+  return cols.map((c, i) => {
+    if (i === 0 || i >= count) return c;
+    const [r, g, b] = c.map(v => v >> 3);
+    const y = (r * 77 + g * 150 + b * 29) >> 8;
+    if (y < 6) return c;
+    let hh = k * (1536 / SHINY_HUES) + y * 8;
+    if (hh >= 1536) hh -= 1536;
+    const up = (31 * (hh & 255)) >> 8, dn = 31 - up;
+    const rgb = [[31, up, 0], [dn, 31, 0], [0, 31, up], [0, dn, 31], [up, 0, 31], [31, 0, dn]][hh >> 8];
+    return [r, g, b].map((v, j) => { const m = (v + rgb[j]) >> 1; return (m << 3) | (m >> 2); });
+  });
+}
+const PIX = ".123456789abcdef";
+const _pixCache = new Map();
+// Canvas (1x) of a pixel-string image. paper = palette index to paint transparent pixels with.
+function pixelsCanvas(rows, palId, paper) {
+  const key = palId + "|" + paper + "|" + (rows || []).join("/");
+  if (_pixCache.has(key)) return _pixCache.get(key);
+  rows = Array.isArray(rows) ? rows : [];
+  const hgt = rows.length, wid = Math.max(1, ...rows.map(r => (r || "").length));
+  const c = document.createElement("canvas");
+  c.width = wid; c.height = Math.max(1, hgt);
+  const ctx = c.getContext("2d");
+  const img = ctx.createImageData(c.width, c.height);
+  const cols = palColors(palId);
+  for (let y = 0; y < hgt; y++) for (let x = 0; x < (rows[y] || "").length; x++) {
+    let i = PIX.indexOf(rows[y][x]);
+    if (i <= 0) { if (paper === undefined || paper === null) continue; i = paper; }
+    const o = (y * c.width + x) * 4, col = cols[i] || [255, 0, 255];
+    img.data[o] = col[0]; img.data[o + 1] = col[1]; img.data[o + 2] = col[2]; img.data[o + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  _pixCache.set(key, c);
+  return c;
+}
+// palOverride: another palette, or "@shiny@k" for the sprite's own palette's shiny copy.
+function frameCanvas(spriteId, frame, palOverride) {
+  const s = NODES[spriteId];
+  if (!s || !s.frames || !s.frames[frame]) return null;
+  return pixelsCanvas(s.frames[frame], palOverride && palOverride[0] === "@" ? s.palette + palOverride : (palOverride || s.palette));
+}
+// Draw a (1x) canvas at x,y with flips; ctx already scaled by zoom if needed.
+function blit(ctx, src, x, y, flipX, flipY) {
+  if (!src) return;
+  ctx.save();
+  ctx.translate(x + (flipX ? src.width : 0), y + (flipY ? src.height : 0));
+  ctx.scale(flipX ? -1 : 1, flipY ? -1 : 1);
+  ctx.drawImage(src, 0, 0);
+  ctx.restore();
+}
+function zoomCanvas(w, hgt, zoom) {
+  const c = h("canvas", { width: w * zoom, height: hgt * zoom });
+  c.style.width = (w * zoom) + "px"; c.style.height = (hgt * zoom) + "px";
+  const ctx = c.getContext("2d");
+  ctx.imageSmoothingEnabled = false;
+  ctx.scale(zoom, zoom);
+  return [c, ctx];
+}
+function bigImage(src, zoom, grid) {
+  const [c, ctx] = zoomCanvas(src.width, src.height, zoom);
+  ctx.drawImage(src, 0, 0);
+  if (grid) drawGrid(ctx, src.width, src.height, 1, zoom, "rgba(255,255,255,.12)");
+  return c;
+}
+function drawGrid(ctx, w, hgt, step, zoom, color) {
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = 1 / zoom;
+  ctx.beginPath();
+  for (let x = 0; x <= w; x += step) { ctx.moveTo(x, 0); ctx.lineTo(x, hgt); }
+  for (let y = 0; y <= hgt; y += step) { ctx.moveTo(0, y); ctx.lineTo(w, y); }
+  ctx.stroke(); ctx.restore();
+}
+
+// ======================================================================================
+// Animation timing (same rules as src/engine/anim.c: 1 tick = 1/60 s).
+// ======================================================================================
+function animAt(animId, tick) {
+  const a = NODES[animId];
+  if (!a || !Array.isArray(a.frames) || !a.frames.length) return null;
+  const total = a.frames.reduce((s, f) => s + Math.max(1, f.ticks | 0), 0);
+  let t = a.loop === false ? Math.min(tick, total - 1) : tick % total;
+  for (let i = 0; i < a.frames.length; i++) {
+    const d = Math.max(1, a.frames[i].ticks | 0);
+    if (t < d) return { index: i, frame: a.frames[i], sprite: a.sprite };
+    t -= d;
+  }
+  return { index: a.frames.length - 1, frame: a.frames[a.frames.length - 1], sprite: a.sprite };
+}
+function bodyAnim(bodyId, slot) {
+  const b = NODES[bodyId];
+  if (!b || !b.animations) return null;
+  const fallback = { run: "walk", walk: "run", fall: "jump", die: "hurt" };
+  const fb = s => fallback[s] || (dirBase(s) !== s ? dirBase(s) : undefined);   // idle_up_left -> idle
+  return b.animations[slot] || b.animations[fb(slot)] || b.animations[fb(fb(slot))] ||
+    b.animations[b.default_animation] || null;
+}
+// The base animation of a directional slot (walk_down_left -> walk).
+const dirBase = s => (s || "").replace(/_(up_right|up_left|down_right|down_left|up|down|left)$/, "");
+// Slots drawn for one direction only (*_up, *_down and the *_left ones) are never mirrored, like sprites.c.
+const isFixedSlot = slot => /_(up|down|left)$/.test(slot || "");
+// The 8 ways an actor faces, as a 3x3 compass (null = the middle): slot suffix and (x, y) step.
+const DIRS8 = [["up_left", -1, -1], ["up", 0, -1], ["up_right", 1, -1], ["left", -1, 0], null, ["right", 1, 0],
+               ["down_left", -1, 1], ["down", 0, 1], ["down_right", 1, 1]];
+// The slot a body plays for a base animation (idle / walk / attack) facing (x, y), and whether it is
+// mirrored: like actor.iwram.c directional_slot. A left one without its art uses the right one
+// mirrored; a diagonal without any, the side one (what `facing` picks from a standing start).
+function dirSlot(bodyId, base, x, y) {
+  const an = (NODES[bodyId] || {}).animations || {};
+  const pick = s => ({ slot: s, mirror: x < 0 && !isFixedSlot(s) });
+  if (x && y) {
+    const v = (y < 0 ? "up_" : "down_");
+    if (an[base + "_" + v + (x < 0 ? "left" : "right")]) return pick(base + "_" + v + (x < 0 ? "left" : "right"));
+    if (x < 0 && an[base + "_" + v + "right"]) return pick(base + "_" + v + "right");
+    y = 0;
+  }
+  if (!x) return pick(an[base + (y < 0 ? "_up" : "_down")] ? base + (y < 0 ? "_up" : "_down") : base);
+  return pick(x < 0 && an[base + "_left"] ? base + "_left" : base);
+}
+// Draw an actor body like sprites.c: the origin mirrors with the art when flipped.
+function drawBody(ctx, bodyId, slot, wx, wy, tick, facingLeft, palOverride) {
+  const b = NODES[bodyId];
+  const an = bodyAnim(bodyId, slot);
+  const st = an && animAt(an, tick);
+  if (!b || !st) return null;
+  const spr = NODES[st.sprite];
+  if (!spr) return null;
+  const fx = !!st.frame.flip_x !== (!!facingLeft && !isFixedSlot(slot)), fy = !!st.frame.flip_y;
+  const o = b.origin || [0, 0];
+  const ox = fx ? spr.width - o[0] : o[0], oy = fy ? spr.height - o[1] : o[1];
+  blit(ctx, frameCanvas(st.sprite, st.frame.frame, palOverride), wx - ox, wy - oy, fx, fy);
+  return { x: wx - ox, y: wy - oy, w: spr.width, h: spr.height };
+}
+// A monster (monster behavior) takes its body from its species, and an Alpha its Alpha colors.
+// Random species show the first one the player can't be (the engine picks at run start).
+function monsterLook(node, overrides) {
+  const e = ((node || {}).logic || []).find(l => l.behavior === "monster");
+  if (!e) return null;
+  const p = Object.assign({}, e.params || {}, (overrides || {}).monster || {});
+  const avoid = p.avoid_var ? SPECIES[varInitial(p.avoid_var)] : null;
+  let sp = p.species || null;
+  if (!sp && p.species_var) sp = SPECIES[varInitial(p.species_var)];
+  if (!sp && p.random) sp = SPECIES.find(s => s !== avoid);
+  const spn = NODES[sp];
+  if (!spn) return null;
+  return { species: sp, body: spn.body, pal: p.alpha ? spn.alpha_palette : null, crown: p.crown, params: p,
+           absent: !!(avoid && p.species && p.species === avoid) };
+}
+function bodyOf(node, overrides) {
+  const m = monsterLook(node, overrides);
+  return m ? m : { body: (node || {}).body, pal: null };
+}
+
+// Global clock: one shared 60 Hz tick for every live preview. Space = play / pause.
+const clock = { tick: 0, playing: true, last: performance.now(), acc: 0, views: [] };
+function tickLoop(now) {
+  const dt = now - clock.last; clock.last = now;
+  if (clock.playing) {
+    clock.acc += dt;
+    const n = Math.floor(clock.acc / (1000 / 60));
+    if (n > 0) { clock.acc -= n * 1000 / 60; clock.tick += Math.min(n, 10); clock.views.forEach(v => v(clock.tick, n)); }
+  }
+  requestAnimationFrame(tickLoop);
+}
+requestAnimationFrame(tickLoop);
+function live(fn) { clock.views.push(fn); fn(clock.tick, 0); }
+function playButtons(extra) {
+  const b = h("button", { onclick: () => { clock.playing = !clock.playing; b.textContent = clock.playing ? "⏸ Pause" : "▶ Play"; } }, clock.playing ? "⏸ Pause" : "▶ Play");
+  const s = h("button", { onclick: () => { clock.playing = false; b.textContent = "▶ Play"; clock.tick++; clock.views.forEach(v => v(clock.tick, 1)); } }, "⏭ Step");
+  return h("span", { class: "toolbar", style: "margin:0" }, b, s, extra || null);
+}
+
+// ======================================================================================
+// Text, boxes and UI screens (same layout as src/engine/ui.c and tools/common.py)
+// ======================================================================================
+function glyphRows(fontId, ch) {
+  const f = NODES[fontId];
+  if (!f || !f.glyphs) return null;
+  return f.glyphs[ch] || f.glyphs[ch.toUpperCase()] || null;
+}
+// pal (optional) = the palette the letters use instead of the font's (a colored menu text).
+function drawText(ctx, fontId, text, tx, ty, paper, pal) {
+  const f = NODES[fontId];
+  if (!f) return;
+  let x = tx, y = ty;
+  for (const ch of String(text)) {
+    if (ch === "\n") { y++; x = tx; continue; }
+    const rows = glyphRows(fontId, ch);
+    if (rows) ctx.drawImage(pixelsCanvas(rows, pal || f.palette, paper), x * 8, y * 8);
+    else if (paper !== undefined && paper !== null) { ctx.fillStyle = rgbCss(palColors(f.palette)[paper]); ctx.fillRect(x * 8, y * 8, 8, 8); }
+    x++;
+  }
+}
+function frameTile(t, paper, border) {
+  const left = t % 3 === 0, right = t % 3 === 2, top = Math.floor(t / 3) === 0, bottom = Math.floor(t / 3) === 2;
+  const rows = [];
+  for (let y = 0; y < 8; y++) {
+    let r = "";
+    for (let x = 0; x < 8; x++) {
+      const edge = (left && x < 2) || (right && x > 5) || (top && y < 2) || (bottom && y > 5);
+      const cut = (left || right) && (top || bottom) && x === (left ? 0 : 7) && y === (top ? 0 : 7);
+      r += cut ? "." : PIX[edge ? border : paper];
+    }
+    rows.push(r);
+  }
+  return rows;
+}
+function drawBox(ctx, fontId, box) {
+  const f = NODES[fontId];
+  if (!f || !box) return;
+  const bx = box.x >> 3, by = box.y >> 3, bw = box.w >> 3, bh = box.h >> 3;
+  const paper = box.paper === undefined ? 1 : box.paper, border = box.border === undefined ? 2 : box.border;
+  for (let j = 0; j < bh; j++) for (let i = 0; i < bw; i++) {
+    const row = j === 0 ? 0 : j === bh - 1 ? 2 : 1, col = i === 0 ? 0 : i === bw - 1 ? 2 : 1;
+    ctx.drawImage(pixelsCanvas(frameTile(row * 3 + col, paper, border), f.palette), (bx + i) * 8, (by + j) * 8);
+  }
+}
+function drawIcon(ctx, iconId, tx, ty, paper, paperPal) {
+  const ic = NODES[iconId];
+  if (!ic) return;
+  const usePaper = paper !== undefined && paper !== null && ic.palette === paperPal;
+  ctx.drawImage(pixelsCanvas(ic.pixels, ic.palette, usePaper ? paper : undefined), tx * 8, ty * 8);
+}
+function varInitial(name) { const v = VARS.find(v => v.name === name); return v ? (v.initial === true ? 1 : v.initial === false ? 0 : v.initial) : 0; }
+// Species in nodes.json order: their number is what species variables hold.
+const SPECIES = INDEX.filter(e => e.type === "species").map(e => e.id);
+function speciesField(index, field) {
+  const sp = NODES[SPECIES[index]];
+  if (!sp) return "";
+  if (field === "name") return sp.title || "";
+  if (field === "type") return String(sp.monster_type || "").toUpperCase();
+  const m = /^move([123])$/.exec(field);
+  return m ? ((NODES[(sp.moves || [])[m[1] - 1]] || {}).title || "") : "";
+}
+// Placeholders like ui.c: {var}, {var:02} (at least 2 digits), {var:time} (seconds as 03:42, negative
+// = --:--), {var.field} (a species' name, type or move), {var|a|b|c} (one word picked by the value), and
+// {list[i]...} (the slot of a list variable that i picks; every slot starts at the list's initial value).
+// A pick's words may hold placeholders themselves (picks too), filled in the same way.
+// get(name) returns a variable's value.
+function fillText(text, get) {
+  get = get || varInitial;
+  const two = n => (n < 10 ? "0" : "") + n;
+  const s = String(text || "");
+  // the '}' closing the '{' at i (placeholders nest inside a pick's words), or -1
+  const closing = i => { for (let d = 0, k = i; k < s.length; k++) { d += s[k] === "{" ? 1 : s[k] === "}" ? -1 : 0; if (!d) return k; } return -1; };
+  // a pick's words: split at the '|' outside nested placeholders
+  const words = p => { const o = []; let d = 0, cur = ""; for (const c of p) { if (c === "|" && !d) { o.push(cur); cur = ""; continue; } d += c === "{" ? 1 : c === "}" ? -1 : 0; cur += c; } return o.concat([cur]); };
+  let out = "";
+  for (let i = 0; i < s.length; i++) {
+    const end = s[i] === "{" ? closing(i) : -1;
+    const m = end > i && /^(\w+)(?:\[(\w+)\])?(?:(:02|:time)|\.(\w+)|\|([\s\S]*))?$/.exec(s.slice(i + 1, end));
+    if (!m) { out += s[i]; continue; }
+    const [, v, , fmt, field, pick] = m, val = get(v);
+    if (field) out += speciesField(val, field);
+    else if (pick !== undefined) { const o = words(pick); out += fillText(o[Math.max(0, Math.min(o.length - 1, val))], get); }
+    else if (fmt === ":time") out += val < 0 ? "--:--" : two(Math.floor(val / 60)) + ":" + two(val % 60);
+    else { const t = String(val); out += fmt && t.length < 2 ? "0" + t : t; }
+    i = end;
+  }
+  return out;
+}
+// A HUD box (like ui.c draw_hud_box): paper inside; outside it a 2-pixel border, then a 1-pixel
+// dark outline (font color 1), rounded at the corners. dx / dy = pixels outside the box.
+function drawHudBox(ctx, fontId, box) {
+  const f = NODES[fontId];
+  if (!f || !box) return;
+  const cols = palColors(f.palette);
+  const paper = box.paper === undefined ? 1 : box.paper, border = box.border === undefined ? 2 : box.border;
+  const x0 = box.x, y0 = box.y, x1 = box.x + box.w, y1 = box.y + box.h;
+  ctx.fillStyle = rgbCss(cols[paper]); ctx.fillRect(x0, y0, box.w, box.h);
+  for (let y = y0 - 8; y < y1 + 8; y++) for (let x = x0 - 8; x < x1 + 8; x++) {
+    const dx = x < x0 ? x0 - x : x >= x1 ? x - x1 + 1 : 0, dy = y < y0 ? y0 - y : y >= y1 ? y - y1 + 1 : 0;
+    if (!dx && !dy) continue;
+    const c = dx <= 2 && dy <= 2 && !(dx === 2 && dy === 2) ? border : dx <= 3 && dy <= 3 && dx + dy <= 4 ? 1 : 0;
+    if (c) { ctx.fillStyle = rgbCss(cols[c]); ctx.fillRect(x, y, 1, 1); }
+  }
+}
+function drawHud(ctx, hudId, values) {
+  const hd = NODES[hudId];
+  if (!hd || !Array.isArray(hd.elements)) return;
+  const get = n => (values && n in values) ? values[n] : varInitial(n);
+  const b = hd.box, fpal = (NODES[hd.font] || {}).palette;
+  if (b) drawHudBox(ctx, hd.font, b);
+  for (const e of hd.elements) {
+    const x = e.x >> 3, y = e.y >> 3;
+    // elements inside the box sit on its paper (icons only when they use the font's palette, like ui.c)
+    const paper = b && e.x >= b.x && e.x < b.x + b.w && e.y >= b.y && e.y < b.y + b.h ? (b.paper === undefined ? 1 : b.paper) : undefined;
+    if (e.kind === "text") {
+      const s = fillText(e.text, get);
+      if (e.font) drawText(ctx, e.font, s, e.align === "center" ? x - s.length / 2 : x, y, undefined, e.palette);   // sprite font: outlined, no paper
+      else drawText(ctx, hd.font, s, e.align === "center" ? x - (s.length >> 1) : x, y, paper);   // centered on x, like ui.c
+    }
+    else if (e.kind === "icon") drawIcon(ctx, e.icon, x, y, paper, fpal);
+    else if (e.kind === "gauge") {
+      const icons = e.icons || [];
+      drawIcon(ctx, icons[Math.max(0, Math.min(icons.length - 1, get(e.var)))], x, y, paper, fpal);
+    }
+    else if (e.kind === "icon_repeat") {
+      const ic = NODES[e.icon]; const size = ic ? ic.pixels.length / 8 : 1;
+      const sp = (e.spacing || size * 8) >> 3, v = get(e.var);
+      const slots = e.max_var ? get(e.max_var) : (e.max || 0);   // empty icons up to max_var (like ui.c)
+      for (let k = 0; k < (e.max || 0); k++) {
+        if (k < v) drawIcon(ctx, e.icon, x + k * sp, y, paper, fpal);
+        else if (e.empty_icon && k < slots) drawIcon(ctx, e.empty_icon, x + k * sp, y, paper, fpal);
+      }
+    } else if (e.kind === "bar") {
+      const f = NODES[hd.font], cols = palColors(f && f.palette);
+      const mx = Math.max(1, e.max_var ? get(e.max_var) : e.max);
+      const v = Math.max(0, Math.min(mx, get(e.var))), px = Math.floor(v * e.length * 8 / mx);
+      // like ui.c: a dark rim above and below; low / mid colors when it runs low
+      const color = e.low_color && v * 4 <= mx ? e.low_color : e.mid_color && v * 2 <= mx ? e.mid_color : e.color;
+      ctx.fillStyle = rgbCss(cols[1]); ctx.fillRect(x * 8, y * 8, e.length * 8, 8);
+      ctx.fillStyle = rgbCss(cols[e.back || 0]); ctx.fillRect(x * 8, y * 8 + 1, e.length * 8, 6);
+      ctx.fillStyle = rgbCss(cols[color]); ctx.fillRect(x * 8, y * 8 + 1, px, 6);
+    }
+  }
+}
+// The palette a menu text's letters use (like ui.c draw_menu_text): the font's with its letter
+// color changed to `color`, or to the one color_by's variable picks (0 = first, past the end = last);
+// a line with neither takes the menu's own color (menuColor), if it has one.
+function menuTextPal(fontId, t, ink, menuColor) {
+  const by = t.color_by && Array.isArray(t.color_by.colors) ? t.color_by : null;
+  const cols = by ? by.colors : t.color ? [t.color] : menuColor ? [menuColor] : [];
+  if (!cols.length) return undefined;
+  const k = by ? Math.max(0, Math.min(cols.length - 1, varInitial(by.var))) : 0;
+  return (NODES[fontId] || {}).palette + "@" + (ink === undefined ? 2 : ink) + "@" + cols[k];
+}
+function drawMenu(ctx, menuId, cursor) {
+  const m = NODES[menuId], lay = DERIVED.menus[menuId];
+  if (!m || !lay) return;
+  const paper = m.box ? (m.box.paper === undefined ? 1 : m.box.paper) : undefined;
+  if (m.box) drawBox(ctx, m.font, m.box);
+  const f = NODES[m.font];
+  const inkPal = menuTextPal(m.font, {}, lay.ink, m.color);      // the title's and options' letters (menu color)
+  if (m.title) drawText(ctx, m.font, fillText(m.title), lay.title_x, lay.title_y, paper, inkPal);
+  for (const ic of m.icons || []) drawIcon(ctx, ic.icon, ic.x >> 3, ic.y >> 3, paper, f && f.palette);
+  for (const t of m.texts || []) drawText(ctx, m.font, fillText(t.text), t.x >> 3, t.y >> 3, paper, menuTextPal(m.font, t, lay.ink, m.color));
+  const cw = NODES[m.cursor] ? NODES[m.cursor].pixels.length / 8 : 1;
+  if (m.upgrades) {                          // card slots, filled with sample upgrades
+    const picks = sampleUpgrades(m.upgrades);
+    picks.forEach((u, i) => {
+      const [x, y] = lay.options[i] || [0, 0];
+      drawUpgradeCard(ctx, m.font, paper, u, upgLevel(u), x, y);
+      if (i === cursor) drawIcon(ctx, m.cursor, x - DERIVED.upgrade_card.icon_dx - cw, y, paper, f && f.palette);
+    });
+    return;
+  }
+  (m.options || []).forEach((o, i) => {
+    const [x, y] = lay.options[i] || [0, 0];
+    drawText(ctx, m.font, fillText(o.label), x, y, paper, inkPal);
+    if (i === cursor) drawIcon(ctx, m.cursor, x - cw, y, paper, f && f.palette);
+  });
+}
+// ---- upgrade cards (same layout as ui.c draw_upgrade_card) ----
+const UPGRADES = INDEX.filter(e => e.type === "upgrade").map(e => e.id);
+function upgLevel(id) { const u = NODES[id] || {}; return u.var ? varInitial(u.var) : 0; }
+// What a fresh run would offer: weapons/items first (as the engine picks at random, show the first ones).
+function sampleUpgrades(n) {
+  const ok = UPGRADES.filter(id => { const u = NODES[id] || {}; return (u.category === "weapon" || u.category === "item") && upgLevel(id) < (u.max_level || 1); });
+  return ok.concat(UPGRADES.filter(id => (NODES[id] || {}).category === "bonus")).slice(0, n);
+}
+function upgradeTag(u, level) {
+  if (u.category === "evolution") return "EVOLVE!";
+  if (u.category === "bonus") return "";
+  return level === 0 ? "NEW!" : "LV" + (level + 1);
+}
+function drawUpgradeCard(ctx, fontId, paper, upgId, level, x, y) {
+  const u = NODES[upgId], f = NODES[fontId];
+  if (!u) return;
+  const lines = DERIVED.upgrades[upgId] || [];
+  const d = Math.max(0, Math.min(level, lines.length - 1));
+  drawIcon(ctx, u.icon, x - DERIVED.upgrade_card.icon_dx, y, paper, f && f.palette);
+  drawText(ctx, fontId, u.title || "", x, y, paper);
+  drawText(ctx, fontId, upgradeTag(u, level), x + DERIVED.upgrade_card.tag_dx, y, paper);
+  drawText(ctx, fontId, (lines[d] || []).join("\n"), x, y + 1, paper);
+}
+function drawDialog(ctx, dlgId, lineIdx, chars, choosing, choice) {
+  const d = NODES[dlgId], lay = DERIVED.dialogs[dlgId];
+  if (!d || !lay || !d.box) return;
+  const paper = d.box.paper === undefined ? 1 : d.box.paper;
+  const f = NODES[d.font];
+  drawBox(ctx, d.font, d.box);
+  if (choosing) {
+    (d.choices || []).forEach((c, i) => {
+      const [x, y] = lay.choices[i];
+      drawText(ctx, d.font, i === choice ? ">" : " ", x - 1, y, paper);
+      drawText(ctx, d.font, c.label, x, y, paper);
+    });
+    return;
+  }
+  const ln = d.lines[lineIdx], L = lay.lines[lineIdx];
+  if (!ln || !L) return;
+  if (ln.speaker) drawText(ctx, d.font, ln.speaker, L.speaker_x, L.speaker_y, paper);
+  if (ln.portrait) drawIcon(ctx, ln.portrait, L.portrait_x, L.portrait_y, paper, f && f.palette);
+  let text = L.wrapped.join("\n");
+  if (chars !== undefined) text = text.slice(0, chars);
+  drawText(ctx, d.font, text, L.text_x, L.text_y, paper);
+}
+function screenCanvas(zoom) {
+  const [c, ctx] = zoomCanvas(240, 160, zoom);
+  return [c, ctx];
+}
+
+// ======================================================================================
+// Audio: a small Web Audio synth approximating the GBA's 4 PSG channels.
+// ======================================================================================
+const audio = { ctx: null, master: null, volume: 0.5, stops: [] };
+function actx() {
+  if (!audio.ctx) {
+    audio.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    audio.master = audio.ctx.createGain();
+    audio.master.gain.value = audio.volume * 0.25;
+    audio.master.connect(audio.ctx.destination);
+  }
+  if (audio.ctx.state === "suspended") audio.ctx.resume();
+  return audio.ctx;
+}
+const NOTE_IDX = { C: 0, "C#": 1, D: 2, "D#": 3, E: 4, F: 5, "F#": 6, G: 7, "G#": 8, A: 9, "A#": 10, B: 11 };
+function noteFreq(tok) {
+  const m = /^([A-G]#?)(\d)$/.exec(tok || "");
+  if (!m) return null;
+  const n = NOTE_IDX[m[1]] + 12 * (parseInt(m[2]) + 1);
+  return 440 * Math.pow(2, (n - 69) / 12);
+}
+const _waves = {};
+function pulseWave(duty) {
+  const k = "p" + duty;
+  if (_waves[k]) return _waves[k];
+  const D = [0.125, 0.25, 0.5, 0.75][duty] || 0.5, N = 64;
+  const re = new Float32Array(N), im = new Float32Array(N);
+  for (let n = 1; n < N; n++) { re[n] = Math.sin(2 * Math.PI * n * D) / (n * Math.PI); im[n] = (1 - Math.cos(2 * Math.PI * n * D)) / (n * Math.PI); }
+  return (_waves[k] = actx().createPeriodicWave(re, im));
+}
+function tableWave(hex) {
+  const k = "w" + hex;
+  if (_waves[k]) return _waves[k];
+  const s = [];
+  for (let i = 0; i < 32; i++) s.push(parseInt((hex || "0123456789abcdeffedcba9876543210")[i] || "0", 16) / 7.5 - 1);
+  const N = 16, re = new Float32Array(N + 1), im = new Float32Array(N + 1);
+  for (let n = 1; n <= N; n++) for (let t = 0; t < 32; t++) {
+    re[n] += s[t] * Math.cos(2 * Math.PI * n * t / 32) / 16;
+    im[n] += s[t] * Math.sin(2 * Math.PI * n * t / 32) / 16;
+  }
+  return (_waves[k] = actx().createPeriodicWave(re, im));
+}
+const NOISE_REG = [0xD1, 0xC1, 0xB1, 0xA1, 0x91, 0x81, 0x71, 0x61, 0x51, 0x41, 0x31, 0x21, 0x11, 0x01, 0x00, 0x08];
+function noiseBuffer(pitch) {
+  const k = "n" + pitch;
+  if (_waves[k]) return _waves[k];
+  const ctx = actx(), reg = NOISE_REG[pitch & 15];
+  const r = reg & 7, s = reg >> 4, short = !!(reg & 8);
+  const freq = 524288 / (r === 0 ? 0.5 : r) / Math.pow(2, s + 1);
+  const len = ctx.sampleRate, buf = ctx.createBuffer(1, len, ctx.sampleRate), d = buf.getChannelData(0);
+  let lfsr = 0x7FFF, acc = 0, out = 1;
+  const step = freq / ctx.sampleRate;
+  for (let i = 0; i < len; i++) {
+    acc += step;
+    while (acc >= 1) {
+      acc -= 1;
+      const bit = (lfsr ^ (lfsr >> 1)) & 1;
+      lfsr = (lfsr >> 1) | (bit << 14);
+      if (short) lfsr = (lfsr & ~0x40) | (bit << 6);
+      out = (lfsr & 1) ? -1 : 1;
+    }
+    d[i] = out;
+  }
+  return (_waves[k] = buf);
+}
+// Start one voice at time t. ch: square1/square2/wave/noise. Returns {stop(t)}.
+function voice(ch, value, vol, opts, t) {
+  const ctx = actx(), g = ctx.createGain();
+  let src;
+  if (ch === "noise") {
+    src = ctx.createBufferSource(); src.buffer = noiseBuffer(value); src.loop = true;
+  } else {
+    src = ctx.createOscillator();
+    src.setPeriodicWave(ch === "wave" ? tableWave(opts.wave) : pulseWave(opts.duty === undefined ? 2 : opts.duty));
+    src.frequency.value = value;
+  }
+  const level = ch === "wave" ? [0, 0.25, 0.5, 0.75, 1][Math.max(0, Math.min(4, vol))] * 0.6 : vol / 15;
+  g.gain.setValueAtTime(level, t);
+  if (opts.decay) {             // GB envelope: one volume step every decay/64 s
+    let v = vol;
+    for (let k = 1; v > 0 && k < 16; k++) { v--; g.gain.setValueAtTime(v / 15, t + k * opts.decay / 64); }
+  }
+  src.connect(g); g.connect(audio.master);
+  src.start(t);
+  const vo = { stop(at) { try { g.gain.setValueAtTime(0, at); src.stop(at + 0.01); } catch (e) { /* already stopped */ } } };
+  audio.stops.push(vo);
+  return vo;
+}
+function stopAllAudio() {
+  audio.stops.forEach(v => v.stop(audio.ctx ? audio.ctx.currentTime : 0));
+  audio.stops = [];
+  if (audio.timer) { clearInterval(audio.timer); audio.timer = null; }
+  audio.onRow = null;
+}
+const SFX_WAVE = "ffffffffffffffff0000000000000000";   // like audio.c: wave-channel sfx play a full square
+function playSfx(id) {
+  const s = NODES[id];
+  if (!s || !Array.isArray(s.steps)) return;
+  const ctx = actx();
+  let t = ctx.currentTime + 0.03;
+  for (const st of s.steps) {
+    const dur = (st.ticks || 1) / 60;
+    const vol = st.volume === undefined ? (s.channel === "wave" ? 4 : 12) : st.volume;
+    if (s.channel === "noise") voice("noise", st.pitch | 0, vol, {}, t).stop(t + dur);
+    else if (st.note !== "..") { const f = noteFreq(st.note); if (f) voice(s.channel, f, vol, { duty: s.duty, wave: SFX_WAVE }, t).stop(t + dur); }
+    t += dur;
+  }
+}
+function musicRows(m) {
+  const ch = ["square1", "square2", "wave", "noise"], rows = [];
+  (m.order || []).forEach((pname, ord) => {
+    const pat = (m.patterns || {})[pname] || {};
+    const first = Object.values(pat)[0];
+    const len = typeof first === "string" ? first.split(/\s+/).filter(t => t && t !== "|").length : 0;
+    const toks = {};
+    ch.forEach(c => { toks[c] = typeof pat[c] === "string" ? pat[c].split(/\s+/).filter(t => t && t !== "|") : null; });
+    for (let i = 0; i < len; i++) rows.push({ pattern: pname, ord, row: i, cells: ch.map(c => toks[c] ? toks[c][i] : null) });
+  });
+  return rows;
+}
+// Where a looping song starts again (after an intro that plays once), like audio.c.
+function loopRow(m, rows) {
+  const k = rows.findIndex(r => r.ord === (m.loop_from || 0));
+  return k < 0 ? 0 : k;
+}
+// Plays like audio.c: one row every 3600 / (bpm * rows_per_beat) ticks.
+function playMusic(id, loop, onRow) {
+  stopAllAudio();
+  const m = NODES[id];
+  if (!m) return;
+  const ctx = actx(), rows = musicRows(m), ch = ["square1", "square2", "wave", "noise"];
+  if (!rows.length) return;
+  const rowDur = 60 / ((m.bpm || 120) * (m.rows_per_beat || 4));
+  const cur = [null, null, null, null];
+  let next = ctx.currentTime + 0.05, r = 0;
+  const shouldLoop = loop === undefined ? m.loop !== false : loop;
+  audio.onRow = onRow;
+  const startTime = next;
+  audio.timer = setInterval(() => {
+    while (next < ctx.currentTime + 0.12) {
+      if (r >= rows.length) {
+        if (!shouldLoop) { cur.forEach(v => v && v.stop(next)); clearInterval(audio.timer); audio.timer = null; return; }
+        r = loopRow(m, rows);
+      }
+      rows[r].cells.forEach((tok, i) => {
+        if (tok === null || tok === "--" || tok === undefined) return;
+        const ins = (m.instruments || {})[ch[i]];
+        if (cur[i]) { cur[i].stop(next); cur[i] = null; }
+        if (tok === ".." || !ins) return;
+        if (ch[i] === "noise") cur[i] = voice("noise", parseInt(tok.slice(1), 16), ins.volume === undefined ? 10 : ins.volume, { decay: ins.decay }, next);
+        else { const f = noteFreq(tok); if (f) cur[i] = voice(ch[i], f, ins.volume === undefined ? (ch[i] === "wave" ? 4 : 10) : ins.volume, ins, next); }
+      });
+      const rr = r, when = next;
+      setTimeout(() => { if (audio.onRow) audio.onRow(rr); }, Math.max(0, (when - ctx.currentTime) * 1000));
+      r++; next += rowDur;
+    }
+  }, 25);
+  return startTime;
+}
+
+// ======================================================================================
+// Plain-language rendering of actions, behaviors and values
+// ======================================================================================
+function nodeLink(id) {
+  if (!IDX[id]) return h("span", { class: "warnline" }, String(id), " (missing)");
+  return h("a", { onclick: () => select(id), title: id }, iconOf(id) + " " + nameOf(id));
+}
+function actionList(list) {
+  if (!Array.isArray(list) || !list.length) return h("span", { class: "small" }, "(nothing)");
+  return h("ul", { class: "acts" }, list.map(actionItem));
+}
+function actionItem(a) {
+  if (!a || typeof a !== "object") return h("li", {}, String(a));
+  const spec = ACTIONS[a.do];
+  if (!spec) return h("li", { class: "warnline" }, "Unknown action: " + a.do);
+  const li = h("li");
+  const params = spec.params || {};
+  let sentence = spec.sentence || a.do;
+  if ((a.do === "set_var" || a.do === "add_var") && a.from) sentence = a.do === "set_var" ? "Set {var} to the value of {from}" : "Add the value of {from} to {var}";
+  if (a.do === "if_var" && a.from) sentence = "If {var} {op} the value of {from}";
+  if (a.do === "add_var" && a.max_var) sentence += " (never above {max_var})";
+  const parts = sentence.split(/(\{\w+\})/);
+  for (const p of parts) {
+    const m = /^\{(\w+)\}$/.exec(p);
+    if (!m) { li.append(p); continue; }
+    const key = m[1], pdef = params[key] || {};
+    const v = key in a ? a[key] : pdef.default;
+    // A list variable: the slot its index picks (best_time[chosen]), or every slot without one.
+    const count = key === "var" ? ((VARS.find(x => x.name === v) || {}).count || 1) : 1;
+    if (a.index && key === "var") li.append(h("b", {}, v + "[" + a.index + "]"));
+    else if (count > 1) li.append("every slot of ", h("b", {}, v), " (" + count + ")");
+    else li.append(valueNode(pdef.type || "", v));
+  }
+  if (a.do === "if_var" || a.do === "if_chance") {
+    li.append(h("div", {}, "then:", actionList(a.then)), h("div", {}, "otherwise:", actionList(a.else)));
+  }
+  return li;
+}
+function valueNode(type, v, sep) {
+  if (type.startsWith("node:") || (typeof v === "string" && IDX[v])) return v ? nodeLink(v) : h("span", { class: "small" }, "(none)");
+  if (type === "actions") return actionList(v);
+  if (type === "types") return h("b", {}, (v || []).map(x => String(x).toUpperCase()).join(", ") || "(none)");
+  if (type === "var") return h("b", {}, v || "(none)");
+  if (type === "points") return h("span", { class: "mono" }, (v || []).map(p => `(${p[0]}, ${p[1]})`).join(sep || " → "));
+  if (typeof v === "boolean") return h("b", {}, v ? "yes" : "no");
+  if (typeof v === "string" && /^#[0-9a-f]{6}$/i.test(v)) return h("span", {}, h("span", { class: "sw", style: "background:" + rgbCss(q15(v)) }), v);
+  if (v === undefined) return h("span", { class: "small" }, "—");
+  return h("b", {}, typeof v === "object" ? JSON.stringify(v) : String(v));
+}
+// One plain sentence for behaviors whose params say it best (gates, things that show at some point).
+function behaviorPlain(name, p) {
+  const op = { "==": "is", "!=": "is not", "<": "is below", "<=": "is at most", ">": "is above", ">=": "is at least" };
+  if (name === "appear_if") return `Here only while ${p.var} ${op[p.op || "=="] || p.op} ${p.from ? "the value of " + p.from : (p.value === undefined ? 0 : p.value)} (checked when it appears and every tick after).`;
+  if (name === "move_switch") return `Opens when a ${(p.types || []).map(t => String(t).toUpperCase()).join(" or ")} move touches it${(p.hits || 1) > 1 ? " " + p.hits + " times" : ""}; any other move only thuds.`;
+  if (name === "monster" && p.armor) return `Armor: every blow it takes does ${p.armor} less damage (at least 1); poison and toxic still hurt as usual.`;
+  if (name === "move_buttons" && p.enable_var) return `Fires moves only while ${p.enable_var} is not 0.`;
+  return null;
+}
+function behaviorCard(entry, overrides) {
+  const name = entry.behavior, spec = BEHAVIORS[name] || {};
+  const card = h("div", { class: "bhv" }, h("div", { class: "bn" }, name), h("div", { class: "bd" }, spec.description || "Unknown behavior"));
+  const merged = {};
+  for (const [p, pdef] of Object.entries(spec.params || {})) merged[p] = pdef.default;
+  Object.assign(merged, entry.params || {}, (overrides || {})[name] || {});
+  const plain = behaviorPlain(name, merged);
+  if (plain) card.append(h("div", { class: "bd" }, h("b", {}, plain)));
+  const kv = h("div", { class: "kv" });
+  const given = entry.params || {}, ov = (overrides || {})[name] || {};
+  for (const [p, pdef] of Object.entries(spec.params || {})) {
+    let v, badge;
+    if (p in ov) { v = ov[p]; badge = h("span", { class: "badge over", title: "Changed for this one instance" }, "instance"); }
+    else if (p in given) { v = given[p]; badge = h("span", { class: "badge set", title: "Set on the object" }, "set"); }
+    else { v = pdef.default; badge = h("span", { class: "badge default", title: "Catalog default" }, "default"); }
+    // A path's points run in order; random_spot's spots are just places (no arrows).
+    kv.append(h("div", { class: "k", title: pdef.description || "" }, p), h("div", { class: "v" }, valueNode(pdef.type || "", v, name === "random_spot" ? ",  " : null), " ", badge));
+  }
+  if (!kv.childNodes.length) kv.append(h("div", { class: "k" }, "(no params)"), h("div"));
+  card.append(kv);
+  return card;
+}
+function genericValue(k, v) {
+  if (Array.isArray(v) && v.length && v.every(x => typeof x === "string") && /^[.0-9a-f]+$/i.test(v[0] || "") && v.length >= 4)
+    return h("span", { class: "small" }, `pixel art ${v[0].length}×${v.length} (see preview)`);
+  if (/^(on_|actions$|then$|else$)/.test(k) && Array.isArray(v)) return actionList(v);
+  if (typeof v === "string") return valueNode("", v);
+  if (Array.isArray(v)) {
+    if (v.every(x => typeof x !== "object")) return h("span", { class: "mono" }, v.filter(x => !(typeof x === "string" && IDX[x])).map(x => JSON.stringify(x)).join(", "), v.filter(x => IDX[x]).map(x => [nodeLink(x), " "]));
+    return h("div", {}, v.map((x, i) => h("div", { style: "margin:2px 0 4px 0" }, h("span", { class: "small" }, "#" + i + " "), genericValue(k, x))));
+  }
+  if (v && typeof v === "object") {
+    const kv = h("div", { class: "kv" });
+    for (const [kk, vv] of Object.entries(v)) kv.append(h("div", { class: "k" }, kk), h("div", { class: "v" }, genericValue(kk, vv)));
+    return kv;
+  }
+  return valueNode("", v);
+}
+
+// ======================================================================================
+// Right sidebar: properties
+// ======================================================================================
+const SKIP_PROPS = new Set(["id", "kind", "type", "name", "notes", "children", "code", "tags"]);
+function renderProps(id) {
+  const n = NODES[id], e = IDX[id] || {}, right = $("#props");
+  right.innerHTML = "";
+  if (!n) { right.append(h("div", { class: "empty" }, "This node's file could not be loaded.")); return; }
+  right.append(
+    h("div", { class: "pname" }, iconOf(id), " ", n.name || id),
+    h("div", { class: "pid" }, h("code", {}, id), h("button", { onclick: ev => { copy(id); ev.target.textContent = "Copied!"; setTimeout(() => ev.target.textContent = "Copy id", 900); } }, "Copy id")),
+    h("div", { class: "kv", style: "margin-top:6px" },
+      h("div", { class: "k" }, "kind / type"), h("div", { class: "v" }, `${e.kind} / ${e.type}`),
+      h("div", { class: "k" }, "file"), h("div", { class: "v mono" }, "nodes/" + (e.path || "?")),
+      e.parent ? h("div", { class: "k" }, "owned by") : null, e.parent ? h("div", { class: "v" }, nodeLink(e.parent)) : null,
+      n.tags ? h("div", { class: "k" }, "tags") : null, n.tags ? h("div", { class: "v" }, n.tags.map(t => h("span", { class: "badge" }, t))) : null),
+    h("div", { class: "notes" }, n.notes || "(no notes)"));
+  if (n.code) right.append(h("div", { class: "prop-sec" }, h("h4", {}, "Custom code"), h("div", { class: "mono" }, n.code),
+    h("div", { class: "small" }, "Hooks: " + id + "_on_start / " + id + "_on_update (see the notes above for what it does).")));
+
+  const props = h("div", { class: "prop-sec" }, h("h4", {}, "Properties"));
+  const kv = h("div", { class: "kv" });
+  for (const [k, v] of Object.entries(n)) {
+    if (SKIP_PROPS.has(k)) continue;
+    if (k === "logic") continue;
+    if (k === "instances") { kv.append(h("div", { class: "k" }, "instances"), h("div", { class: "v" }, `${(v || []).length} placed (list in the middle)`)); continue; }
+    kv.append(h("div", { class: "k" }, k), h("div", { class: "v" }, genericValue(k, v)));
+  }
+  props.append(kv);
+  right.append(props);
+  if (Array.isArray(n.logic)) {
+    const sec = h("div", { class: "prop-sec" }, h("h4", {}, "Logic (behaviors, run every tick in this order)"));
+    if (!n.logic.length) sec.append(h("div", { class: "small" }, "No behaviors: it just sits there."));
+    n.logic.forEach(en => sec.append(behaviorCard(en)));
+    right.append(sec);
+  }
+  const kids = n.children || [];
+  right.append(h("div", { class: "prop-sec" }, h("h4", {}, "Children (owned parts)"),
+    kids.length ? h("div", {}, kids.map(k => h("div", {}, nodeLink(k)))) : h("div", { class: "small" }, "none")));
+  const used = USED_BY[id] || [], gameUses = GAME_USES[id] || [];
+  right.append(h("div", { class: "prop-sec" }, h("h4", {}, "Used by"),
+    used.length || gameUses.length ? h("div", {}, used.map(k => h("div", {}, nodeLink(k))), gameUses.map(g => h("div", { class: "mono small" }, g + " (nodes.json)")))
+      : h("div", { class: "small" }, id === (D.game || {}).start_scene ? "the game (start scene)" : "nothing")));
+  right.append(h("details", { class: "prop-sec" }, h("summary", {}, "Raw JSON"), h("pre", { class: "raw" }, JSON.stringify(n, null, 2))));
+}
+function copy(text) {
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).catch(() => fallbackCopy(text));
+  else fallbackCopy(text);
+}
+function fallbackCopy(text) {
+  const t = h("textarea", {}, text); document.body.append(t); t.select();
+  try { document.execCommand("copy"); } catch (e) { /* ignore */ }
+  t.remove();
+}
+
+// ======================================================================================
+// Main area previews: one function per node type
+// ======================================================================================
+function card(title, ...kids) { return h("div", { class: "card" }, title ? h("h3", {}, title) : null, ...kids); }
+function zoomSelect(def, onchange) {
+  const s = h("select", { onchange: () => onchange(parseInt(s.value)) }, [1, 2, 3, 4, 6, 8, 12, 16].map(z => h("option", { value: z, selected: z === def ? "selected" : null }, z + "×")));
+  return h("label", {}, "Zoom ", s);
+}
+function toggle(label, state, key, onchange) {
+  const b = h("button", { class: state[key] ? "on" : "", onclick: () => { state[key] = !state[key]; b.className = state[key] ? "on" : ""; onchange(); } }, label);
+  return b;
+}
+
+const PREVIEW = {};
+
+PREVIEW.palette = (id, n) => card("Colors (as the GBA shows them: 15-bit)",
+  h("div", { class: "swatches" }, (n.colors || []).map((c, i) => h("div", { class: "swatch" },
+    h("div", { class: "c", style: i === 0 ? "background:repeating-conic-gradient(#555 0% 25%,#333 0% 50%) 50%/12px 12px" : "background:" + rgbCss(q15(c)) }),
+    h("div", { class: "t" }, h("b", {}, "#" + i + " "), i === 0 ? "transparent" : c, h("br"), "15-bit 0x" + bgr555(c).toString(16).toUpperCase().padStart(4, "0"))))));
+
+function framesView(entries, palId, defZoom) {
+  const st = { zoom: defZoom, grid: false };
+  const box = h("div", { class: "frames" });
+  const draw = () => {
+    box.innerHTML = "";
+    for (const [name, rows] of entries) box.append(h("div", { class: "frame" }, bigImage(pixelsCanvas(rows, palId), st.zoom, st.grid), h("div", { class: "cap" }, name)));
+  };
+  draw();
+  return [h("div", { class: "toolbar" }, zoomSelect(st.zoom, z => { st.zoom = z; draw(); }), toggle("Pixel grid", st, "grid", draw)), box];
+}
+PREVIEW.sprite = (id, n) => card(`Frames — ${n.width}×${n.height}, palette `, ...framesView(Object.entries(n.frames || {}), n.palette, n.width > 32 ? 4 : 8));
+PREVIEW.icon = (id, n) => card(`Icon — ${(n.pixels || []).length}×${(n.pixels || []).length}`, ...framesView([[id, n.pixels || []]], n.palette, 12));
+PREVIEW.font = (id, n) => {
+  const [c, ctx] = screenCanvas(2);
+  ctx.fillStyle = rgbCss(palColors(n.palette)[3] || [40, 72, 144]); ctx.fillRect(0, 0, 240, 160);
+  drawText(ctx, id, "THE QUICK BROWN FOX\nJUMPS OVER THE LAZY DOG\n0123456789 .,!?:-'/+=%", 1, 1);
+  return [card("Sample text (on a 240×160 screen)", c), card("Glyphs", ...framesView(Object.entries(n.glyphs || {}).map(([k, v]) => [k === " " ? "space" : k, v]), n.palette, 6))];
+};
+// The palette a tile is drawn in: 0 / none = the tileset's, k = its palettes[k - 1] (a big map's lands).
+function tilePal(ts, t) {
+  const k = (t && t.palette) || 0;
+  return k ? (ts.palettes || [])[k - 1] : ts.palette;
+}
+PREVIEW.tileset = (id, n) => {
+  const st = { zoom: 6, grid: false };
+  const box = h("div", { class: "frames" });
+  const draw = () => {
+    box.innerHTML = "";
+    for (const [ch, t] of Object.entries(n.tiles || {})) {
+      const flags = ["solid", "one_way", "hazard", "ladder"].filter(f => t[f]);
+      box.append(h("div", { class: "frame" }, bigImage(pixelsCanvas(t.pixels, tilePal(n, t)), st.zoom, st.grid),
+        h("div", { class: "cap" }, h("code", {}, "'" + ch + "'"), " ", flags.length ? flags.map(f => h("span", { class: "badge " + f }, f.replace("_", "-"))) : h("span", { class: "badge" }, "scenery"),
+          t.palette ? h("span", { class: "small", title: tilePal(n, t) }, " " + tilePal(n, t)) : null)));
+    }
+  };
+  draw();
+  return card("Tiles — the character is what you type in a tilemap row", h("div", { class: "toolbar" }, zoomSelect(st.zoom, z => { st.zoom = z; draw(); }), toggle("Pixel grid", st, "grid", draw)), box);
+};
+
+const _mapCache = new Map();
+function mapCanvas(mapId) {
+  if (_mapCache.has(mapId)) return _mapCache.get(mapId);
+  const m = NODES[mapId], ts = m && NODES[m.tileset];
+  const rows = (m && m.rows) || [];
+  const w = Math.max(1, ...rows.map(r => r.length)) * 8, hh = Math.max(1, rows.length * 8);
+  const c = h("canvas", { width: w, height: hh }), ctx = c.getContext("2d");
+  if (ts) rows.forEach((r, y) => [...r].forEach((ch, x) => {
+    const t = ts.tiles && ts.tiles[ch];
+    if (t) ctx.drawImage(pixelsCanvas(t.pixels, tilePal(ts, t)), x * 8, y * 8);
+  }));
+  _mapCache.set(mapId, c);
+  return c;
+}
+function collisionOverlay(ctx, mapId, ox, oy) {
+  const m = NODES[mapId], ts = m && NODES[m.tileset];
+  if (!ts) return;
+  (m.rows || []).forEach((r, y) => [...r].forEach((ch, x) => {
+    const t = ts.tiles && ts.tiles[ch];
+    if (!t) return;
+    const px = ox + x * 8, py = oy + y * 8;
+    if (t.solid) { ctx.fillStyle = "rgba(255,60,60,.35)"; ctx.fillRect(px, py, 8, 8); }
+    if (t.one_way) { ctx.fillStyle = "rgba(90,170,255,.9)"; ctx.fillRect(px, py, 8, 2); }
+    if (t.hazard) { ctx.fillStyle = "rgba(255,170,30,.45)"; ctx.fillRect(px, py, 8, 8); }
+    if (t.ladder) { ctx.fillStyle = "rgba(60,220,110,.35)"; ctx.fillRect(px, py, 8, 8); }
+  }));
+}
+PREVIEW.tilemap = (id, n) => {
+  const st = { zoom: 1, coll: true, grid: false };
+  const stage = h("div", { class: "stage" });
+  const src = mapCanvas(id);
+  const draw = () => {
+    const [c, ctx] = zoomCanvas(src.width, src.height, st.zoom);
+    ctx.drawImage(src, 0, 0);
+    if (st.coll) collisionOverlay(ctx, id, 0, 0);
+    if (st.grid) drawGrid(ctx, src.width, src.height, 8, st.zoom, "rgba(255,255,255,.15)");
+    stage.innerHTML = ""; stage.append(c);
+  };
+  draw();
+  return card(`Map — ${src.width / 8}×${src.height / 8} tiles (${src.width}×${src.height} px), layer ${n.layer}, parallax ${n.parallax === undefined ? 1 : n.parallax}${n.repeat_x ? ", repeats sideways" : ""}${n.over ? ", drawn over the sprites" : ""}`,
+    h("div", { class: "toolbar" }, zoomSelect(st.zoom, z => { st.zoom = z; draw(); }), toggle("Collision overlay", st, "coll", draw), toggle("Tile grid", st, "grid", draw),
+      h("span", { class: "small" }, h("span", { class: "badge solid" }, "solid"), h("span", { class: "badge one_way" }, "one-way"), h("span", { class: "badge hazard" }, "hazard"), h("span", { class: "badge ladder" }, "ladder"))),
+    stage);
+};
+
+PREVIEW.animation = (id, n) => {
+  const spr = NODES[n.sprite] || { width: 16, height: 16 };
+  const z = spr.width > 32 ? 4 : 8;
+  const [c, ctx] = zoomCanvas(spr.width, spr.height, z);
+  const strip = h("div", { class: "frames" });
+  const cells = (n.frames || []).map((f, i) => {
+    const cell = h("div", { class: "frame" }, bigImage(frameCanvas(n.sprite, f.frame) || h("canvas"), 3), h("div", { class: "cap" }, `${i}: ${f.frame} · ${f.ticks}t${f.flip_x ? " ↔" : ""}${f.flip_y ? " ↕" : ""}`));
+    strip.append(cell);
+    return cell;
+  });
+  const info = h("div", { class: "small" });
+  const total = (n.frames || []).reduce((s, f) => s + (f.ticks | 0), 0);
+  live(tick => {
+    if (!c.isConnected) return;
+    const st = animAt(id, tick);
+    ctx.clearRect(0, 0, spr.width, spr.height);
+    if (!st) return;
+    blit(ctx, frameCanvas(st.sprite, st.frame.frame), 0, 0, st.frame.flip_x, st.frame.flip_y);
+    cells.forEach((cl, i) => cl.classList.toggle("cur", i === st.index));
+    info.textContent = `frame ${st.index} · tick ${n.loop === false ? Math.min(tick, total - 1) : tick % total} / ${total} · ${n.loop === false ? "plays once" : "loops"}`;
+  });
+  const evs = (n.events || []).map(ev => h("li", {}, `When frame ${ev.at} starts: `, actionList(ev.action ? [ev.action] : ev.actions)));
+  return [card("Playback (real speed)", h("div", { class: "toolbar" }, playButtons()), h("div", { class: "stage" }, c), info),
+    card("Frame strip", strip), card("Events", evs.length ? h("ul", {}, evs) : h("div", { class: "small" }, "No events."))];
+};
+
+// Particle simulation: same math as particles.c (angles in degrees, 90 = up).
+// particles.c particles_aim: particle i of an even burst leaves at min + (max - min + 1) * i / count degrees.
+function particleAngle(n, i) {
+  const a = n.angle || [0, 0], k = n.count || 1;
+  return n.even && n.mode === "burst" && k > 1 ? a[0] + Math.trunc((a[1] - a[0] + 1) * i / k) : a[0] + Math.random() * (a[1] - a[0]);
+}
+PREVIEW.particle = (id, n) => {
+  const W = 160, H = 120, z = 3;
+  const [c, ctx] = zoomCanvas(W, H, z);
+  let parts = [], timer = 0;
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const emit = i => {
+    const ang = particleAngle(n, i) * Math.PI / 180, sp = rnd((n.speed || [0, 0])[0], (n.speed || [0, 0])[1]);
+    parts.push({ x: W / 2, y: H / 2, vx: Math.cos(ang) * sp, vy: -Math.sin(ang) * sp, life: n.lifetime || 30, age: 0 });
+  };
+  const burst = () => { const k = n.mode === "burst" ? (n.count || 1) : 1; for (let i = 0; i < k; i++) emit(i); };
+  const restart = () => { parts = []; timer = 0; };
+  live((tick, steps) => {
+    if (!c.isConnected) return;
+    for (let s = 0; s < steps; s++) {
+      if (timer <= 0) { burst(); timer = n.mode === "stream" ? (n.rate || 1) : (n.lifetime || 30) + 20; }
+      timer--;
+      parts.forEach(p => { p.vy += n.gravity || 0; p.x += p.vx; p.y += p.vy; p.age++; });
+      parts = parts.filter(p => p.age < p.life);
+    }
+    ctx.fillStyle = "#1a1d24"; ctx.fillRect(0, 0, W, H);
+    ctx.strokeStyle = "#444"; ctx.lineWidth = 1 / z; ctx.beginPath(); ctx.moveTo(W / 2 - 4, H / 2); ctx.lineTo(W / 2 + 4, H / 2); ctx.moveTo(W / 2, H / 2 - 4); ctx.lineTo(W / 2, H / 2 + 4); ctx.stroke();
+    for (const p of parts) {
+      const st = animAt(n.animation, p.age);
+      if (!st) continue;
+      const spr = NODES[st.sprite];
+      blit(ctx, frameCanvas(st.sprite, st.frame.frame), Math.floor(p.x) - spr.width / 2, Math.floor(p.y) - spr.height / 2, st.frame.flip_x, st.frame.flip_y);
+    }
+  });
+  return card(`Live emitter — ${n.mode}, ${n.mode === "burst" ? (n.count || 1) + " per burst" + (n.even ? ", evenly spaced" : "") : "one every " + n.rate + " ticks"}, lives ${n.lifetime} ticks${n.on_top ? ", drawn in front of the actors" : ""}`,
+    h("div", { class: "toolbar" }, playButtons(h("button", { onclick: restart }, "↺ Restart"))), h("div", { class: "stage" }, c),
+    h("div", { class: "small" }, "The cross marks the emit point. Angle 0 = right, 90 = up."));
+};
+
+function bodyStage(bodyId, slotGetter, opts) {
+  const b = NODES[bodyId] || {};
+  let maxW = 16, maxH = 16;
+  Object.values(b.animations || {}).forEach(a => { const s = NODES[(NODES[a] || {}).sprite]; if (s) { maxW = Math.max(maxW, s.width); maxH = Math.max(maxH, s.height); } });
+  const pad = 12, W = maxW * 2 + pad * 2, H = maxH + pad * 2, z = maxW > 32 ? 3 : 5;
+  const [c, ctx] = zoomCanvas(W, H, z);
+  const o = b.origin || [0, 0];
+  const wx = Math.floor(W / 2), wy = pad + o[1];
+  live(tick => {
+    if (!c.isConnected) return;
+    ctx.fillStyle = "#1a1d24"; ctx.fillRect(0, 0, W, H);
+    drawBody(ctx, bodyId, slotGetter(), wx, wy, tick, opts.facingLeft && opts.facingLeft(), opts.pal && opts.pal());
+    if (!opts.state || opts.state.hitbox) {
+      const hb = b.hitbox || {}; ctx.strokeStyle = "#ff4d6d"; ctx.lineWidth = 1 / z;
+      ctx.strokeRect(wx + (hb.x | 0) + 0.5 / z, wy + (hb.y | 0) + 0.5 / z, (hb.w | 0) - 1 / z, (hb.h | 0) - 1 / z);
+    }
+    if (!opts.state || opts.state.origin) {
+      ctx.fillStyle = "#ffe14d"; ctx.fillRect(wx - 0.5, wy - 0.5, 1, 1);
+      ctx.strokeStyle = "#ffe14d"; ctx.lineWidth = 1 / z; ctx.beginPath(); ctx.moveTo(wx - 3, wy); ctx.lineTo(wx + 3, wy); ctx.moveTo(wx, wy - 3); ctx.lineTo(wx, wy + 3); ctx.stroke();
+    }
+  });
+  return c;
+}
+// A body in all 8 directions, each with the slot the engine picks for it (dirSlot). Attacks replay
+// every 45 ticks. Only for top-down bodies (with directional slots).
+function compassCard(bodyId, palGetter) {
+  const b = NODES[bodyId] || {};
+  if (!Object.keys(b.animations || {}).some(s => dirBase(s) !== s)) return null;
+  const st = { base: "idle" };
+  const tabs = h("span", { class: "toolbar", style: "margin:0" });
+  const redraw = () => { tabs.innerHTML = ""; ["idle", "walk", "attack"].forEach(k => tabs.append(h("button", { class: k === st.base ? "on" : "", onclick: () => { st.base = k; redraw(); } }, k))); };
+  redraw();
+  let maxW = 16, maxH = 16;
+  Object.values(b.animations).forEach(a => { const s = NODES[(NODES[a] || {}).sprite]; if (s) { maxW = Math.max(maxW, s.width); maxH = Math.max(maxH, s.height); } });
+  const pad = 4, W = maxW + pad * 2, H = maxH + pad * 2, z = maxW > 32 ? 2 : 4, o = b.origin || [0, 0];
+  const grid = h("div", { class: "compass" });
+  DIRS8.forEach(d => {
+    if (!d) { grid.append(h("div")); return; }
+    const [name, x, y] = d;
+    const [c, ctx] = zoomCanvas(W, H, z);
+    const cap = h("div", { class: "cap" });
+    let shown = "";
+    live(tick => {
+      if (!c.isConnected) return;
+      const p = dirSlot(bodyId, st.base, x, y);
+      ctx.fillStyle = "#1a1d24"; ctx.fillRect(0, 0, W, H);
+      drawBody(ctx, bodyId, p.slot, Math.floor(W / 2), pad + o[1], st.base === "attack" ? tick % 45 : tick, p.mirror, palGetter && palGetter());
+      const text = `${name.replace("_", "-")}: ${p.slot}${p.mirror ? " (mirrored)" : ""}`;
+      if (text !== shown) cap.textContent = shown = text;
+    });
+    grid.append(h("div", { class: "frame" }, c, cap));
+  });
+  return card("8 directions", h("div", { class: "toolbar" }, tabs, playButtons()), grid,
+    h("div", { class: "small" }, "What the engine shows for each way the monster faces: it turns to the way it walks (diagonals too), keeps that way when it stops, and attacks the way it aims. The *_left slots have their own art (never mirrored), so the light stays top-left in every direction."));
+}
+PREVIEW.body = (id, n) => {
+  const slots = Object.keys(n.animations || {});
+  let cur = n.default_animation || slots[0];
+  const st = { hitbox: true, origin: true, left: false };
+  const tabs = h("div", { class: "toolbar" });
+  const redrawTabs = () => {
+    tabs.innerHTML = "";
+    slots.forEach(s => tabs.append(h("button", { class: s === cur ? "on" : "", onclick: () => { cur = s; redrawTabs(); } }, s + (s === n.default_animation ? " (default)" : ""))));
+  };
+  redrawTabs();
+  const stage = bodyStage(id, () => cur, { state: st, facingLeft: () => st.left });
+  const ph = n.physics || {};
+  return [card("Animation slots", tabs, h("div", { class: "toolbar" }, playButtons(), toggle("Hitbox", st, "hitbox", () => {}), toggle("Origin", st, "origin", () => {}), toggle("Face left", st, "left", () => {})),
+    h("div", { class: "stage" }, stage), h("div", { class: "small" }, "Red box = hitbox (used for collisions). Yellow cross = origin (the point placed at the instance's x, y).")),
+  compassCard(id),
+  card("Physics", h("div", { class: "kv" },
+    h("div", { class: "k" }, "falls (gravity)"), h("div", {}, ph.gravity ? "yes" : "no"),
+    h("div", { class: "k" }, "solid to others"), h("div", {}, ph.solid ? "yes — others can't walk through it" : "no"),
+    h("div", { class: "k" }, "collides with"), h("div", {}, (ph.collides_with || []).join(", ") || "nothing"),
+    h("div", { class: "k" }, "hitbox"), h("div", { class: "mono" }, JSON.stringify(n.hitbox)),
+    h("div", { class: "k" }, "origin"), h("div", { class: "mono" }, JSON.stringify(n.origin))))];
+};
+
+function pathPreview(points, bodyId) {
+  const pts = points || [];
+  const xs = pts.map(p => p[0]), ys = pts.map(p => p[1]);
+  const minx = Math.min(0, ...xs) - 24, maxx = Math.max(0, ...xs) + 24, miny = Math.min(0, ...ys) - 24, maxy = Math.max(0, ...ys) + 24;
+  const W = maxx - minx, H = maxy - miny, z = Math.max(1, Math.min(4, Math.floor(480 / W)));
+  const [c, ctx] = zoomCanvas(W, H, z);
+  ctx.fillStyle = "#1a1d24"; ctx.fillRect(0, 0, W, H);
+  ctx.strokeStyle = "#ffcf5c"; ctx.lineWidth = 1 / z; ctx.setLineDash([2, 2]);
+  ctx.beginPath(); pts.forEach((p, i) => i ? ctx.lineTo(p[0] - minx, p[1] - miny) : ctx.moveTo(p[0] - minx, p[1] - miny)); ctx.stroke();
+  ctx.setLineDash([]);
+  pts.forEach((p, i) => { ctx.fillStyle = i ? "#ffcf5c" : "#5fd38d"; ctx.fillRect(p[0] - minx - 1, p[1] - miny - 1, 3, 3); });
+  if (bodyId) drawBody(ctx, bodyId, "idle", -minx, -miny, 0, false);
+  return c;
+}
+function actorPreview(id, n) {
+  const out = [];
+  const t = typeOf(id);
+  if (t === "trigger") {
+    const z = n.zone || { w: 16, h: 16 }, sc = Math.max(1, Math.min(6, Math.floor(240 / Math.max(z.w, z.h))));
+    const [c, ctx] = zoomCanvas(z.w + 16, z.h + 16, sc);
+    ctx.fillStyle = "#1a1d24"; ctx.fillRect(0, 0, z.w + 16, z.h + 16);
+    ctx.fillStyle = "rgba(255,207,92,.25)"; ctx.fillRect(8, 8, z.w, z.h);
+    ctx.strokeStyle = "#ffcf5c"; ctx.lineWidth = 1 / sc; ctx.strokeRect(8, 8, z.w, z.h);
+    out.push(card(`Invisible zone — ${z.w}×${z.h} px (top-left corner is the instance x, y)`, c));
+  } else if (!n.body && !monsterLook(n)) {
+    out.push(card("Invisible", h("div", { class: "small" }, "No body: nothing is drawn and nothing touches it. It only runs its logic (below) every tick.")));
+  } else {
+    const look = bodyOf(n), bodyId = look.body;
+    let slot = (NODES[bodyId] || {}).default_animation || "idle";
+    const st = { hitbox: true, origin: true };
+    const b = NODES[bodyId] || {};
+    const tabs = h("div", { class: "toolbar" });
+    const redraw = () => { tabs.innerHTML = ""; Object.keys(b.animations || {}).forEach(s => tabs.append(h("button", { class: s === slot ? "on" : "", onclick: () => { slot = s; redraw(); } }, s))); };
+    redraw();
+    const from = look.species ? h("span", { class: "small" }, " — taken from its species ", nodeLink(look.species),
+      look.params.species_var ? " (the one in '" + look.params.species_var + "'; shown: its starting value)" : look.params.random ? " (picked at random when the run starts; shown: one of them)" : "",
+      look.pal ? ", in its Alpha colors" : "") : null;
+    out.push(card("Body ", h("div", { class: "toolbar" }, "Body: ", nodeLink(bodyId), from), tabs, h("div", { class: "toolbar" }, playButtons(), toggle("Hitbox", st, "hitbox", () => {}), toggle("Origin", st, "origin", () => {})),
+      h("div", { class: "stage" }, bodyStage(bodyId, () => slot, { state: st, pal: () => look.pal }))));
+  }
+  const logic = n.logic || [];
+  out.push(card("Logic — what it does (behaviors run every tick, top to bottom)", logic.length ? logic.map(e => behaviorCard(e)) : h("div", { class: "small" }, "No behaviors: it is decoration.")));
+  const fp = logic.find(e => e.behavior === "follow_path");
+  if (fp) {
+    const pts = (fp.params || {}).points || (BEHAVIORS.follow_path.params.points || {}).default;
+    out.push(card("Path (follow_path) — green = start", h("div", { class: "stage" }, pathPreview(pts, n.body))));
+  }
+  const snd = n.sounds || {};
+  if (Object.keys(snd).length) out.push(card("Sounds", h("div", { class: "kv" }, Object.entries(snd).map(([ev, s]) => [h("div", { class: "k" }, ev), h("div", {}, h("button", { onclick: () => playSfx(s) }, "▶"), " ", nodeLink(s))]))));
+  return out;
+}
+ACTOR_TYPES.forEach(t => { PREVIEW[t] = actorPreview; });
+
+PREVIEW.hud = (id, n) => {
+  const [c, ctx] = screenCanvas(3);
+  ctx.fillStyle = "#3a4458"; ctx.fillRect(0, 0, 240, 160);
+  drawHud(ctx, id);
+  return card("On a 240×160 screen — variables at their starting values (" + VARS.map(v => v.name + " = " + (v.count > 1 ? v.count + " × " : "") + v.initial).join(", ") + ")", c);
+};
+PREVIEW.upgrade = (id, n) => {
+  const levels = n.category === "weapon" || n.category === "item" ? (n.max_level || 1) : 1;
+  let lv = Math.min(upgLevel(id), levels - 1);
+  const menuId = INDEX.find(e => e.type === "menu" && (NODES[e.id] || {}).upgrades);
+  const m = menuId ? NODES[menuId.id] : null;
+  const [c, ctx] = screenCanvas(3);
+  const label = h("span", { class: "small" });
+  const draw = () => {
+    ctx.fillStyle = "#3a4458"; ctx.fillRect(0, 0, 240, 160);
+    if (m) {
+      const lay = DERIVED.menus[menuId.id], paper = m.box.paper === undefined ? 1 : m.box.paper;
+      drawBox(ctx, m.font, m.box);
+      if (m.title) drawText(ctx, m.font, fillText(m.title), lay.title_x, lay.title_y, paper);
+      const [x, y] = lay.options[0] || [6, 4];
+      drawUpgradeCard(ctx, m.font, paper, id, lv, x, y);
+      drawIcon(ctx, m.cursor, x - DERIVED.upgrade_card.icon_dx - 1, y, paper, (NODES[m.font] || {}).palette);
+    }
+    label.textContent = n.category === "bonus" ? "can be picked any number of times" :
+      n.category === "evolution" ? "evolution card" : (lv === 0 ? "card shown when it is new" : `card for going from level ${lv} to ${lv + 1}`);
+  };
+  draw();
+  const parts = [card("Card on the level-up menu (240×160)", h("div", { class: "toolbar" },
+    h("button", { onclick: () => { lv = Math.max(0, lv - 1); draw(); } }, "◀ Level"),
+    h("button", { onclick: () => { lv = Math.min(levels - 1, lv + 1); draw(); } }, "Level ▶"), label), c,
+    m ? null : h("div", { class: "warnline" }, "No menu with 'upgrades' exists yet, so this card is never offered."))];
+  const kv = h("div", { class: "kv" },
+    h("div", { class: "k" }, "kind"), h("div", {}, { weapon: "Weapon", item: "Passive item", evolution: "Evolution (replaces a weapon)", bonus: "Bonus filler (only when nothing else is left)" }[n.category] || n.category),
+    h("div", { class: "k" }, "level variable"), h("div", {}, n.var ? h("b", {}, n.var) : "(none)"),
+    h("div", { class: "k" }, "levels"), h("div", {}, n.category === "bonus" ? "unlimited" : String(n.max_level || 1)));
+  parts.push(card("What it is", kv));
+  if ((n.requires || []).length || n.replaces) parts.push(card("Evolution recipe", h("ul", {},
+    (n.requires || []).map(r => h("li", {}, "Needs ", nodeLink(r.upgrade), " at level ", h("b", {}, r.level === "max" ? "max (" + ((NODES[r.upgrade] || {}).max_level || 1) + ")" : String(r.level)))),
+    n.replaces ? h("li", {}, "Replaces ", nodeLink(n.replaces), " (its level goes back to 0 and it is never offered again)") : null)));
+  parts.push(card("Card text per level (as the GBA wraps it)", (DERIVED.upgrades[id] || []).map((ln, i) =>
+    h("div", { class: "bhv" }, h("div", { class: "bn" }, n.category === "weapon" || n.category === "item" ? (i === 0 ? "New" : "Level " + i + " → " + (i + 1)) : "Card"), h("pre", { class: "mono", style: "margin:2px 0" }, ln.join("\n"))))));
+  parts.push(card("When picked", h("div", {}, n.var ? ["Adds 1 to ", h("b", {}, n.var), ", then: "] : "Runs: ", actionList(n.on_pick))));
+  return parts;
+};
+PREVIEW.menu = (id, n) => {
+  if (n.upgrades) {
+    let cur = 0;
+    const [c, ctx] = screenCanvas(3);
+    const count = sampleUpgrades(n.upgrades).length || 1;
+    const draw = () => { ctx.fillStyle = "#3a4458"; ctx.fillRect(0, 0, 240, 160); drawMenu(ctx, id, cur); };
+    draw();
+    return [card("On a 240×160 screen — sample cards", h("div", { class: "toolbar" },
+      h("button", { onclick: () => { cur = (cur + count - 1) % count; draw(); } }, "▲ Up"),
+      h("button", { onclick: () => { cur = (cur + 1) % count; draw(); } }, "▼ Down"),
+      h("span", { class: "small" }, "The engine picks " + n.upgrades + " random cards each time it opens: evolutions whose recipe is complete come first, then weapons and items not yet maxed, then bonus fillers. A takes the card, which levels it up, runs its 'on pick' actions and closes the menu.")), c),
+    card("Upgrades it can offer (" + UPGRADES.length + ")", h("div", {}, UPGRADES.map(u => h("div", {}, nodeLink(u), h("span", { class: "small" }, " — " + ((NODES[u] || {}).category || "")))))),
+    n.on_cancel ? card("When B or START is pressed", actionList(n.on_cancel)) : null];
+  }
+  let cur = 0;
+  const [c, ctx] = screenCanvas(3);
+  const draw = () => { ctx.fillStyle = "#3a4458"; ctx.fillRect(0, 0, 240, 160); drawMenu(ctx, id, cur); };
+  draw();
+  const opts = h("div");
+  (n.options || []).forEach((o, i) => opts.append(h("div", { class: "bhv" }, h("div", { class: "bn" }, "Option " + (i + 1) + ": " + fillText(o.label)), actionList(o.actions))));
+  const row = (DERIVED.menus[id] || {}).row;     // options side by side: Left / Right
+  const keys = row ? ["◀ Left", "▶ Right", "Left/Right"] : ["▲ Up", "▼ Down", "Up/Down"];
+  const colored = (n.texts || []).some(t => t.color_by) ? " Colored lines show the color their variable picks at its initial value." : "";
+  return [card("On a 240×160 screen", h("div", { class: "toolbar" },
+    h("button", { onclick: () => { cur = (cur + (n.options || [1]).length - 1) % (n.options || [1]).length; draw(); } }, keys[0]),
+    h("button", { onclick: () => { cur = (cur + 1) % (n.options || [1]).length; draw(); } }, keys[1]),
+    h("span", { class: "small" }, keys[2] + " move the cursor; A picks. The menu stays on screen (locked) until its actions close it or change scene." + colored)), c),
+  card("What each option does", opts),
+  n.on_cancel ? card("When B or START is pressed", actionList(n.on_cancel)) : null];
+};
+PREVIEW.dialog = (id, n) => {
+  let line = 0, choosing = false, choice = 0, typedFrom = clock.tick;
+  const [c, ctx] = screenCanvas(3);
+  const lay = DERIVED.dialogs[id];
+  const tpc = n.ticks_per_char === undefined ? 1 : n.ticks_per_char;
+  live(tick => {
+    if (!c.isConnected) return;
+    ctx.fillStyle = "#3a4458"; ctx.fillRect(0, 0, 240, 160);
+    const chars = tpc ? Math.floor((tick - typedFrom) / tpc) : undefined;
+    drawDialog(ctx, id, line, chars, choosing, choice);
+  });
+  const nChoices = (n.choices || []).length;
+  const label = h("span", { class: "small" });
+  const upd = () => { label.textContent = choosing ? `choices (${choice + 1}/${nChoices})` : `line ${line + 1} / ${(n.lines || []).length}`; typedFrom = clock.tick; };
+  upd();
+  const prev = h("button", { onclick: () => { if (choosing) choosing = false; else line = Math.max(0, line - 1); upd(); } }, "◀ Prev");
+  const next = h("button", { onclick: () => { if (line + 1 < (n.lines || []).length) line++; else if (nChoices) choosing = true; upd(); } }, "Next ▶");
+  const ch = h("button", { onclick: () => { if (choosing) { choice = (choice + 1) % nChoices; upd(); } } }, "▼ Next choice");
+  const parts = [card("On a 240×160 screen (text types out like on the GBA)", h("div", { class: "toolbar" }, prev, next, nChoices ? ch : null, label), c)];
+  if (lay) parts.push(card("Lines as the GBA wraps them", (n.lines || []).map((ln, i) => h("div", { class: "bhv" }, h("div", { class: "bn" }, (ln.speaker || "(no speaker)") + (ln.portrait ? " 🖼" : "")), h("pre", { class: "mono", style: "margin:2px 0" }, lay.lines[i].wrapped.join("\n"))))));
+  if (nChoices) parts.push(card("Choices", n.choices.map(cc => h("div", { class: "bhv" }, h("div", { class: "bn" }, cc.label), actionList(cc.actions)))));
+  parts.push(card("When the dialog ends", actionList(n.on_end)));
+  return parts;
+};
+
+PREVIEW.sfx = (id, n) => {
+  const rows = (n.steps || []).map((s, i) => h("tr", {}, h("td", {}, i), h("td", {}, n.channel === "noise" ? "noise " + s.pitch : s.note), h("td", {}, s.ticks + " t"), h("td", {}, s.volume === undefined ? "—" : s.volume)));
+  const total = (n.steps || []).reduce((a, s) => a + (s.ticks | 0), 0);
+  return [card(`Sound — channel ${n.channel}${n.channel && n.channel.startsWith("square") ? ", duty " + ["12.5%", "25%", "50%", "75%"][n.duty === undefined ? 2 : n.duty] : ""}, ${total} ticks (${(total / 60).toFixed(2)} s), priority ${n.priority || 0}`,
+    h("div", { class: "toolbar" }, h("button", { onclick: () => playSfx(id) }, "▶ Play"), h("button", { onclick: stopAllAudio }, "■ Stop"), volumeControl()),
+    h("table", { class: "grid steps" }, h("tr", {}, h("th", {}, "#"), h("th", {}, "note"), h("th", {}, "length"), h("th", {}, "volume")), rows))];
+};
+function volumeControl() {
+  const r = h("input", { type: "range", min: 0, max: 100, value: Math.round(audio.volume * 100), oninput: () => { audio.volume = r.value / 100; if (audio.master) audio.master.gain.value = audio.volume * 0.25; } });
+  return h("label", {}, "Volume ", r);
+}
+PREVIEW.music = (id, n) => {
+  const rows = musicRows(n), chs = ["square1", "square2", "wave", "noise"];
+  const tb = h("table", { class: "grid" });
+  tb.append(h("tr", {}, h("th", {}, "row"), h("th", {}, "pattern"), chs.map(c => h("th", {}, c + ((n.instruments || {})[c] ? "" : " (off)")))));
+  const trs = rows.map((r, i) => {
+    const tr = h("tr", {}, h("td", {}, i), h("td", {}, r.row === 0 ? r.pattern : ""), r.cells.map(cell => h("td", { class: cell === "--" ? "hold" : cell === ".." ? "rest" : "" }, cell === null ? "" : cell)));
+    tb.append(tr);
+    return tr;
+  });
+  const wrap = h("div", { class: "tracker" }, tb);
+  let last = null;
+  const onRow = r => {
+    if (!wrap.isConnected) return;
+    if (last) last.classList.remove("cur");
+    last = trs[r]; if (last) { last.classList.add("cur"); const top = last.offsetTop - wrap.clientHeight / 2; wrap.scrollTop = Math.max(0, top); }
+  };
+  let loop = n.loop !== false;
+  const lb = h("button", { class: loop ? "on" : "", onclick: () => { loop = !loop; lb.className = loop ? "on" : ""; } }, "🔁 Loop");
+  const secs = rows.length * 60 / ((n.bpm || 120) * (n.rows_per_beat || 4));
+  const intro = n.loop_from ? `, intro (${(n.order || []).slice(0, n.loop_from).join(" ")}) plays once, then loops from ${(n.order || [])[n.loop_from]}` : "";
+  return [card(`Song — ${n.bpm} bpm, ${n.rows_per_beat} rows per beat, ${rows.length} rows (${secs.toFixed(1)} s), order: ${(n.order || []).join(" ")}${intro}`,
+    h("div", { class: "toolbar" }, h("button", { onclick: () => playMusic(id, loop, onRow) }, "▶ Play"), h("button", { onclick: stopAllAudio }, "■ Stop"), lb, volumeControl()),
+    h("div", { class: "small", style: "margin-bottom:6px" }, "-- = keep holding the note, .. = silence. The highlighted row is playing."), wrap),
+  card("Instruments", h("div", { class: "kv" }, Object.entries(n.instruments || {}).map(([c, ins]) => [h("div", { class: "k" }, c), h("div", { class: "mono" }, JSON.stringify(ins))])))];
+};
+
+// ---- monster battles: species, moves, the type chart (nodes.json game.battle) ------
+const BATTLE = (D.game || {}).battle || {};
+const TYPES = BATTLE.types || [];
+const chartMult = (att, dfn) => (((BATTLE.chart || {})[att] || {})[dfn] === undefined ? 1 : BATTLE.chart[att][dfn]);
+function typeChartCard(highlightAtt, highlightDef) {
+  const tb = h("table", { class: "grid" });
+  tb.append(h("tr", {}, h("th", {}, "attack ↓ / defend →"), TYPES.map(t => h("th", {}, t.slice(0, 3).toUpperCase()))));
+  for (const a of TYPES) tb.append(h("tr", {}, h("th", {}, a), TYPES.map(d => {
+    const m = chartMult(a, d);
+    const style = (m > 1 ? "color:#5fd38d;font-weight:700;" : m < 1 ? "color:#ff8a8a;" : "color:#4a5060;") +
+      ((a === highlightAtt || d === highlightDef) ? "background:#2d3a52;" : "");
+    return h("td", { style }, m === 1 ? "·" : "×" + m);
+  })));
+  return card("Type chart (game.battle) — damage multiplier of an attack on a defender", tb,
+    h("div", { class: "small" }, "Damage = power × (1 + 0.15 × (level − 1)) × type multiplier × the user's power % × its species' power %, rounded, at least 1. A super effective hit shows its word in yellow; a weak one in grey."));
+}
+function matchups(type) {
+  const strong = TYPES.filter(d => chartMult(type, d) > 1), weak = TYPES.filter(d => chartMult(type, d) < 1);
+  const hurtBy = TYPES.filter(a => chartMult(a, type) > 1), resists = TYPES.filter(a => chartMult(a, type) < 1);
+  const L = arr => arr.length ? arr.map(t => t.toUpperCase()).join(", ") : "—";
+  return h("div", { class: "kv" },
+    h("div", { class: "k" }, "its moves hit hard on"), h("div", {}, L(strong)),
+    h("div", { class: "k" }, "its moves are weak on"), h("div", {}, L(weak)),
+    h("div", { class: "k" }, "takes extra damage from"), h("div", {}, L(hurtBy)),
+    h("div", { class: "k" }, "shrugs off"), h("div", {}, L(resists)));
+}
+const SLOT_KEYS = ["A", "B", "R"];
+// Tiles a move reaches (moves.c moves_reach): how close a wild monster walks before using it.
+function moveReach(m) {
+  if (m.shape === "dash") return (m.range || 0) + (m.dash || 0);
+  if (m.shape === "zone") { const pl = (m.zone || {}).place || "front"; return pl === "front" ? 1 : pl === "around" ? (m.range || 0) : 8; }
+  if (m.shape === "screen") return 8;
+  if (m.shape === "self") return 0;
+  return m.range || 0;
+}
+// Every species' walking speed next to how far its move 1 reaches (this one highlighted).
+function speedCard(id) {
+  const rows = SPECIES.map(s => {
+    const sn = NODES[s] || {}, m1 = NODES[(sn.moves || [])[0]] || {};
+    return { s, m1, reach: moveReach(m1), speed: sn.speed === undefined ? 100 : sn.speed, regen: sn.regen || 0 };
+  });
+  const me = rows.find(r => r.s === id) || { speed: 100 };
+  const tb = h("table", { class: "grid" }, h("tr", {}, h("th", {}, "species"), h("th", {}, "move 1"), h("th", {}, "reaches"), h("th", {}, "speed")),
+    rows.map(r => h("tr", { style: r.s === id ? "background:#2d3a52;font-weight:700;" : "" },
+      h("td", {}, nodeLink(r.s)), h("td", {}, r.m1.title || "?"), h("td", {}, r.reach + (r.reach === 1 ? " tile" : " tiles")), h("td", {}, r.speed + " %" + (r.regen ? ` (heals ${r.regen} HP/s)` : "")))));
+  return card(`Walking speed — ${me.speed} %`, tb,
+    h("div", { class: "small" }, "The farther a species' move 1 reaches, the slower it walks; a species that heals (regen) is slower still, paying for its healing. The percent scales the walker's own speed: the player's (topdown_controller speed) and a wild monster's (monster_ai speed and chase_speed)."));
+}
+PREVIEW.species = (id, n) => {
+  const out = [];
+  const port = NODES[n.portrait];
+  const st = { hitbox: false, origin: false, alpha: false, shiny: false, left: false };
+  // Its colors now: its own, the Alpha's, and either of them shimmering when 'Shiny colors' is on.
+  const palNow = () => st.shiny ? (st.alpha && n.alpha_palette ? n.alpha_palette : "") + "@shiny@" + shinyHue(clock.tick)
+                                : (st.alpha ? n.alpha_palette : null);
+  let pc = h("span", { class: "small" }, "(no portrait)");
+  if (port && port.width) {
+    const f0 = Object.keys(port.frames || {})[0];
+    const [c, ctx] = zoomCanvas(port.width, port.height, 3);
+    live((tick, steps) => {
+      if (!c.isConnected && steps) return;            // the first call draws it before it is on the page
+      ctx.clearRect(0, 0, port.width, port.height);
+      ctx.drawImage(frameCanvas(n.portrait, f0, st.shiny ? "@shiny@" + shinyHue(tick) : null), 0, 0);
+    });
+    pc = c;
+  }
+  const b = NODES[n.body] || {};
+  let slot = b.default_animation || "idle";
+  const tabs = h("div", { class: "toolbar" });
+  const redraw = () => { tabs.innerHTML = ""; Object.keys(b.animations || {}).forEach(s => tabs.append(h("button", { class: s === slot ? "on" : "", onclick: () => { slot = s; redraw(); } }, s))); };
+  redraw();
+  out.push(card(`${n.title || id} — ${String(n.monster_type || "").toUpperCase()} type`,
+    h("div", { style: "display:flex;gap:18px;flex-wrap:wrap;align-items:flex-start" },
+      h("div", { class: "frame" }, pc, h("div", { class: "cap" }, "menu portrait")),
+      h("div", {}, tabs, h("div", { class: "toolbar" }, playButtons(), toggle("Alpha colors", st, "alpha", () => {}), toggle("Shiny colors", st, "shiny", () => {}), toggle("Face left", st, "left", () => {}), toggle("Hitbox", st, "hitbox", () => {})),
+        h("div", { class: "stage" }, bodyStage(n.body, () => slot, { state: st, facingLeft: () => st.left, pal: palNow })),
+        h("div", { class: "small" }, "In the world (body ", nodeLink(n.body), "). 'Alpha colors' shows how it looks as the Alpha. 'Shiny colors' shows it once it is shiny (the player's monster after 5 different runs won, see the 'shiny' variable): every animation and the menu portrait shimmer through 8 rainbow hues, a new one every 4 ticks, half and half with its own colors (lighter colors a little further along the rainbow, the outline kept dark), exactly as the GBA draws it. A shiny monster's moves hit 20% harder, it starts each run with 40% more HP and a hit makes it blink red."),
+        n.hp_bonus ? h("div", { class: "small" }, h("b", {}, `+${n.hp_bonus}% starting HP`),
+          " when the player plays it: added to the player's starting max HP and HP at the start of every run (wild ones are not affected).") : null,
+        (n.power || 100) !== 100 ? h("div", { class: "small" }, h("b", {}, `Moves hit at ${n.power}% power`),
+          ` (${n.power > 100 ? "+" : ""}${n.power - 100}% damage on every move), the player's and wild ones alike, in every mode.`) : null,
+        n.regen ? h("div", { class: "small" }, h("b", {}, `Heals ${n.regen} HP every second`),
+          " up to its max, as the player, a wild monster or the Alpha, in every mode (no word floats up: the HP bar fills).") : null,
+        n.evasion ? h("div", { class: "small" }, h("b", {}, `Evasion ${n.evasion}`),
+          `: every move aimed at it has ${n.evasion} points less accuracy (a 100% move hits ${100 - n.evasion}%), the player's and wild ones alike, in every mode; ground zones and status-only moves still never miss.`) : null,
+        n.double_hit ? h("div", { class: "small" }, h("b", {}, `${n.double_hit}% chance to hit twice`),
+          `: each time one of its damaging moves lands (not a ground zone), every monster it hit that still stands takes the same blow again 12 ticks (0.2 s) later (same damage, never a miss, its own number, flash and hit sound), and ${((BATTLE.texts || {}).double || {}).text || "2X"} floats up over its head; the player's, wild ones and the Alpha alike, in every mode.`) : null))));
+  out.push(compassCard(n.body, palNow));
+  out.push(card("Moves", (n.moves || []).map((m, i) => {
+    const mv = NODES[m] || {};
+    return h("div", { class: "bhv" }, h("div", { class: "bn" }, SLOT_KEYS[i] + " · ", nodeLink(m)),
+      h("div", { class: "bd" }, `${mv.shape || "?"}${mv.range !== undefined ? ", " + mv.range + " tiles" : ""}, power ${mv.power || 0}${mv.power && (n.power || 100) !== 100 ? " × " + n.power + "%" : ""}, charge ${((mv.charge || 0) / 60).toFixed(0)} s`));
+  }), h("div", { class: "small" }, "Move 2 and move 3 unlock with the player's level (move_buttons). Wild monsters only use move 1, unless their monster_ai `moves` says 2 or 3 (a boss).")));
+  out.push(speedCard(id));
+  out.push(card("Cry", h("div", { class: "toolbar" }, h("button", { onclick: () => playSfx(n.cry) }, "▶ Play"), nodeLink(n.cry))));
+  out.push(card("Type matchups", matchups(n.monster_type)));
+  out.push(typeChartCard(n.monster_type, n.monster_type));
+  return out;
+};
+// How a paralyzed monster looks (monster.c par_look): it holds its pose, trembles 1 px every 2
+// frames, flickers yellow (game.battle par_palette, 3 frames of every 8) and the par_effect
+// animation loops on its hitbox's middle, in front of it.
+function parStage(bodyId) {
+  const hb = (NODES[bodyId] || {}).hitbox || { x: -8, y: -15, w: 16, h: 16 };
+  const fx = NODES[BATTLE.par_effect], fs = fx ? NODES[fx.sprite] : null;
+  const W = 56, H = 48, z = 5, wx = 28, wy = 32;
+  const [c, ctx] = zoomCanvas(W, H, z);
+  live(tick => {
+    if (!c.isConnected) return;
+    ctx.fillStyle = "#1a1d24"; ctx.fillRect(0, 0, W, H);
+    drawBody(ctx, bodyId, "walk", wx + ((tick >> 1) & 1), wy, 0, false, (tick & 7) < 3 ? BATTLE.par_palette : null);
+    const at = fs && animAt(BATTLE.par_effect, tick);
+    if (at) blit(ctx, frameCanvas(at.sprite, at.frame.frame), wx + hb.x + Math.trunc(hb.w / 2) - fs.width / 2,
+      wy + hb.y + Math.trunc(hb.h / 2) - fs.height / 2, !!at.frame.flip_x, !!at.frame.flip_y);
+  });
+  return c;
+}
+// How a hardened monster looks (monster.c defense_look): it keeps moving and flickers in the defense
+// buff's colors (3 frames of every 8, like the paralysis flicker) for the buff's ticks; here it then
+// shows its own colors for a second before it hardens again.
+function hardenStage(bodyId, pal, ticks) {
+  const W = 56, H = 48, z = 5, wx = 28, wy = 32;
+  const [c, ctx] = zoomCanvas(W, H, z);
+  live(tick => {
+    if (!c.isConnected) return;
+    ctx.fillStyle = "#1a1d24"; ctx.fillRect(0, 0, W, H);
+    const hard = tick % (ticks + 60) < ticks;
+    drawBody(ctx, bodyId, "idle", wx, wy, tick, false, hard && (tick & 7) < 3 ? pal : null);
+  });
+  return c;
+}
+// A move hurts what its effect draws (moves.c): the effect's picture box (every frame of its
+// animation, worked out by tools/common.py) around each particle, at every spot of its flight,
+// grown by MOVE_HIT_MARGIN px. Whole-screen moves hurt everything in view; self moves no one.
+const HIT_MARGIN = ((ENGINE.limits || {}).MOVE_HIT_MARGIN !== undefined) ? ENGINE.limits.MOVE_HIT_MARGIN : 2;
+// The body of the first species that knows the move (the user in the diagram).
+function moveUser(id) {
+  const sp = SPECIES.find(s => ((NODES[s] || {}).moves || []).includes(id));
+  const body = sp ? NODES[sp].body : null;
+  return { body, hb: ((NODES[body] || {}).hitbox) || { x: -8, y: -15, w: 16, h: 16 } };
+}
+// Where the engine puts a move's effect for a user standing at (0, 0) facing right, with no monster
+// in range (single / dash: straight ahead at full range, like moves.c plan_ahead). Returns the
+// effect spots, the user's spot after a dash, the zone (tiles, world px) and where targets are picked.
+function moveLayout(n, hb) {
+  const R = Math.max(1, n.range || 0), mid = -7, half = Math.trunc(hb.w / 2);
+  const ahead = (ux, k) => [ux + half + 8 * k - 4, mid];
+  const out = { spots: [], ux: 0, zone: null, pick: 0 };
+  const at = n.effect_at || "target";
+  if (n.shape === "single" || n.shape === "dash") {
+    out.pick = (n.range || 0) + (n.shape === "dash" ? (n.dash || 0) : 0);
+    if (n.shape === "dash") out.ux = 8 * (n.dash || 0);
+    for (let k = at === "line" ? 1 : R; k <= R; k++) out.spots.push(ahead(out.ux, k));
+  } else if (n.shape === "beam") {
+    for (let k = 1; k <= R; k++) out.spots.push(ahead(0, k));
+  } else if (n.shape === "circle" || n.shape === "self") {
+    out.spots.push([0, mid]);
+  } else if (n.shape === "zone") {
+    const z = n.zone || {}, w = z.w || 1, hgt = z.h || 1, size = 8 * (z.cell || 1);
+    // zones_place: just past the body's edge it faces (front), its middle tile on the body's middle
+    // (around), or one spot (a screen zone, shown 3 tiles ahead).
+    const around = z.place === "around";
+    const tx = around ? (hb.x + Math.trunc(hb.w / 2)) >> 3 : z.place === "front" ? ((hb.x + hb.w - 1) >> 3) + 1 + Math.floor(w / 2) : 4;
+    const ty = around ? (hb.y + Math.trunc(hb.h / 2)) >> 3 : (0 - 4) >> 3;
+    const zx = (tx - Math.floor(w / 2)) * 8, zy = (ty - Math.floor(hgt / 2)) * 8;
+    out.zone = { x: zx, y: zy, w: w * 8, h: hgt * 8 };
+    // zone_fx: a piece in the middle of each tile (or each cell x cell block; when the zone's size
+    // isn't a multiple of the block, the blocks are centered on it: moves.c cell_overhang).
+    const over = len => (Math.ceil(len / size) * size - len) / 2, ox = over(w * 8), oy = over(hgt * 8);
+    if (at === "center") out.spots.push([zx + Math.trunc(w * 8 / 2), zy + Math.trunc(hgt * 8 / 2)]);
+    else for (let y = -oy; y < hgt * 8; y += size) for (let x = -ox; x < w * 8; x += size) out.spots.push([zx + x + size / 2, zy + y + size / 2]);
+  }
+  return out;
+}
+// Live diagram of what a move hurts: the effect plays where the engine puts it and the orange fill is
+// what this very use hurts (each particle's picture + the margin, along its whole flight). It plays in
+// the engine's 3 steps (moves.c strike_show): the travel picture comes out from behind the user, flies
+// to where the effect plays, then the effect plays there sped up. The hurt area doesn't wait: the hit
+// lands the moment the move is used. Returns [canvas, caption naming the step on screen].
+function moveHitStage(id, n) {
+  const eff = NODES[n.effect] || {}, info = ((D.derived || {}).moves || {})[id] || {};
+  const box = info.box, M = HIT_MARGIN, user = moveUser(id), hb = user.hb, L = moveLayout(n, hb);
+  const z = n.zone || {}, life = eff.lifetime || 1, sp = eff.speed || [0, 0];
+  const steps = info.steps, T1 = steps ? steps[0] : 0, T2 = steps ? steps[1] : 0;
+  const travelSpr = NODES[(NODES[n.travel] || {}).sprite] || null;
+  const atUser = n.effect_at === "user", staged = !!steps && (atUser || !!travelSpr);
+  const travel = Math.ceil(Math.max(Math.abs(sp[0]), Math.abs(sp[1])) * life + Math.abs(eff.gravity || 0) * life * life);
+  // World area to show: the user, every spot with its picture and travel, the zone, the pick area.
+  let x0 = hb.x - 8, y0 = hb.y - 8, x1 = hb.x + hb.w + 8, y1 = hb.y + hb.h + 8;
+  const grow = (a, b, c, d) => { x0 = Math.min(x0, a); y0 = Math.min(y0, b); x1 = Math.max(x1, c); y1 = Math.max(y1, d); };
+  const pad = 8 * L.pick - 4;
+  if (L.pick) grow(hb.x - pad, hb.y - pad, hb.x + hb.w + pad, hb.y + hb.h + pad);
+  if (box) L.spots.forEach(([x, y]) => grow(x + box[0] - travel - M - 4, y + box[1] - travel - M - 4, x + box[2] + travel + M + 4, y + box[3] + travel + M + 4));
+  if (L.zone) grow(L.zone.x - 4, L.zone.y - 4, L.zone.x + L.zone.w + 4, L.zone.y + L.zone.h + 4);
+  const W = x1 - x0, H = y1 - y0, zm = Math.max(2, Math.min(4, Math.floor(560 / Math.max(W, H))));
+  const [c, ctx] = zoomCanvas(W, H, zm);
+  const caption = h("div", { class: "small" }, "");
+  const mask = document.createElement("canvas"); mask.width = W; mask.height = H;
+  const mctx = mask.getContext("2d");
+  const rnd = (a, b) => a + Math.random() * (b - a);
+  const tiles = n.shape === "zone" && n.effect_at !== "center", delay = z.delay || 0;
+  const zoneTicks = n.shape === "zone" ? (z.every ? delay + ((z.ticks || [1, 1])[1] || 1) : delay + 1) : 0;
+  const cycle = Math.max(life, zoneTicks + life) + 40;
+  // The user's body (after a dash) and its middle, where the travel picture starts.
+  const body = { l: L.ux + hb.x, t: hb.y, r: L.ux + hb.x + hb.w - 1, b: hb.y + hb.h - 1 };
+  const cx = L.ux + hb.x + Math.trunc(hb.w / 2), cy = hb.y + Math.trunc(hb.h / 2);
+  const overBody = (l, t, r, b) => l <= r && r >= body.l && l <= body.r && b >= body.t && t <= body.b;
+  let t = 0, parts = [], img = null;
+  // A particle like particles.c: a plain one shows after steps 1 .. life - 1; a staged one may wait
+  // hidden (wait = frames + 1), be drawn behind the user, and spread its S steps over F frames.
+  const spawn = (x, y, lifeCut, i) => {
+    const a = particleAngle(eff, i) * Math.PI / 180, s = rnd(sp[0], sp[1]);
+    const p = { x, y, vx: Math.cos(a) * s, vy: -Math.sin(a) * s, g: eff.gravity || 0, life: lifeCut || life, anim: eff.animation,
+      onTop: !!eff.on_top, front: !!eff.on_top, wait: 0, behind: 0, S: 0, F: 0, acc: 0, left: 0, turn: 0, withAnim: false, age: 0 };
+    parts.push(p);
+    return p;
+  };
+  const burst = (x, y, lifeCut) => { const out = []; for (let i = 0; i < (eff.mode === "burst" ? (eff.count || 1) : 1); i++) out.push(spawn(x, y, lifeCut, i)); return out; };
+  const late = (p, wait, behind) => {           // particles_shoot_late: step 3, sped up to end when it would have
+    const S = p.life - 1;
+    if (S < 1) return;
+    wait = Math.max(0, Math.min(wait, S - 1));
+    const F = S - wait;
+    Object.assign(p, { wait: wait ? wait + 1 : 0, life: F + 1, S, F, left: S, withAnim: true, behind: behind ? F : 0, front: !behind });
+  };
+  const comeOut = (p, frames) => {               // particles_shoot_out: steps 1-2 behind the user, its whole flight
+    const S = p.life - 1;
+    Object.assign(p, { behind: frames, front: false });
+    if (frames < S) Object.assign(p, { S, F: frames, left: S });
+  };
+  const travelOut = (ex, ey) => {               // moves.c travel_out: the picture just past the body's edge
+    const dx = ex - cx, dy = ey - cy;
+    let k = 1;
+    if (dx) k = Math.min(k, (Math.trunc(hb.w / 2) + Math.trunc(travelSpr.width / 2)) / Math.abs(dx));
+    if (dy) k = Math.min(k, (Math.trunc(hb.h / 2) + Math.trunc(travelSpr.height / 2)) / Math.abs(dy));
+    return [cx + Math.trunc(dx * k), cy + Math.trunc(dy * k)];
+  };
+  const addTravel = (ox, oy, ex, ey) => {        // particles_travel
+    const v2x = T2 ? (ex - ox) / T2 : 0, v2y = T2 ? (ey - oy) / T2 : 0;
+    const p = { travel: true, anim: n.travel, g: 0, onTop: true, wait: 0, S: 0, F: 0, acc: 0, left: 0, withAnim: false, age: 0 };
+    if (T1) Object.assign(p, { x: cx, y: cy, vx: (ox - cx) / T1, vy: (oy - cy) / T1, life: T1 + T2 + 1, turn: T1, vx2: v2x, vy2: v2y });
+    else Object.assign(p, { x: ox, y: oy, vx: v2x, vy: v2y, life: T2 + 1, turn: 0 });
+    p.behind = ox === ex && oy === ey ? T1 + T2 : T1;
+    p.front = !p.behind;
+    parts.push(p);
+  };
+  // What a particle's picture covers over its whole flight (moves.c plan), or null.
+  const flightBox = p => {
+    if (!box) return null;
+    let x = p.x, y = p.y, vy = p.vy, l = 1e9, tp = 1e9, r = -1e9, b = -1e9;
+    for (let k = 1; k < p.life; k++) {
+      vy += p.g; x += p.vx; y += vy;
+      const fx = Math.floor(x), fy = Math.floor(y);
+      l = Math.min(l, fx + box[0]); tp = Math.min(tp, fy + box[1]); r = Math.max(r, fx + box[2]); b = Math.max(b, fy + box[3]);
+      if (!p.vx && !vy && !p.g) break;
+    }
+    return l > r ? null : [l, tp, r, b];
+  };
+  const step = p => {                            // particles_update for one particle; false = gone
+    if (p.wait && --p.wait) return true;
+    if (--p.life === 0) return false;
+    p.front = p.behind ? false : p.onTop;
+    if (p.behind) p.behind--;
+    let k = 1;
+    if (p.F) {
+      k = 0;
+      if (p.left) { p.acc += p.S; while (p.acc >= p.F) { p.acc -= p.F; k++; } k = Math.min(k, p.left); p.left -= k; }
+    }
+    for (let i = 0; i < k; i++) {
+      p.vy += p.g; p.x += p.vx; p.y += p.vy;
+      if (p.turn && --p.turn === 0) { p.vx = p.vx2; p.vy = p.vy2; }
+      if (p.withAnim) p.age++;
+    }
+    if (!p.withAnim) p.age++;
+    return true;
+  };
+  // The hurt area: union of the picture box + margin at every spot each particle is drawn
+  // (its real flight, as moves.c plans it; the travel picture hurts no one).
+  const paintHurt = () => {
+    img = mctx.createImageData(W, H);
+    const mark = (l, tp, r, b) => {
+      for (let y = Math.max(0, tp - y0); y <= Math.min(H - 1, b - y0); y++)
+        for (let x = Math.max(0, l - x0); x <= Math.min(W - 1, r - x0); x++) { const o = (y * W + x) * 4; img.data[o] = 255; img.data[o + 1] = 140; img.data[o + 2] = 40; img.data[o + 3] = 120; }
+    };
+    if (!box) return;
+    if (n.shape === "zone") {               // a zone hurts by its picture on each tile / at its center
+      L.spots.forEach(([x, y]) => mark(x + box[0] - M, y + box[1] - M, x + box[2] + M, y + box[3] + M));
+      return;
+    }
+    for (const p of parts) {
+      if (p.travel) continue;
+      let x = p.x, y = p.y, vy = p.vy;
+      for (let k = 1; k < p.life; k++) {
+        vy += p.g; x += p.vx; y += vy;
+        const fx = Math.floor(x), fy = Math.floor(y);
+        mark(fx + box[0] - M, fy + box[1] - M, fx + box[2] + M, fy + box[3] + M);
+        if (!p.vx && !vy && !p.g) break;
+      }
+    }
+  };
+  // Where the travel picture flies: to the farthest spot (a zone: its middle).
+  const travelEnd = () => {
+    if (L.zone) return [L.zone.x + Math.trunc(L.zone.w / 2), L.zone.y + Math.trunc(L.zone.h / 2)];
+    let best = -1, e = [cx, cy];
+    L.spots.forEach(([x, y]) => { const d = (x - cx) * (x - cx) + (y - cy) * (y - cy); if (d > best) { best = d; e = [x, y]; } });
+    return e;
+  };
+  const start = () => {
+    parts = []; t = 0;
+    const fresh = [];
+    if (n.shape !== "zone" || n.effect_at === "center") L.spots.forEach(([x, y]) => fresh.push(...burst(x, y)));
+    paintHurt();                              // before any staging changes the particles
+    mctx.clearRect(0, 0, W, H);
+    if (img) mctx.putImageData(img, 0, 0);
+    if (!staged) return;
+    if (atUser) { fresh.forEach(p => comeOut(p, T1 + T2)); return; }
+    const [ex, ey] = travelEnd(), [ox, oy] = travelOut(ex, ey);
+    addTravel(ox, oy, ex, ey);
+    const wx = ex - ox, wy = ey - oy, len2 = wx * wx + wy * wy;
+    fresh.forEach(p => {
+      let wait = T1 + T2;                       // it shows once the travel has passed it
+      if (len2) {
+        const along = (p.x - ox) * wx + (p.y - oy) * wy;
+        if (along <= 0) wait = T1;
+        else if (along < len2) wait = T1 + Math.floor((along * T2 + len2 - 1) / len2);
+      }
+      const fb = flightBox(p);
+      late(p, wait, fb && overBody(...fb));
+    });
+  };
+  const stepName = () => {
+    if (!staged) return "";
+    const first = tiles ? 1 + delay : 1;        // the frame the effect (a zone: its first flicker) starts
+    const j = t - first + 1;
+    if (j < 1 || j > life - 1) return "";
+    return j <= T1 ? `Step 1 of 3 — coming out of the user (frame ${j} of ${life - 1})`
+      : j <= T1 + T2 ? `Step 2 of 3 — on its way (frame ${j} of ${life - 1})`
+      : `Step 3 of 3 — at the destination (frame ${j} of ${life - 1})`;
+  };
+  start();
+  let shown = null;
+  live((tick, ticks) => {
+    if (!c.isConnected) return;
+    for (let s = 0; s < ticks; s++) {
+      if (++t >= cycle) start();
+      // zone_fx: a flicker on each tile every `every` ticks, the last one cut at the zone's end; the
+      // first one waits for the travel picture to land on the zone, then plays sped up.
+      if (tiles && t > delay && t <= zoneTicks && (z.every ? (t - 1 - delay) % z.every === 0 : t === delay + 1)) {
+        const fresh = [];
+        L.spots.forEach(([x, y]) => fresh.push(...burst(x, y, z.every ? Math.min(life, zoneTicks - t + 2) : life)));
+        if (staged && t === delay + 1) fresh.forEach(p => late(p, T1 + T2, false));
+      }
+      parts = parts.filter(step);
+    }
+    const name = stepName();
+    if (name !== shown) { caption.textContent = name || " "; shown = name; }
+    ctx.save();
+    ctx.fillStyle = "#1a1d24"; ctx.fillRect(0, 0, W, H);
+    ctx.translate(-x0, -y0);
+    ctx.strokeStyle = "rgba(255,255,255,.06)"; ctx.lineWidth = 1 / zm; ctx.beginPath();   // the 8 px tile grid
+    for (let gx = Math.ceil(x0 / 8) * 8; gx <= x1; gx += 8) { ctx.moveTo(gx, y0); ctx.lineTo(gx, y1); }
+    for (let gy = Math.ceil(y0 / 8) * 8; gy <= y1; gy += 8) { ctx.moveTo(x0, gy); ctx.lineTo(x1, gy); }
+    ctx.stroke();
+    if (L.pick) {   // moves.c gap_within: `pad` px of straight-line gap around the body (round corners)
+      const bl = hb.x, bt = hb.y, br = hb.x + hb.w, bb = hb.y + hb.h, q = Math.PI / 2;
+      ctx.strokeStyle = "#8a6a3a"; ctx.lineWidth = 1 / zm; ctx.setLineDash([2 / zm * 2, 2 / zm * 2]); ctx.beginPath();
+      ctx.moveTo(bl, bt - pad); ctx.lineTo(br, bt - pad); ctx.arc(br, bt, pad, -q, 0);
+      ctx.lineTo(br + pad, bb); ctx.arc(br, bb, pad, 0, q);
+      ctx.lineTo(bl, bb + pad); ctx.arc(bl, bb, pad, q, 2 * q);
+      ctx.lineTo(bl - pad, bt); ctx.arc(bl, bt, pad, 2 * q, 3 * q);
+      ctx.stroke(); ctx.setLineDash([]);
+    }
+    if (L.zone) { ctx.strokeStyle = "#c0503a"; ctx.lineWidth = 1 / zm; ctx.strokeRect(L.zone.x, L.zone.y, L.zone.w, L.zone.h); }
+    const hurting = n.shape !== "zone" || (n.effect_at === "center"
+      ? (t >= (info.hurt_steps || [0, 0])[0] && t <= (info.hurt_steps || [0, 0])[1]) : t > delay && t <= zoneTicks);
+    if (hurting) ctx.drawImage(mask, x0, y0);
+    const drawParts = front => {
+      for (const p of parts) {
+        if (p.wait || !!p.front !== front) continue;
+        const st = animAt(p.anim, p.age);
+        if (!st) continue;
+        const spr = NODES[st.sprite];
+        blit(ctx, frameCanvas(st.sprite, st.frame.frame), Math.floor(p.x) - spr.width / 2, Math.floor(p.y) - spr.height / 2, st.frame.flip_x, st.frame.flip_y);
+      }
+    };
+    drawParts(false);                           // behind the actors: coming out of the user
+    if (user.body) {
+      if (L.ux) { ctx.globalAlpha = 0.35; drawBody(ctx, user.body, "idle", 0, 0, tick, false); ctx.globalAlpha = 1; }
+      drawBody(ctx, user.body, n.shape === "self" ? "idle" : "attack", L.ux, 0, tick, false);
+    }
+    ctx.strokeStyle = "#6cb4ff"; ctx.lineWidth = 1 / zm; ctx.strokeRect(L.ux + hb.x, hb.y, hb.w, hb.h);
+    drawParts(true);
+    ctx.restore();
+  });
+  return [c, caption];
+}
+PREVIEW.move = (id, n) => {
+  const out = [];
+  const st = n.status || {}, z = n.zone || {}, bf = n.buff || {}, push = n.push || {};
+  // Like moves.c: the player's damaging moves that hit at once play only their result sound.
+  const resultOnly = n.power > 0 && n.shape !== "zone" && n.shape !== "self";
+  // monster.c walk_dodge: the player's walking dodge (dodge_walk, + dodge_away diagonally away from the user).
+  const plrMon = Object.values(NODES).map(o => o.type === "player" && (o.logic || []).find(l => l.behavior === "monster")).find(e => e) || {};
+  const dw = (plrMon.params || {}).dodge_walk || 0, da = (plrMon.params || {}).dodge_away || 0;
+  const dTicks = (plrMon.params || {}).dodge_ticks || 6, clamp = v => Math.max(0, Math.min(100, v));
+  // monster.c monster_power: the species that knows it scales the damage of all its moves.
+  const spOwner = SPECIES.find(s => ((NODES[s] || {}).moves || []).includes(id));
+  const spPow = spOwner ? (NODES[spOwner].power || 100) : 100;
+  const spPowerText = spPow !== 100 ? ` × ${spPow}% (its species' power: every move of ${(NODES[spOwner] || {}).title || spOwner} hits at ${spPow}%)` : "";
+  // monster.c monster_double_hit: the species that knows it may land a damaging move twice (not zones).
+  const spDouble = spOwner && n.shape !== "zone" ? (NODES[spOwner].double_hit || 0) : 0;
+  const doubleText = spDouble ? `; ${spDouble}% chance to hit twice (its species: every monster it hit takes the same blow again 0.2 s later, and ${((BATTLE.texts || {}).double || {}).text || "2X"} floats over ${NODES[spOwner].title || spOwner})` : "";
+  const walkText = n.shape !== "zone" && n.power && n.accuracy && (dw || da)
+    ? `; against the player it hits ${clamp(n.accuracy - dw)}% when it walked in the last ${dTicks} ticks (${(dTicks / 60).toFixed(1)} s) before the move, ${clamp(n.accuracy - dw - da)}% when it walked diagonally away from the user`
+    : "";
+  // monster.c monster_hit: a target species' evasion takes from the accuracy too (Gustling).
+  const evasionText = n.shape !== "zone" && n.power && n.accuracy
+    ? SPECIES.filter(s => (NODES[s] || {}).evasion).map(s => `; against ${NODES[s].title || s} (evasion ${NODES[s].evasion}) ${clamp(n.accuracy - NODES[s].evasion)}%`).join("")
+    : "";
+  const typeHit = (BATTLE.player_hit_sounds || {})[n.monster_type], hitSfx = typeHit || (BATTLE.sounds || {}).hit;
+  const touched = `and every monster its effect touches (${HIT_MARGIN} px margin)`;
+  const shapeText = {
+    single: `the nearest monster up to ${n.range} tile(s) away${n.effect_at === "line" ? ", " + touched.replace("its effect touches", "the trail to it touches") : ", " + touched}; with none in range the effect plays straight ahead at full range and hurts whatever it touches there`,
+    dash: `rushes ${n.dash} tile(s) toward the nearest monster within ${(n.range || 0) + (n.dash || 0)} tiles and strikes it (${n.range} tile), ${touched}; if it got away, the blow lands in front, toward it`,
+    beam: `every monster its effect touches on a straight line ${n.range} tiles long in front (${HIT_MARGIN} px margin)`,
+    circle: `every monster its effect touches as it bursts out of the user (${HIT_MARGIN} px margin); a wild monster uses it within ${n.range} tiles`,
+    screen: "every monster on the screen",
+    zone: (z.place === "screen" ? `${z.count || 1} spot(s) of ${z.w}×${z.h} tiles on the screen` : `the ${z.w}×${z.h} tiles ${z.place === "around" ? "around" : "in front of"} the user`) +
+      `: every monster its effect touches there (${HIT_MARGIN} px margin)`,
+    self: "only the user",
+  }[n.shape] || n.shape;
+  // Its animation in 3 steps (moves.c strike_show): only a picture, the hit lands at once.
+  const mvSteps = (((D.derived || {}).moves || {})[id] || {}).steps, effLife = (NODES[n.effect] || {}).lifetime || 0;
+  const stepsText = !n.effect ? (bf.kind === "defense" && bf.palette ? "no effect picture: the user flickers in its colors for as long as it lasts (see Hardened look)" : "no effect") : !mvSteps
+    ? `plays as it is over ${effLife} ticks${n.shape === "zone" && z.every ? " (each flicker)" : ""} (${n.shape === "screen" ? "it covers the whole screen" : z.place === "around" ? "it rises from the ground all around the user" : "its rocks fall from the sky"}: nothing comes from the user)`
+    : n.effect_at === "user"
+      ? `3 steps over ${effLife} ticks: its effect comes out from behind the user and flies its whole way (steps 1-2: ${mvSteps[0] + mvSteps[1]} frames, drawn behind the user), then stays there (step 3: ${effLife - mvSteps[0] - mvSteps[1]} frames)`
+      : [`3 steps over ${effLife} ticks${n.shape === "zone" ? " (its first flicker)" : ""}: `, nodeLink(n.travel),
+         ` comes out from behind the user (step 1: ${mvSteps[0]} frames), flies to ${n.shape === "zone" ? "the zone" : n.effect_at === "target" ? "the target" : n.effect_at === "line" ? "the target, lighting up the trail as it passes" : "the end of the line, lighting up each tile as it passes"} (step 2: ${mvSteps[1]} frames), then the effect plays there, sped up (step 3: ${effLife - mvSteps[0] - mvSteps[1]} frames)`];
+  const kv = h("div", { class: "kv" },
+    h("div", { class: "k" }, "type"), h("div", {}, String(n.monster_type || "").toUpperCase()),
+    h("div", { class: "k" }, "hits"), h("div", {}, shapeText),
+    h("div", { class: "k" }, "power"), h("div", {}, n.power ? String(n.power) + (n.shape === "zone" && z.every ? ` per hit (on touch, then every ${(z.every / 60).toFixed(1)} s per monster)` : "") + spPowerText + doubleText : n.status ? "none (status only)" : "none"),
+    h("div", { class: "k" }, "accuracy"), h("div", {}, n.shape === "zone" ? "never misses (the ground)" : n.shape === "self" ? "never misses (it only works on the user)" : n.power ? (n.accuracy ? n.accuracy + "% (a miss shows MISS)" + walkText + evasionText : "never misses") : "—"),
+    h("div", { class: "k" }, "charge (player)"), h("div", {}, `${n.charge} ticks (${(n.charge / 60).toFixed(1)} s)`),
+    h("div", { class: "k" }, "animation"), h("div", {}, [].concat(stepsText, mvSteps ? h("span", { class: "small" }, " — only a picture: the hit lands the moment the move is used") : [])),
+    n.status ? h("div", { class: "k" }, "status") : null,
+    n.status ? h("div", {}, `${st.chance}% chance: ${{ par: "paralyzed (can't move or attack: it stops dead in its pose, trembles, flickers yellow and sparks crackle over it; PAR and a zap when it lands)", psn: "poisoned (1 damage a second)", tox: "badly poisoned (1, 2, 3... damage a second)", freeze: "frozen (can't move or attack)" }[st.kind] || st.kind} for ${(st.ticks || [0, 0]).map(t => (t / 60).toFixed(1)).join("-")} s`) : null,
+    n.zone ? h("div", { class: "k" }, "zone") : null,
+    n.zone ? h("div", {}, `${z.w}×${z.h} tiles${z.place === "screen" ? ", on screen spots (each near a monster in view)" : z.place === "around" ? ", around the user (it stands on the middle tile)" : ", in front"}${(z.cell || 1) > 1 ? `, its effect drawn once per ${z.cell}×${z.cell} tiles` : ""}${z.delay ? `, lands after ${(z.delay / 60).toFixed(1)} s` : ""}${z.every ? `, lasts ${(z.ticks || [0, 0]).map(t => (t / 60).toFixed(1)).join("-")} s, hurts a monster as soon as it steps on, then every ${(z.every / 60).toFixed(1)} s while it stays (each monster has its own timer)` : ", one hit"}`) : null,
+    n.push ? h("div", { class: "k" }, "push") : null,
+    n.push ? h("div", {}, `every monster it reaches slides ${push.px} px straight away from the user in ${push.ticks} ticks (${(push.ticks / 60).toFixed(2)} s), fast at first, then slowing down; walls and other monsters stop it, and it can't move or attack while it slides`) : null,
+    n.buff ? h("div", { class: "k" }, "buff") : null,
+    n.buff ? h("div", {}, `${{ fly: "Fly: only a shadow shows, it can't be hit and passes over monsters", phase: "Phase: passes through monsters",
+      defense: `Defense ${bf.amount}: every blow it takes does ${bf.amount} less damage (a ${bf.amount + 10} hit does 10; a blow always does at least 1; poison still hurts as usual)${bf.palette ? " and it flickers in its colors (see Hardened look)" : ""}` }[bf.kind] || bf.kind} for ${(bf.ticks / 60).toFixed(1)} s`) : null,
+    h("div", { class: "k" }, "sound"), h("div", {}, n.sfx ? [h("button", { onclick: () => playSfx(n.sfx) }, "▶"), " ", nodeLink(n.sfx),
+      resultOnly ? h("span", { class: "small" }, " — wild monsters only: the player's use plays just the hit or miss sound") : null] : "silent"),
+    n.power ? h("div", { class: "k" }, "hit sound (player)") : null,
+    n.power ? h("div", {}, hitSfx ? [h("button", { onclick: () => playSfx(hitSfx) }, "▶"), " ", nodeLink(hitSfx),
+      h("span", { class: "small" }, typeHit ? ` — every ${String(n.monster_type).toUpperCase()} hit by the player (a miss: ${(BATTLE.sounds || {}).miss || "silent"})` : " — the battle hit sound")] : "silent") : null);
+  out.push(card(`${n.title} — what it does`, kv, n.on_use && n.on_use.length ? h("div", {}, h("b", {}, "Also, each use: "), actionList(n.on_use)) : null));
+  if (st.kind === "par") {
+    const target = SPECIES.find(s => !((NODES[s] || {}).moves || []).includes(id)) || SPECIES[0];
+    const parSfx = (BATTLE.sounds || {}).par;
+    out.push(card("Paralyzed look", h("div", { class: "stage" }, parStage((NODES[target] || {}).body)),
+      h("div", { class: "small" }, "How every paralyzed monster looks (the player's too) for as long as it lasts: it stops dead in the pose it had, trembles 1 px, flickers yellow (",
+        nodeLink(BATTLE.par_palette), ") and the sparks (", BATTLE.par_effect ? nodeLink(BATTLE.par_effect) : "none", ") crackle over its middle. When it lands, PAR floats up and the zap plays: ",
+        parSfx ? [h("button", { onclick: () => playSfx(parSfx) }, "▶"), " ", nodeLink(parSfx)] : "silent",
+        ". The player's move buttons buzz while it can't move.")));
+  }
+  if (bf.kind === "defense") {
+    out.push(card("Hardened look", h("div", { class: "stage" }, hardenStage(moveUser(id).body, bf.palette, bf.ticks)),
+      h("div", { class: "small" }, `How the user looks while hardened (the player's monster or a wild one): it moves as usual and flickers in `,
+        bf.palette ? nodeLink(bf.palette) : "nothing (no palette: it doesn't flicker)",
+        ` for ${(bf.ticks / 60).toFixed(1)} s, then shows its own colors again (here: hardened, then a second as usual). A hit's flash and the paralysis flicker show over it. Every blow in that time does ${bf.amount} less damage, at least 1.`)));
+  }
+  // What it hurts: the effect playing where the engine puts it, and the area it hurts in orange.
+  if (n.shape === "screen" || n.shape === "self") {
+    out.push(card("Area", h("div", { class: "small" }, n.shape === "self" ? "No area: it changes the user." : "The whole 240×160 screen (30×20 tiles) the camera shows: every monster with any part of its body in view.")));
+  } else if (!n.effect || !(((D.derived || {}).moves || {})[id] || {}).box) {
+    out.push(card("Area", h("div", { class: "small" }, "Its effect draws nothing, so it hurts no one (the validator reports this).")));
+  } else {
+    const moving = ((NODES[n.effect] || {}).speed || [0, 0]).some(v => v);
+    const [stage, stepCaption] = moveHitStage(id, n);
+    out.push(card(`What it hurts (blue = the user's body, facing right; grid = 8 px tiles)`, h("div", { class: "stage" }, stage), stepCaption,
+      h("div", { class: "small" }, [
+        `Orange = what this use hurts: its effect's picture (every frame of the animation) wherever it is drawn, plus ${HIT_MARGIN} px. A monster whose body reaches into it is hit.`,
+        mvSteps ? " The orange is hurt the moment the move is used; the animation then plays its 3 steps (the travel picture hurts no one)." : "",
+        moving ? ((NODES[n.effect] || {}).even ? " Its particles fly out evenly spaced, so the area is the same every use." : " Its particles fly off in random directions and hurt only where they really go, so the area changes every use.") : "",
+        { single: ` Shown with no monster in range: straight ahead at full range. Brown dashes = where the nearest monster is picked (${n.range} tile(s) from the body, round: no farther on a diagonal); with one there, the effect plays ${n.effect_at === "line" ? "as a trail from the user to it" : "on it"} instead.`,
+          dash: ` Shown with no monster in reach: the user rushes ${n.dash} tile(s) ahead (faded = where it started), then strikes in front. Brown dashes = where the nearest monster is picked.`,
+          beam: " Facing up, down or a diagonal, the same line runs that way (just as long on a diagonal).",
+          zone: z.place === "screen" ? ` Red = one of its ${z.count || 1} spots (aimed near monsters in view). The orange shows only while it can hurt: when the rock lands.` : (z.place === "around" ? " Red = the zone's tiles, centered on the user (it stays where it was used)." : " Red = the zone's tiles.") + " The orange shows while it lasts; each monster is hurt as soon as it touches it, then again every " + ((z.every || 0) / 60).toFixed(1) + " s while it stays." }[n.shape] || ""].join(""))));
+  }
+  if (n.effect && PREVIEW.particle) out.push(...[].concat(PREVIEW.particle(n.effect, NODES[n.effect] || {})).map(cd => { cd.querySelector("h3").textContent = "Effect (" + (n.effect_at || "target") + ") — " + cd.querySelector("h3").textContent; return cd; }));
+  out.push(card("Against each type", h("div", { class: "kv" }, TYPES.map(t => [h("div", { class: "k" }, t.toUpperCase()), h("div", {}, "×" + chartMult(n.monster_type, t))]))));
+  return out;
+};
+
+// ---- scenes ------------------------------------------------------------------------
+// What an instance places: its object, or with 'variants' the one the variable picks (like
+// scene.c: 0 = first, past the end = last). pick null = the instance's own object.
+function instObject(inst, pick) {
+  const v = inst.variants, objs = v && Array.isArray(v.objects) ? v.objects : [];
+  if (!objs.length || pick === null || pick === undefined) return inst.object;
+  return objs[Math.max(0, Math.min(pick, objs.length - 1))];
+}
+function sceneLayout(sc, pick) {
+  const insts = (sc.instances || []).map((inst, i) => { const object = instObject(inst, pick); return { ...inst, object, index: i, node: NODES[object], type: typeOf(object) }; });
+  const maps = insts.filter(i => i.type === "tilemap" && i.node);
+  const coll = maps.find(m => m.node.layer === 1);
+  let W = 240, H = 160;
+  if (coll) { W = Math.max(...coll.node.rows.map(r => r.length)) * 8; H = coll.node.rows.length * 8; }
+  else maps.forEach(m => { W = Math.max(W, Math.max(...m.node.rows.map(r => r.length)) * 8); H = Math.max(H, m.node.rows.length * 8); });
+  // Camera start, like camera.c (snap to the followed instance, clamp to the map).
+  const cam = sc.camera || {};
+  let cx = cam.x || 0, cy = cam.y || 0;
+  const f = insts.find(i => i.id === cam.follow) || insts.find(i => i.type && ACTOR_TYPES.includes(i.type) && i.node && (i.node.logic || []).some(l => l.behavior === "camera_target"));
+  if (f) { cx = (f.x || 0) - 120; cy = (f.y || 0) - 88; }
+  if (cam.bounds !== "none") { cx = Math.max(0, Math.min(cx, W - 240)); cy = Math.max(0, Math.min(cy, H - 160)); }
+  // Screens camera: the view is the whole screen the followed actor stands in (camera.c screens mode).
+  const screens = cam.mode === "screens";
+  if (screens && f) { cx = Math.floor((f.x || 0) / 240) * 240; cy = Math.floor(Math.max(0, (f.y || 0) - 8) / 160) * 160; }
+  return { insts, maps, W, H, cx, cy, screens, cols: Math.max(1, Math.floor(W / 240)), rows: Math.max(1, Math.floor(H / 160)) };
+}
+// appear_if checks of an instance (its object's, with the instance's overrides): it shows only while all pass.
+function appearConds(inst) {
+  const node = NODES[inst.object] || {};
+  return (node.logic || []).filter(e => e.behavior === "appear_if")
+    .map(e => Object.assign({ op: "==", value: 0 }, e.params || {}, (inst.overrides || {}).appear_if || {}));
+}
+function condPass(c, vals) {
+  const v = vals[c.var] === undefined ? varInitial(c.var) : vals[c.var];
+  const w = c.from ? (vals[c.from] === undefined ? varInitial(c.from) : vals[c.from]) : c.value;
+  switch (c.op) {
+    case "==": return v === w; case "!=": return v !== w; case "<": return v < w;
+    case "<=": return v <= w; case ">": return v > w; case ">=": return v >= w;
+  }
+  return true;
+}
+function drawSceneMap(ctx, m, L, ov) {
+  const src = mapCanvas(m.object), par = m.node.parallax === undefined ? 1 : m.node.parallax;
+  // Parallax layers are drawn where they appear when the camera is at its start position.
+  const offx = Math.floor(L.cx - L.cx * par), offy = Math.floor(L.cy - L.cy * par);
+  if (m.node.repeat_x) for (let x = offx - src.width * Math.ceil((offx + 1) / src.width); x < L.W; x += src.width) ctx.drawImage(src, x, offy);
+  else ctx.drawImage(src, offx, offy);
+  if (ov.coll && m.node.layer === 1) collisionOverlay(ctx, m.object, 0, 0);
+}
+function drawScene(ctx, sc, L, tick, ov, layersOnScreen) {
+  ctx.fillStyle = rgbCss(q15(sc.backdrop || "#000000")); ctx.fillRect(0, 0, L.W, L.H);
+  // 'over' layers (tree tops) are drawn after the actors, like the GBA (priority 0).
+  [...L.maps].filter(m => !m.node.over).sort((a, b) => (b.node.layer || 1) - (a.node.layer || 1)).forEach(m => drawSceneMap(ctx, m, L, ov));
+  if (ov.grid) drawGrid(ctx, L.W, L.H, 8, ov.zoom, "rgba(255,255,255,.12)");
+  const hits = [];
+  const actors = L.insts.filter(i => i.type && ACTOR_TYPES.includes(i.type) && i.node && (!ov.vals || appearConds(i).every(c => condPass(c, ov.vals))));
+  const order = [...actors.filter(i => i.type !== "player"), ...actors.filter(i => i.type === "player")];
+  for (const i of order) {
+    const x = i.x || 0, y = i.y || 0;
+    if (i.type === "trigger") {
+      const z = i.node.zone || { w: 8, h: 8 };
+      if (ov.zones) { ctx.fillStyle = "rgba(255,207,92,.22)"; ctx.fillRect(x, y, z.w, z.h); ctx.strokeStyle = "#ffcf5c"; ctx.lineWidth = 1 / ov.zoom; ctx.strokeRect(x, y, z.w, z.h); }
+      hits.push({ inst: i, x, y, w: z.w, h: z.h });
+      continue;
+    }
+    const look = bodyOf(i.node, i.overrides);
+    if (look.absent) ctx.globalAlpha = 0.35;      // the player's own species: it never appears
+    const r = drawBody(ctx, look.body, (NODES[look.body] || {}).default_animation || "idle", x, y, tick, false, look.pal);
+    ctx.globalAlpha = 1;
+    if (r && look.crown && NODES[look.crown]) {
+      const cs = NODES[look.crown], o = (NODES[look.body] || {}).origin || [0, 0];
+      blit(ctx, frameCanvas(look.crown, Object.keys(cs.frames || {})[(tick >> 4) & 1] || "f0"), x - cs.width / 2, y - o[1] - cs.height + 3);
+    }
+    if (r) hits.push({ inst: i, ...r });
+    const b = NODES[look.body] || {};
+    if (ov.hitbox && b.hitbox) { ctx.strokeStyle = "#ff4d6d"; ctx.lineWidth = 1 / ov.zoom; ctx.strokeRect(x + b.hitbox.x, y + b.hitbox.y, b.hitbox.w, b.hitbox.h); }
+    if (ov.origin) { ctx.fillStyle = "#ffe14d"; ctx.fillRect(x - 1, y - 1, 2, 2); }
+    if (ov.paths) {
+      const fp = (i.node.logic || []).find(e => e.behavior === "follow_path");
+      if (fp) {
+        const pts = ((i.overrides || {}).follow_path || {}).points || (fp.params || {}).points || [];
+        ctx.strokeStyle = "#ffcf5c"; ctx.setLineDash([2, 2]); ctx.lineWidth = 1 / ov.zoom; ctx.beginPath();
+        pts.forEach((p, k) => k ? ctx.lineTo(x + p[0], y + p[1]) : ctx.moveTo(x + p[0], y + p[1])); ctx.stroke(); ctx.setLineDash([]);
+      }
+      // random_spot: the other places it may appear this run, drawn faded with a dashed box.
+      const rs = (i.node.logic || []).find(e => e.behavior === "random_spot");
+      if (rs) {
+        const spots = ((i.overrides || {}).random_spot || {}).spots || (rs.params || {}).spots || [];
+        for (const [sx, sy] of spots) {
+          ctx.globalAlpha = 0.45;
+          const g = drawBody(ctx, look.body, (NODES[look.body] || {}).default_animation || "idle", sx, sy, tick, false, look.pal);
+          ctx.globalAlpha = 1;
+          if (!g) continue;
+          ctx.strokeStyle = "#ffcf5c"; ctx.setLineDash([2, 2]); ctx.lineWidth = 1 / ov.zoom; ctx.strokeRect(g.x, g.y, g.w, g.h); ctx.setLineDash([]);
+          hits.push({ inst: i, ...g });
+        }
+      }
+    }
+  }
+  [...L.maps].filter(m => m.node.over).forEach(m => drawSceneMap(ctx, m, L, ov));
+  if (ov.labels) {
+    ctx.font = `${Math.max(4, 9 / ov.zoom * 1.4)}px sans-serif`; ctx.fillStyle = "#fff"; ctx.strokeStyle = "#000"; ctx.lineWidth = 2 / ov.zoom;
+    for (const ht of hits) { ctx.strokeText(ht.inst.id, ht.x, ht.y - 1); ctx.fillText(ht.inst.id, ht.x, ht.y - 1); }
+  }
+  if (L.screens && ov.screens) {                  // the screen grid, each screen's name in its corner
+    const names = ((sc.camera || {}).screen_names) || [];
+    ctx.strokeStyle = "rgba(255,255,255,.55)"; ctx.lineWidth = 1 / ov.zoom;
+    for (let c = 1; c < L.cols; c++) { ctx.beginPath(); ctx.moveTo(c * 240, 0); ctx.lineTo(c * 240, L.H); ctx.stroke(); }
+    for (let r = 1; r < L.rows; r++) { ctx.beginPath(); ctx.moveTo(0, r * 160); ctx.lineTo(L.W, r * 160); ctx.stroke(); }
+    ctx.font = `${Math.max(6, 11 / ov.zoom * 1.2)}px sans-serif`; ctx.fillStyle = "#fff"; ctx.strokeStyle = "#000"; ctx.lineWidth = 3 / ov.zoom;
+    for (let k = 0; k < L.cols * L.rows; k++) {
+      const label = names[k] || ("ABCDEFGHIJKLMNOPQRSTUVWXYZ"[k % L.cols] + (Math.floor(k / L.cols) + 1));
+      const x = (k % L.cols) * 240 + 4, y = Math.floor(k / L.cols) * 160 + 14;
+      ctx.strokeText(label, x, y); ctx.fillText(label, x, y);
+    }
+  }
+  // UI on top, drawn into the screen frame at the camera start (screens camera: the screen looked at).
+  const ui = ov.view && L.screens ? { x: ov.view.x, y: ov.view.y } : { x: L.cx, y: L.cy };
+  ctx.save(); ctx.translate(ui.x, ui.y);
+  for (const i of L.insts) {
+    if (i.type === "hud") drawHud(ctx, i.object);
+    if (i.type === "menu") drawMenu(ctx, i.object, 0);
+    if (i.type === "dialog") drawDialog(ctx, i.object, 0);
+  }
+  ctx.restore();
+  if (ov.frame) { ctx.strokeStyle = "#6cb4ff"; ctx.lineWidth = 2 / ov.zoom; ctx.strokeRect(L.cx, L.cy, 240, 160); }
+  for (const i of L.insts) if (i.type === "particle" && i.node) {
+    const st = animAt(i.node.animation, tick);
+    if (st) { const s = NODES[st.sprite]; blit(ctx, frameCanvas(st.sprite, st.frame.frame), (i.x || 0) - s.width / 2, (i.y || 0) - s.height / 2); hits.push({ inst: i, x: (i.x || 0) - s.width / 2, y: (i.y || 0) - s.height / 2, w: s.width, h: s.height }); }
+  }
+  return hits;
+}
+function PREVIEW_scene(id, sc) {
+  const varied = (sc.instances || []).filter(i => i.variants && Array.isArray(i.variants.objects) && i.variants.objects.length);
+  let L = sceneLayout(sc, null);
+  const ov = { zoom: 1, grid: false, hitbox: false, origin: false, labels: false, paths: true, zones: true, frame: true, coll: false, screens: true, vals: null, view: null };
+  const stage = h("div", { class: "stage" });
+  let canvas, ctx, hits = [];
+  const build = () => {
+    const v = ov.view || { x: 0, y: 0, w: L.W, h: L.H };
+    [canvas, ctx] = zoomCanvas(v.w, v.h, ov.zoom);
+    ctx.translate(-v.x, -v.y);
+    canvas.style.cursor = "pointer";
+    canvas.addEventListener("click", ev => {
+      const r = canvas.getBoundingClientRect();
+      const x = (ev.clientX - r.left) / ov.zoom + v.x, y = (ev.clientY - r.top) / ov.zoom + v.y;
+      for (let k = hits.length - 1; k >= 0; k--) { const t = hits[k]; if (x >= t.x && x < t.x + t.w && y >= t.y && y < t.y + t.h) { select(t.inst.object); return; } }
+    });
+    stage.innerHTML = ""; stage.append(canvas);
+  };
+  // Screens camera: look at the whole map or one screen, and pick the progress that decides what appears.
+  let screenSel = null, progress = null;
+  if (L.screens) {
+    const names = (sc.camera || {}).screen_names || [];
+    const s = h("select", { onchange: () => {
+      const k = parseInt(s.value);
+      ov.view = k < 0 ? null : { x: (k % L.cols) * 240, y: Math.floor(k / L.cols) * 160, w: 240, h: 160 };
+      if (k >= 0 && ov.zoom < 2) ov.zoom = 2;
+      build();
+    } }, h("option", { value: -1 }, "whole map"),
+      [...Array(L.cols * L.rows).keys()].map(k => h("option", { value: k }, names[k] || ("ABCDEFG"[k % L.cols] + (Math.floor(k / L.cols) + 1)))));
+    screenSel = h("label", {}, "Show ", s);
+    const conds = {};
+    (sc.instances || []).forEach(i => appearConds(i).forEach(c => {
+      const set = conds[c.var] = conds[c.var] || new Set([varInitial(c.var)]);
+      if (!c.from) { set.add(c.value); set.add(c.value + 1); if (c.value > 0) set.add(c.value - 1); }
+    }));
+    ov.vals = {};
+    progress = h("span", {}, h("span", { class: "small" }, "Progress (what appear_if sees): "),
+      Object.entries(conds).sort().map(([vn, set]) => {
+        ov.vals[vn] = varInitial(vn);
+        const sel = h("select", { onchange: () => { ov.vals[vn] = parseInt(sel.value); } },
+          [...set].sort((a, b) => a - b).map(v => h("option", { value: v, selected: v === varInitial(vn) ? "selected" : null }, `${vn} = ${v}`)));
+        return [sel, " "];
+      }));
+  }
+  build();
+  live(tick => { if (canvas.isConnected) hits = drawScene(ctx, sc, L, tick, ov); });
+  // Scenes whose maps are picked by a variable (one world per run): choose which one to look at.
+  let variantSel = null;
+  if (varied.length) {
+    const v = varied[0].variants, count = Math.max(...varied.map(i => i.variants.objects.length));
+    const def = Math.max(0, v.objects.indexOf(varied[0].object));
+    const s = h("select", { onchange: () => { L = sceneLayout(sc, parseInt(s.value)); build(); } },
+      [...Array(count).keys()].map(k => h("option", { value: k, selected: k === def ? "selected" : null }, `${v.var} = ${k}: ${nameOf(instObject(varied[0], k))}`)));
+    variantSel = h("label", {}, "Map picked by ", s);
+  }
+  const tb = h("div", { class: "toolbar" }, playButtons(), variantSel, screenSel, zoomSelect(ov.zoom, z => { ov.zoom = z; build(); }),
+    ...[["Tile grid", "grid"], ["Collision", "coll"], ["Hitboxes", "hitbox"], ["Origins", "origin"], ["Labels", "labels"], ["Paths & random spots", "paths"], ["Trigger zones", "zones"], ["Screen frame", "frame"]].concat(L.screens ? [["Screens", "screens"]] : []).map(([l, k]) => toggle(l, ov, k, () => {})),
+    progress ? h("div", { style: "width:100%" }, progress) : null);
+  const table = h("table", { class: "inst-table" }, h("tr", {}, h("th", {}, "instance"), h("th", {}, "object"), h("th", {}, "x, y"), h("th", {}, "per-instance changes")));
+  for (const i of L.insts) table.append(h("tr", {}, h("td", { class: "mono" }, i.id), h("td", {}, nodeLink(i.object)), h("td", { class: "mono" }, i.x === undefined ? "—" : `${i.x}, ${i.y}`),
+    h("td", {}, i.overrides ? Object.entries(i.overrides).map(([b, ps]) => h("div", {}, h("span", { class: "badge over" }, b), " ", Object.entries(ps).map(([k, v]) => k + " = " + JSON.stringify(v)).join(", "))) : "",
+      i.variants ? h("div", {}, h("span", { class: "badge over" }, "variants"), ` one of ${i.variants.objects.length}, picked by '${i.variants.var}' when the scene loads: `,
+        i.variants.objects.map((o, k) => [k ? ", " : "", `${k} = `, nodeLink(o)])) : "")));
+  const cam = sc.camera || {};
+  return [card(`Scene — ${L.W}×${L.H} px world${L.screens ? `, ${L.cols} × ${L.rows} screens (the camera shows one whole screen and jumps to the next one at its edge)` : ""}. Click anything to open it.`, tb, stage,
+    h("div", { class: "small" }, "Blue frame = what the 240×160 screen shows when the scene starts" + (cam.follow ? ` (following '${cam.follow}')` : "") + ". HUD/menus are drawn inside it." +
+      (L.screens ? " Each screen's things only exist while it shows; the progress lists decide which of them appear (their appear_if)." : ""))),
+  card("When the scene starts", h("div", { class: "kv" }, h("div", { class: "k" }, "music"), h("div", {}, sc.music ? [h("button", { onclick: () => playMusic(sc.music) }, "▶"), " ", h("button", { onclick: stopAllAudio }, "■"), " ", nodeLink(sc.music)] : "silence"),
+    h("div", { class: "k" }, "actions"), h("div", {}, actionList(sc.on_start)),
+    L.screens ? h("div", { class: "k" }, "on every screen change") : null, L.screens ? h("div", {}, actionList(cam.on_screen)) : null)),
+  card(`Instances (${L.insts.length}) — placed in this order`, table)];
+}
+
+// ======================================================================================
+// Left sidebar: list + tree
+// ======================================================================================
+const ui = { sel: null, search: "", kind: "all", type: null, open: new Set(["#scenes", "#objects"]) };
+function filtered() {
+  const q = ui.search.toLowerCase();
+  return INDEX.filter(e => {
+    if (ui.kind !== "all" && e.kind !== ui.kind) return false;
+    if (ui.type && e.type !== ui.type) return false;
+    if (!q) return true;
+    const n = NODES[e.id] || {};
+    return [e.id, e.type, n.name, (n.tags || []).join(" ")].join(" ").toLowerCase().includes(q);
+  });
+}
+function renderChips() {
+  const kc = $("#kindchips"); kc.innerHTML = "";
+  [["all", "All"], ["scene", "Scenes"], ["object", "Objects"]].forEach(([k, l]) => kc.append(h("button", { class: "chip" + (ui.kind === k ? " on" : ""), onclick: () => { ui.kind = k; ui.type = null; renderChips(); renderList(); } }, l)));
+  const tc = $("#typechips"); tc.innerHTML = "";
+  const types = [...new Set(INDEX.filter(e => ui.kind === "all" || e.kind === ui.kind).map(e => e.type))];
+  types.forEach(t => tc.append(h("button", { class: "chip" + (ui.type === t ? " on" : ""), onclick: () => { ui.type = ui.type === t ? null : t; renderChips(); renderList(); } }, (ICONS[t] || "") + " " + t)));
+}
+function renderList() {
+  const list = $("#list"); list.innerHTML = "";
+  const items = filtered();
+  if (!items.length) list.append(h("div", { class: "small" }, "No nodes match."));
+  for (const e of items) list.append(h("div", { class: "row" + (e.id === ui.sel ? " sel" : ""), "data-id": e.id, onclick: () => select(e.id) },
+    h("span", { class: "ic" }, iconOf(e.id)), h("span", { class: "nm" }, nameOf(e.id)), h("span", { class: "id" }, e.id)));
+}
+function treeItem(key, label, kids, onclick, selected) {
+  const open = ui.open.has(key);
+  const wrap = h("div");
+  const lab = h("div", { class: "tlabel" + (selected ? " sel" : "") },
+    h("span", { class: "tog", onclick: ev => { ev.stopPropagation(); if (open) ui.open.delete(key); else ui.open.add(key); renderTree(); } }, kids.length ? (open ? "▾" : "▸") : ""),
+    label);
+  lab.addEventListener("click", () => { if (onclick) onclick(); else { if (open) ui.open.delete(key); else ui.open.add(key); renderTree(); } });
+  wrap.append(lab);
+  if (open && kids.length) wrap.append(h("div", { class: "tnode" }, kids.map(k => k())));
+  return wrap;
+}
+function objectTree(id, path) {
+  const kids = ((NODES[id] || {}).children || []).filter(k => IDX[k]);
+  const key = path + "/" + id;
+  return treeItem(key, [h("span", {}, iconOf(id)), " ", nameOf(id), h("span", { class: "sub" }, " " + id)], kids.map(k => () => objectTree(k, key)), () => select(id), ui.sel === id);
+}
+function renderTree() {
+  const tree = $("#tree"); tree.innerHTML = "";
+  const scenes = INDEX.filter(e => e.kind === "scene");
+  const roots = INDEX.filter(e => e.kind === "object" && !e.parent);
+  tree.append(treeItem("#scenes", [h("b", {}, "Scenes"), h("span", { class: "sub" }, " " + scenes.length)], scenes.map(s => () => {
+    const insts = ((NODES[s.id] || {}).instances || []);
+    return treeItem("s/" + s.id, [h("span", {}, iconOf(s.id)), " ", nameOf(s.id), h("span", { class: "sub" }, " " + s.id)],
+      insts.map(i => () => h("div", { class: "tlabel" + (ui.sel === i.object ? " sel" : ""), onclick: () => select(i.object) }, h("span", { class: "tog" }), h("span", { class: "mono" }, i.id), h("span", { class: "sub" }, " → "), iconOf(i.object), " ", nameOf(i.object))),
+      () => select(s.id), ui.sel === s.id);
+  })));
+  tree.append(treeItem("#objects", [h("b", {}, "Objects"), h("span", { class: "sub" }, " " + roots.length + " roots")], roots.map(r => () => objectTree(r.id, "o"))));
+}
+function expandTo(id) {
+  // Open the object chain from its root, and every scene that places it.
+  const chain = [];
+  for (let cur = id; cur && IDX[cur]; cur = IDX[cur].parent) chain.unshift(cur);
+  let key = "o";
+  chain.forEach(c => { key = key + "/" + c; ui.open.add(key); });
+  INDEX.filter(e => e.kind === "scene").forEach(s => { if (((NODES[s.id] || {}).instances || []).some(i => i.object === id || ((i.variants || {}).objects || []).includes(id))) ui.open.add("s/" + s.id); });
+}
+
+// ======================================================================================
+// Selection
+// ======================================================================================
+function select(id, fromHash) {
+  if (!IDX[id]) return;
+  ui.sel = id;
+  stopAllAudio();
+  clock.views = [];
+  if (!fromHash && location.hash.slice(1) !== id) history.replaceState(null, "", "#" + id);
+  expandTo(id);
+  renderList(); renderTree(); renderProps(id);
+  const center = $("#center"); center.innerHTML = "";
+  const n = NODES[id], e = IDX[id];
+  if (!n) { center.append(h("div", { class: "empty" }, "This node's file is missing or invalid; see the red banner.")); return; }
+  try {
+    const fn = e.kind === "scene" ? PREVIEW_scene : PREVIEW[e.type];
+    const out = fn ? fn(id, n) : card("No preview for this type yet.");
+    [].concat(out).filter(Boolean).forEach(x => center.append(x));
+  } catch (err) {
+    center.append(card("Preview error", h("div", { class: "warnline" }, "Could not draw this node: " + err.message + ". Ask the AI to check it.")));
+    console.error(err);
+  }
+  const row = document.querySelector(`#list .row[data-id="${id}"]`);
+  if (row) row.scrollIntoView({ block: "nearest" });
+}
+
+// ======================================================================================
+// Header, banner, keyboard, boot
+// ======================================================================================
+function renderHeader() {
+  const g = D.game || {};
+  $("#title").textContent = (g.title || "Game") + " — node visualizer";
+  document.title = (g.title || "Game") + " · visualizer";
+  $("#gen").textContent = "data from " + (D.generated_at || "?");
+  const v = D.validation || { ok: true, errors: [], warnings: [] };
+  const st = $("#status");
+  st.innerHTML = "";
+  const banner = $("#banner");
+  if (v.ok) st.append(h("span", { class: "pill ok" }, "✔ valid" + (v.warnings.length ? ` · ${v.warnings.length} warnings` : "")));
+  else st.append(h("span", { class: "pill bad", onclick: () => banner.classList.toggle("show") }, `✖ ${v.errors.length} error(s)`));
+  if (!v.ok || v.warnings.length) {
+    banner.innerHTML = "";
+    if (!v.ok) banner.append(h("b", {}, "Validation errors — the ROM will not build until the AI fixes these:"), h("ul", {}, v.errors.map(e => h("li", {}, e))));
+    if (v.warnings.length) banner.append(h("div", { class: "w" }, h("b", {}, "Warnings:"), h("ul", {}, v.warnings.map(e => h("li", {}, e)))));
+    if (!v.ok) banner.classList.add("show");
+    if (v.ok) st.firstChild.style.cursor = "pointer", st.firstChild.onclick = () => banner.classList.toggle("show");
+  }
+  const scenes = INDEX.filter(e => e.kind === "scene").length;
+  $("#counts").textContent = `${INDEX.length} nodes · ${scenes} scenes · ${INDEX.length - scenes} objects`;
+}
+$("#search").addEventListener("input", ev => { ui.search = ev.target.value; renderList(); });
+// Collapsible sidebars and sections (view-only; remembered in this browser).
+function loadFolds() { try { return JSON.parse(localStorage.getItem("gba_vis_folds") || "{}"); } catch (e) { return {}; } }
+function saveFolds(f) { try { localStorage.setItem("gba_vis_folds", JSON.stringify(f)); } catch (e) { /* storage blocked: fine */ } }
+const folds = loadFolds();
+function setSide(side, closed) {
+  const aside = $("#" + side), btn = aside.querySelector(".side-btn");
+  aside.classList.toggle("collapsed", closed);
+  $("main").classList.toggle(side === "left" ? "lc" : "rc", closed);
+  btn.textContent = (side === "left") === closed ? "▶" : "◀";
+  folds[side] = closed; saveFolds(folds);
+}
+["left", "right"].forEach(side => {
+  const aside = $("#" + side);
+  aside.querySelector(".side-btn").addEventListener("click", ev => { ev.stopPropagation(); setSide(side, !aside.classList.contains("collapsed")); });
+  aside.addEventListener("click", () => { if (aside.classList.contains("collapsed")) setSide(side, false); });
+  setSide(side, !!folds[side]);
+});
+document.querySelectorAll("#left .sec").forEach(sec => {
+  sec.querySelector("h2").addEventListener("click", () => { const c = sec.classList.toggle("collapsed"); folds[sec.id] = c; saveFolds(folds); });
+  sec.classList.toggle("collapsed", !!folds[sec.id]);
+});
+document.addEventListener("keydown", ev => {
+  if (ev.target.tagName === "INPUT" || ev.target.tagName === "SELECT") return;
+  if (ev.key === "ArrowDown" || ev.key === "ArrowUp") {
+    const items = filtered(); if (!items.length) return;
+    let i = items.findIndex(e => e.id === ui.sel);
+    i = ev.key === "ArrowDown" ? Math.min(items.length - 1, i + 1) : Math.max(0, i - 1);
+    select(items[i].id); ev.preventDefault();
+  } else if (ev.key === " ") {
+    clock.playing = !clock.playing;
+    document.querySelectorAll("button").forEach(b => { if (b.textContent === "⏸ Pause" || b.textContent === "▶ Play") b.textContent = clock.playing ? "⏸ Pause" : "▶ Play"; });
+    ev.preventDefault();
+  }
+});
+window.addEventListener("hashchange", () => { const id = decodeURIComponent(location.hash.slice(1)); if (id && id !== ui.sel) select(id, true); });
+renderHeader(); renderChips(); renderList(); renderTree();
+const start = decodeURIComponent(location.hash.slice(1)) || (D.game || {}).start_scene || (INDEX[0] || {}).id;
+if (start && IDX[start]) select(start, true);
+</script>
+</body>
+</html>

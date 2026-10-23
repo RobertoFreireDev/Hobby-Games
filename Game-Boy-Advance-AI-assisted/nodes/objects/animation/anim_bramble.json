@@ -1,0 +1,16 @@
+{
+  "id": "anim_bramble",
+  "kind": "object",
+  "type": "animation",
+  "name": "Bramble wall",
+  "notes": "Bramble wall, standing still.",
+  "sprite": "spr_bramble",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "bramble",
+      "ticks": 60
+    }
+  ],
+  "events": []
+}

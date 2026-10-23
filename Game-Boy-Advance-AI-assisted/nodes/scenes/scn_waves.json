@@ -1,0 +1,345 @@
+{
+  "id": "scn_waves",
+  "kind": "scene",
+  "type": "level",
+  "name": "Waves run",
+  "notes": "The waves mode's run (the menu's WAVES pad; the classic run is scn_run). A 2 x 2-screen arena in one of the 9 worlds, drawn at random by the picker as in the classic run ('world'): the world's own ground tiles, laid out for the arena (clearings, patches and pictures spread over it, no roads), lit in the middle of the dark; its edge darkens smoothly into black. The player can't step into the dark; the monsters come out of it. A monster whose type is the world's is at home: +10% power and speed and -10% recharge for wild ones, half that (+5% power and speed, -5% recharge) for the player's monster. No floor items lie on the ground when it starts: each level gained opens a menu of 3 cards to choose from, and a fainting monster has a 25% chance to drop one of the classic run's 5 items (at most 3 of each per run, see enm_wave_1). A run started after a win also has the 3 items that win gave (their boosts for the whole run, their words over the player at the start). The wave director brings 10 waves, growing from 3 monsters to 24 plus the boss (see prop_waves); clear them all to win, about 10 minutes. Music: the waves theme (mus_waves) until the boss comes, then the boss theme. Seed: one seed lies on the lit floor each run, at a random one of its 18 spots (away from the player's start); only the player picks it up. It is planted in the menu's garden only if the run is finished, won or lost (see run_seed); quitting or restarting the run loses it. No seed lies on the map while all 4 garden plots are in use, or once the 10 garden items (5 HP UP + 5 POWER UP) are picked up or growing. Garden items: each HP UP picked up adds 5 to the starting HP (and max HP), each POWER UP 2% or 1% to the moves' power (2, 1, 2, 1, 2: +8% for all 5), added silently when the scene starts, so a RESTART gets them again, just the same. World sign: right after the fade-in, the world's name (GREEN MEADOW, EMBER CRATER, CORAL LAGOON, STORM PLATEAU, VERDANT JUNGLE, MIASMA SWAMP, SKY ISLE, HAUNTED HOLLOW or BOULDER CANYON) shows for 3 s in the middle near the top of the screen, like a location sign (the 'sign' variable, drawn by the HUD); the words over the player at the start come after it.",
+  "backdrop": "#000000",
+  "music": "mus_waves",
+  "camera": {
+    "follow": "player",
+    "bounds": "map"
+  },
+  "instances": [
+    {
+      "id": "edge",
+      "object": "map_arena_edge_normal",
+      "variants": {
+        "var": "world",
+        "objects": [
+          "map_arena_edge_normal",
+          "map_arena_edge_fire",
+          "map_arena_edge_water",
+          "map_arena_edge_electric",
+          "map_arena_edge_grass",
+          "map_arena_edge_poison",
+          "map_arena_edge_flying",
+          "map_arena_edge_ghost",
+          "map_arena_edge_rock"
+        ]
+      }
+    },
+    {
+      "id": "floor",
+      "object": "map_arena_normal",
+      "variants": {
+        "var": "world",
+        "objects": [
+          "map_arena_normal",
+          "map_arena_fire",
+          "map_arena_water",
+          "map_arena_electric",
+          "map_arena_grass",
+          "map_arena_poison",
+          "map_arena_flying",
+          "map_arena_ghost",
+          "map_arena_rock"
+        ]
+      }
+    },
+    {
+      "id": "player",
+      "object": "plr_waves",
+      "x": 272,
+      "y": 192
+    },
+    {
+      "id": "waves",
+      "object": "prop_waves"
+    },
+    {
+      "id": "hud",
+      "object": "hud_waves"
+    }
+  ],
+  "on_start": [
+    {
+      "do": "set_var",
+      "var": "sign",
+      "value": 0
+    },
+    {
+      "do": "if_var",
+      "var": "hp_ups",
+      "op": ">=",
+      "value": 1,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "hp_max",
+          "value": 5
+        },
+        {
+          "do": "add_var",
+          "var": "hp",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "hp_ups",
+      "op": ">=",
+      "value": 2,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "hp_max",
+          "value": 5
+        },
+        {
+          "do": "add_var",
+          "var": "hp",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "hp_ups",
+      "op": ">=",
+      "value": 3,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "hp_max",
+          "value": 5
+        },
+        {
+          "do": "add_var",
+          "var": "hp",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "hp_ups",
+      "op": ">=",
+      "value": 4,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "hp_max",
+          "value": 5
+        },
+        {
+          "do": "add_var",
+          "var": "hp",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "hp_ups",
+      "op": ">=",
+      "value": 5,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "hp_max",
+          "value": 5
+        },
+        {
+          "do": "add_var",
+          "var": "hp",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "power_ups",
+      "op": ">=",
+      "value": 1,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "boost_power",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "power_ups",
+      "op": ">=",
+      "value": 2,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "boost_power",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "power_ups",
+      "op": ">=",
+      "value": 3,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "boost_power",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "power_ups",
+      "op": ">=",
+      "value": 4,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "boost_power",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "power_ups",
+      "op": ">=",
+      "value": 5,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "boost_power",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "do": "set_var",
+      "var": "run_seed",
+      "value": 0
+    },
+    {
+      "do": "set_var",
+      "var": "plots_used",
+      "value": 0
+    },
+    {
+      "do": "if_var",
+      "var": "plot_1",
+      "op": ">=",
+      "value": 1,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "plots_used",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "plot_2",
+      "op": ">=",
+      "value": 1,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "plots_used",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "plot_3",
+      "op": ">=",
+      "value": 1,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "plots_used",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "plot_4",
+      "op": ">=",
+      "value": 1,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "plots_used",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "do": "set_var",
+      "var": "items_total",
+      "from": "hp_ups"
+    },
+    {
+      "do": "add_var",
+      "var": "items_total",
+      "from": "power_ups"
+    },
+    {
+      "do": "add_var",
+      "var": "items_total",
+      "from": "plots_used"
+    },
+    {
+      "do": "if_var",
+      "var": "plots_used",
+      "op": "<",
+      "value": 4,
+      "then": [
+        {
+          "do": "if_var",
+          "var": "items_total",
+          "op": "<",
+          "value": 10,
+          "then": [
+            {
+              "do": "spawn",
+              "object": "item_waves_seed",
+              "x": 60,
+              "y": 60,
+              "relative": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "do": "fade_in",
+      "ticks": 20
+    },
+    {
+      "do": "set_var",
+      "var": "sign",
+      "value": 1
+    },
+    {
+      "do": "wait",
+      "ticks": 180
+    },
+    {
+      "do": "set_var",
+      "var": "sign",
+      "value": 0
+    }
+  ]
+}

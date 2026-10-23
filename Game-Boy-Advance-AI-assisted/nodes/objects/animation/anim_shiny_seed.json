@@ -1,0 +1,44 @@
+{
+  "id": "anim_shiny_seed",
+  "kind": "object",
+  "type": "animation",
+  "name": "Shiny seed shimmer",
+  "notes": "Loops while the shiny seed lies on the map: one rainbow hue every 4 ticks, all 8 in about half a second, the same pace as a shiny monster's shimmer, with a twinkle at its side in every round.",
+  "sprite": "spr_shiny_seed",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "shine_0",
+      "ticks": 4
+    },
+    {
+      "frame": "shine_1",
+      "ticks": 4
+    },
+    {
+      "frame": "shine_2",
+      "ticks": 4
+    },
+    {
+      "frame": "shine_3",
+      "ticks": 4
+    },
+    {
+      "frame": "shine_4",
+      "ticks": 4
+    },
+    {
+      "frame": "shine_5",
+      "ticks": 4
+    },
+    {
+      "frame": "shine_6",
+      "ticks": 4
+    },
+    {
+      "frame": "shine_7",
+      "ticks": 4
+    }
+  ],
+  "events": []
+}

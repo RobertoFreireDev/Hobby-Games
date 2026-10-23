@@ -1,0 +1,33 @@
+{
+  "id": "prop_trophy",
+  "kind": "object",
+  "type": "prop",
+  "name": "Winner portrait",
+  "notes": "Invisible: shows the winning monster's portrait bobbing and plays its cry; a shiny monster's portrait shimmers through the rainbow. START goes to the items screen (scn_prizes: the 3 items this win gave), which then goes on to the shiny screen or the menu.",
+  "logic": [
+    {
+      "behavior": "species_select",
+      "params": {
+        "var": "chosen",
+        "browse": false,
+        "button": "START",
+        "bob": 2,
+        "on_pick": [
+          {
+            "do": "play_sfx",
+            "sfx": "sfx_confirm"
+          },
+          {
+            "do": "fade_out",
+            "ticks": 20
+          },
+          {
+            "do": "goto_scene",
+            "scene": "scn_prizes"
+          }
+        ],
+        "shiny_var": "shiny"
+      }
+    }
+  ]
+}

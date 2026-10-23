@@ -1,0 +1,66 @@
+{
+  "id": "prop_sprout",
+  "kind": "object",
+  "type": "prop",
+  "name": "Sprout",
+  "notes": "A sprout on the edge of a ravine. A GRASS move on it (Vine Whip, Razor Leaf, Solar Beam) grows a vine bridge across the ravine: the Plateau's way in (gate_5, saved for good), or, on the High Mesas, a bridge to a mesa (sw_1-3) that grows back each time you come in until Venomole is freed. Any other move thuds. Not solid: the invisible block over the ravine stops the monsters.",
+  "body": "body_sprout",
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "gate_5",
+        "op": "==",
+        "value": 0
+      }
+    },
+    {
+      "behavior": "move_switch",
+      "params": {
+        "types": [
+          "grass"
+        ],
+        "on_open": [
+          {
+            "do": "set_var",
+            "var": "gate_5",
+            "value": 1
+          },
+          {
+            "do": "save_game"
+          },
+          {
+            "do": "play_sfx",
+            "sfx": "sfx_grow"
+          },
+          {
+            "do": "spawn",
+            "object": "ptc_gate_grow",
+            "x": 0,
+            "y": -8,
+            "relative": true
+          },
+          {
+            "do": "spawn",
+            "object": "prop_vine_bridge",
+            "x": 432,
+            "y": 272,
+            "relative": false
+          },
+          {
+            "do": "destroy_self"
+          }
+        ],
+        "on_wrong": [
+          {
+            "do": "play_sfx",
+            "sfx": "sfx_thud"
+          }
+        ]
+      }
+    }
+  ],
+  "children": [
+    "body_sprout"
+  ]
+}

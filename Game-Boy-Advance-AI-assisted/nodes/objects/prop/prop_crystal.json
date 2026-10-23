@@ -1,0 +1,59 @@
+{
+  "id": "prop_crystal",
+  "kind": "object",
+  "type": "prop",
+  "name": "Storm crystal",
+  "notes": "A pale storm crystal across the Crater's west path to the Lagoon. Solid. An ELECTRIC move shatters it for good (gate_4, saved); any other move thuds.",
+  "body": "body_crystal",
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "gate_4",
+        "op": "==",
+        "value": 0
+      }
+    },
+    {
+      "behavior": "move_switch",
+      "params": {
+        "types": [
+          "electric"
+        ],
+        "on_open": [
+          {
+            "do": "set_var",
+            "var": "gate_4",
+            "value": 1
+          },
+          {
+            "do": "save_game"
+          },
+          {
+            "do": "play_sfx",
+            "sfx": "sfx_shatter"
+          },
+          {
+            "do": "spawn",
+            "object": "ptc_gate_shatter",
+            "x": 0,
+            "y": -16,
+            "relative": true
+          },
+          {
+            "do": "destroy_self"
+          }
+        ],
+        "on_wrong": [
+          {
+            "do": "play_sfx",
+            "sfx": "sfx_thud"
+          }
+        ]
+      }
+    }
+  ],
+  "children": [
+    "body_crystal"
+  ]
+}

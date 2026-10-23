@@ -1,0 +1,18 @@
+{
+  "id": "prop_freed_wispook",
+  "kind": "object",
+  "type": "prop",
+  "name": "Wispook (trapped / freed)",
+  "notes": "Wispook on the menu map, in its own look (its species' body) but a prop, so moves can't hit it: trapped on its land's challenge screen (with appear_if unlocked == 7, so it vanishes the moment it is freed), or freed (spawned by the unlock, happy until you leave the screen).",
+  "body": "body_wispook",
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "unlocked",
+        "op": ">=",
+        "value": 0
+      }
+    }
+  ]
+}

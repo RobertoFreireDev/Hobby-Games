@@ -1,0 +1,31 @@
+{
+  "id": "sfx_miss",
+  "kind": "object",
+  "type": "sfx",
+  "name": "Miss",
+  "notes": "A clear whoosh of air: the move missed, or the player's move reached no monster.",
+  "channel": "noise",
+  "priority": 2,
+  "steps": [
+    {
+      "pitch": 12,
+      "ticks": 1,
+      "volume": 11
+    },
+    {
+      "pitch": 10,
+      "ticks": 2,
+      "volume": 14
+    },
+    {
+      "pitch": 12,
+      "ticks": 3,
+      "volume": 12
+    },
+    {
+      "pitch": 14,
+      "ticks": 3,
+      "volume": 8
+    }
+  ]
+}

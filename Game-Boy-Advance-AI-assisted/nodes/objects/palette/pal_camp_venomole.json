@@ -1,0 +1,25 @@
+{
+  "id": "pal_camp_venomole",
+  "kind": "object",
+  "type": "palette",
+  "name": "Venomole by the fire colors",
+  "notes": "Venomole's colors in the campfire's light (15 colors for all its seats): warmer and darker than in the game, bright on the side facing the fire.",
+  "colors": [
+    "#000000",
+    "#392929",
+    "#ffdede",
+    "#c57b9c",
+    "#def631",
+    "#7b4a73",
+    "#9cb429",
+    "#f6acac",
+    "#181818",
+    "#ffff62",
+    "#e683b4",
+    "#d5cd4a",
+    "#52315a",
+    "#f68b73",
+    "#a4628b",
+    "#ffc5cd"
+  ]
+}

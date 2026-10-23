@@ -1,0 +1,30 @@
+{
+  "id": "body_camp_furrbit",
+  "kind": "object",
+  "type": "body",
+  "name": "Furrbit by the fire body",
+  "notes": "How Furrbit looks at the intro's campfire. No collisions: it only sits there.",
+  "origin": [
+    8,
+    15
+  ],
+  "hitbox": {
+    "x": -4,
+    "y": -4,
+    "w": 8,
+    "h": 4
+  },
+  "physics": {
+    "gravity": false,
+    "solid": false,
+    "collides_with": []
+  },
+  "animations": {
+    "idle": "anim_camp_furrbit"
+  },
+  "default_animation": "idle",
+  "children": [
+    "spr_camp_furrbit",
+    "anim_camp_furrbit"
+  ]
+}

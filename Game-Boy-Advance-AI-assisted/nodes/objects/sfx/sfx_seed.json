@@ -1,0 +1,42 @@
+{
+  "id": "sfx_seed",
+  "kind": "object",
+  "type": "sfx",
+  "name": "Seed pickup",
+  "notes": "The player picks up the run's seed: a little dip, then a bright rising chirp, like a sprout popping up. Distinct from the floor items' chime.",
+  "channel": "square1",
+  "duty": 1,
+  "priority": 3,
+  "steps": [
+    {
+      "note": "C6",
+      "ticks": 2,
+      "volume": 13
+    },
+    {
+      "note": "G5",
+      "ticks": 2,
+      "volume": 13
+    },
+    {
+      "note": "C6",
+      "ticks": 2,
+      "volume": 13
+    },
+    {
+      "note": "G6",
+      "ticks": 3,
+      "volume": 13
+    },
+    {
+      "note": "C7",
+      "ticks": 6,
+      "volume": 12
+    },
+    {
+      "note": "C7",
+      "ticks": 5,
+      "volume": 6
+    }
+  ]
+}

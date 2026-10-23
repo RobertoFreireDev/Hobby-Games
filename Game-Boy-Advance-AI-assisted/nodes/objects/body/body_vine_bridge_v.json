@@ -1,0 +1,29 @@
+{
+  "id": "body_vine_bridge_v",
+  "kind": "object",
+  "type": "body",
+  "name": "Vine bridge (down) body",
+  "notes": "A bridge to walk down: centered on its spot; not solid.",
+  "origin": [
+    16,
+    16
+  ],
+  "hitbox": {
+    "x": -8,
+    "y": -16,
+    "w": 16,
+    "h": 32
+  },
+  "physics": {
+    "gravity": false,
+    "solid": false,
+    "collides_with": []
+  },
+  "animations": {
+    "idle": "anim_vine_bridge_v"
+  },
+  "default_animation": "idle",
+  "children": [
+    "anim_vine_bridge_v"
+  ]
+}

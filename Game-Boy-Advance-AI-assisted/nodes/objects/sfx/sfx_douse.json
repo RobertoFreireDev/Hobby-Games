@@ -1,0 +1,31 @@
+{
+  "id": "sfx_douse",
+  "kind": "object",
+  "type": "sfx",
+  "name": "Douse",
+  "notes": "Flames go out in a hiss of steam.",
+  "channel": "noise",
+  "priority": 2,
+  "steps": [
+    {
+      "pitch": 1,
+      "ticks": 4,
+      "volume": 15
+    },
+    {
+      "pitch": 1,
+      "ticks": 6,
+      "volume": 12
+    },
+    {
+      "pitch": 2,
+      "ticks": 8,
+      "volume": 9
+    },
+    {
+      "pitch": 2,
+      "ticks": 8,
+      "volume": 5
+    }
+  ]
+}

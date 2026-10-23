@@ -1,0 +1,25 @@
+{
+  "id": "pal_campfire",
+  "kind": "object",
+  "type": "palette",
+  "name": "Campfire colors",
+  "notes": "The intro's fire pit, every color taken from the cave picture's own palettes so the fire belongs to the scene: a flame ramp from deep ember red through orange and gold to a pale yellow core, warm browns and tans for the stones (lit by the fire on top) and the logs. No black outline.",
+  "colors": [
+    "#000000",
+    "#201008",
+    "#311008",
+    "#4a2010",
+    "#5a2910",
+    "#7b3918",
+    "#9c4118",
+    "#cd5a20",
+    "#ee6a29",
+    "#ff9439",
+    "#ffb441",
+    "#ffde4a",
+    "#ffffa4",
+    "#8b6220",
+    "#c5a452",
+    "#734118"
+  ]
+}

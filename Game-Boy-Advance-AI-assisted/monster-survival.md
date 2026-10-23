@@ -1,0 +1,584 @@
+# Monster Survival — Game Design Document (GBA)
+
+Target: Game Boy Advance, C/C++, generated entirely by AI.
+Pipeline: nodes (JSON) → read-only viewer → change requests → `build.bat` → `run.bat` (emulator).
+
+---
+
+## 1. Concept
+
+A short, top-down **monster survival** game. The player picks one of 9 monsters (one per type) and roams a small overworld drawn in the style of classic GBA monster-collecting games. Enemy monsters wander the map; when the player gets close, they turn hostile and attack. The player fights with auto-charging moves, gains XP from every hit and much more from every kill, and unlocks new moves as they level up.
+
+- **Run length:** ~10 minutes
+- **Enemies on screen:** few at a time (not a bullet-hell / horde game)
+- **Win:** defeat all **25** enemies
+- **Lose:** player HP reaches 0 → back to the Menu scene
+- **No healing items.** No evolution.
+
+All monsters, names, sprites, tiles and music are **original**. The style may evoke GBA-era monster games, but nothing is copied from existing games (no existing characters, logos, sprites, tilesets or melodies).
+
+---
+
+## 2. Technical baseline
+
+| Item | Value |
+|---|---|
+| Screen | 240×160 px = 30×20 tiles |
+| Tile | 8×8 px |
+| Map size | 3×3 screens = 720×480 px = **90×60 tiles** |
+| Frame rate | 60 FPS — all timers are counted in frames (1 s = 60 frames) |
+| Video mode | Mode 0, tiled backgrounds + sprites (OAM) |
+| Monster sprites | 16×16 px (2×2 tiles), GBA monster-game overworld style (dark closed outline, 3 shades lit from the top-left, eyes with a glint). Per direction: an idle loop (breathing 1 px, a blink), a 4-frame walk (step, passing pose 1 px higher, other step, passing pose; Splashell slides, Wispook floats) and an attack (wind-up, lunge). Gustling (Flying) always flies instead: feet tucked, every animation flaps its wings (raised, level, down; quicker when it moves, a downstroke with the beak open to attack), and its body never moves up or down in the picture. Every frame stays inside the 16×16 box with its outline closed: nothing is ever cut at the edges. Move effects keep a 1 px empty border for the same reason. |
+| Math | Fixed-point (no floats) |
+| Distances | Measured in tiles, using Chebyshev distance (8-direction grid), `dist = max(|dx|, |dy|)` |
+
+**Map streaming:** a regular GBA background holds at most 64×64 tiles, and the map is 90 tiles wide, so the camera must stream map columns/rows into the BG tilemap as it scrolls. The camera follows the player and clamps at map edges.
+
+**Background layers:**
+- BG0 — HUD / text
+- BG1 — overlays (screen flashes)
+- BG2 — map decoration above ground (tree tops)
+- BG3 — map ground
+
+---
+
+## 3. Scenes
+
+### 3.1 Menu Scene (first scene on boot)
+
+**Layout (240×160):**
+```
++------------------------------------------+
+|           M O N S T E R                  |   ← big chunky title logo
+|          S U R V I V A L                 |
+|                                          |
+|      ◀      [ monster sprite ]      ▶    |   ← large sprite (32×32 scaled 2×)
+|         FURRBIT  TYPE: NORMAL            |
+|                                          |
+|             PRESS START                  |   ← blinks every 0.5 s (locked: LOCKED)
+|         SELECT: CLEAR SAVE               |   ← locked: WIN A RUN TO UNLOCK
++------------------------------------------+
+```
+
+**Title "MONSTER SURVIVAL":**
+- Big, chunky, blocky letters with a thick dark outline and a light bevel/highlight, in the spirit of classic handheld monster-game title screens (original lettering — not a copy of any existing logo).
+- Intro animation: the title drops in from the top of the screen, bounces twice, then a quick white flash. After that the monster selector fades in.
+
+**Monster selector:**
+- Shows one monster at a time, its name and type.
+- **Left / Right** cycles through the 9 monsters (wraps around). Short slide animation + a cry sound effect for each monster.
+- **Start** begins the run with the selected monster.
+- The selected monster idles (bobbing animation).
+
+**Locked monsters (progress):**
+- At first only **Furrbit (Normal)** can be played. Every other monster is **locked**: it still shows in the selector (so the player sees what is coming), but as a dark silhouette, without its cry. Picking a locked monster buzzes and does nothing.
+- **Monsters are freed on the menu map** (section 3.1b), in roster order (section 6.1): Emberpup, Splashell, Voltail, Sproutle, Venomole, Gustling, Wispook, then Pebbulk. Runs no longer unlock monsters. Once all 9 are freed the WAVES mode opens.
+- Progress is **saved on the cartridge** (SRAM) the moment it changes — when a run is won, when a run starts (the pick), and when it is cleared — and loaded every time the menu opens, so it survives switching the game off.
+- **Select** opens *CLEAR SAVED PROGRESS?* with **NO** (cursor starts here) / **YES**. YES locks every monster again except Furrbit, selects Furrbit and saves. NO, B or Start close it.
+
+**Music — "Monster Survival Theme" (new, original):**
+- Original chiptune composition. It should *feel* like an energetic, adventurous handheld-monster-game title theme, but the melody must be written from scratch — **do not transcribe or reproduce any existing game's melody**.
+- Channels: GBA legacy sound — Pulse 1 (lead melody), Pulse 2 (harmony / counter-melody), Wave (bass), Noise (drums).
+- Tempo: ~140 BPM, 4/4, key of C major.
+- Structure: short 2-bar fanfare intro → A section (8 bars, bright marching melody) → B section (8 bars, slightly lower and building) → loop back to A. The fanfare plays only once; A+B loops.
+- Suggested progression for A: C – F – G – C, B: Am – F – G – G7.
+- Music data stored in its own node (see section 9) as note/duration arrays per channel.
+
+### 3.1b The menu map (7 × 7 screens)
+
+The menu is a map the current monster walks: 7 × 7 screens (1680 × 1120 px), named like a chessboard
+(columns A-G, rows 1-7). The camera shows one whole screen and jumps to the next when the monster's
+middle crosses an edge. The middle screen, D4, is the **Green Meadow** (the cave with the monster picker,
+the garden, the CLASSIC / CLEAR SAVE / WAVES signs); it has openings west, east and south. Around it lie
+8 **lands** of 6 screens each, one per run world. Each land's monster is trapped on its challenge screen,
+behind guards or an obstacle only the monster freed just before can get past, so only one new land is
+ever open:
+
+| # | Land | Way in | Challenge | Frees |
+|---|---|---|---|---|
+| 1 | Boulder Canyon (A4-C5) | open path west of the Meadow | 4 Pebbulks in the Quarry (A5) | Emberpup |
+| 2 | Verdant Jungle (D5-E7) | a bramble wall: fire burns it | a second bramble (E6), Splashell in vines (E7) | Splashell |
+| 3 | Ember Crater (E3-G4) | a wall of flames: water puts it out | 8 Emberpups on the Crater Floor (G3) | Voltail |
+| 4 | Coral Lagoon (C1-D3) | a storm crystal: electricity shatters it | 5 Splashells on islands of the Reef (C1) | Sproutle |
+| 5 | Storm Plateau (A1-B3) | a ravine: a grass move grows a vine bridge | 4 Voltails on the High Mesas (A1) | Venomole |
+| 6 | Miasma Swamp (E1-G2) | a boulder: poison melts it | 4 armored Sproutles in the Sunken Bog (G1) | Gustling |
+| 7 | Sky Isle (F5-G7) | a hole only a flyer crosses | Wispook on a pillar in a bigger hole (F7) | Wispook |
+| 8 | Haunted Hollow (A6-C7) | a haunted hedge only a ghost passes | 3 Furrbits + 3 Venomoles in the Hedge Maze (A7) | Pebbulk |
+
+- Outside the Meadow the monster fights: level 7, all 3 moves on A / B / R, HP like a level-7 monster
+  in a run (+5 per garden HP UP), the garden's POWER UPs, +20 % power when shiny. At 0 HP it faints and
+  wakes up in the Meadow with full HP; walking back into the Meadow refills it. Nothing is lost.
+- Wild monsters only live on challenge screens while their land's monster is trapped, never leave their
+  screen, give no XP and drop nothing. Leaving a challenge screen early starts it over.
+- Freeing a monster: the world freezes a moment, it appears with a sparkle and its cry, the jingle plays
+  and **<NAME> UNLOCKED! / PICK IT IN THE CAVE** shows. It is saved at once.
+- The map HUD (outside the Meadow): A / B / R charge circles, LV7 and the HP bar, the land's name for
+  3 s on walking into it, what a gate needs while standing by it, and on a challenge screen the garden
+  items its fight is tuned for (Canyon 5, Crater 6, Lagoon 6, Plateau 7, Swamp 8, Hollow 10).
+- While WAVES is locked, standing by its grey sign says WAVES over the monster and **N MONSTER TYPES
+  LEFT** on the bottom line.
+- Clearing the saved progress also closes every opened way.
+
+**Behavior:**
+- Menu music starts on boot and loops.
+- Coming back after a Game Over or Victory returns here with the last chosen monster pre-selected.
+
+### 3.2 Run Scene
+
+- The player's monster spawns in the **center screen** of the 3×3 map.
+- 25 enemies are placed on the map at run start (see section 6).
+- 5 floor items lie at random spots on the map; walking into one gives a small boost for the rest of the run (section 7.4).
+- Player moves freely in 8 directions. Enemies near the player turn hostile and attack.
+- Moves auto-charge; the player fires them with buttons (section 5).
+- Run music: a separate original, upbeat loop (same channel setup, faster ~155 BPM). A short jingle plays on level-up and when a new move unlocks.
+
+**End conditions:**
+- **Victory:** all 25 enemies defeated → "YOU SURVIVED!" screen with final time, level and kills, (a jingle for a new best time) → press Start → the items screen (**YOU WON 3 ITEMS!**, section 7.6) → press Start → Menu (or first the shiny screen, when the win made a monster shiny: section 7.5).
+- **Game Over:** player HP = 0 → player sprite blinks and fades → "GAME OVER" → after 3 s (or Start) → Menu.
+- Either way the run counts for the garden: the seed picked up is planted and every plant grows a step (section 7.7); quitting or restarting from the pause menu counts nothing and loses the seed.
+
+**Pause:** Start during the run pauses (shows level, XP, kills, timer, and which moves are unlocked). Start again resumes.
+
+---
+
+## 4. Controls
+
+| Input | Action |
+|---|---|
+| D-pad (8 directions, incl. diagonals) | Move. Facing direction = last movement direction |
+| **A** (press) | Move 1 (if charged) |
+| **B** (press) | Move 2 (if unlocked and charged) |
+| **R** (press) | Move 3 (if unlocked and charged) |
+| Start | Menu: start run. Run: pause |
+| Left/Right | Menu: change monster |
+
+**Move buttons:** each move has its own button and fires on a single press, the same way for all three: A is Move 1, B is Move 2, R is Move 3. Pressing a button whose move is still charging does nothing; pressing it while the move is still locked buzzes.
+
+---
+
+## 5. Moves
+
+### 5.1 Charging
+
+Every move has its own charge timer that starts as soon as the move is unlocked. A move can be used only when fully charged; using it restarts its timer, **even if it hits nothing** (section 5.3).
+
+| Move | Charge time |
+|---|---|
+| Move 1 | 3 s (180 frames) |
+| Move 2 | 10 s (600 frames) |
+| Move 3 | depends on the move (below) |
+
+Move 3 recharges at its own pace: the stronger or safer it is, the longer it takes.
+
+| Move 3 | Species | Charge time |
+|---|---|---|
+| Phase | Wispook | 10 s (600 frames) |
+| Growl | Furrbit | 20 s (1200 frames) |
+| Fly | Gustling | 30 s (1800 frames) |
+| Flamethrower | Emberpup | 40 s (2400 frames) |
+| Thunderbolt | Voltail | 40 s (2400 frames) |
+| Solar Beam | Sproutle | 40 s (2400 frames) |
+| Surf | Splashell | 60 s (3600 frames) |
+| Toxic | Venomole | 60 s (3600 frames) |
+| Rock Slide | Pebbulk | 60 s (3600 frames) |
+
+### 5.2 Unlock order
+
+Moves unlock one at a time, in order, by level (section 7). Tuned so a normal run unlocks:
+- Move 2 at around **minute 3**
+- Move 3 at around **minute 6**
+
+### 5.3 Shapes / targeting
+
+**What you see is what you get: a move hurts exactly what its animation draws.** Every enemy whose body comes within **2 px** of the move's effect picture (any frame of its animation, wherever it is drawn) is hit. The shape only decides where the animation plays:
+
+- **Single target (`<= N tiles`):** auto-aims at the **nearest** enemy within N tiles; its animation plays on it (or as a trail from the player to it), so it is hit, and so is any other enemy the animation touches. If none is in range, it fires straight ahead in the facing direction at full range and hits whatever its animation touches there.
+- **Beam:** the animation plays on every tile along the facing direction, N tiles long, and hits every enemy it touches.
+- **Burst (circular):** the animation bursts out of the player; every enemy a piece of it touches is hit.
+- **Ground zone:** places a hazard on tiles while it lasts; it damages an enemy the moment its picture touches the enemy, then again every 0.5 s while the enemy stays in it (each enemy has its own timer). Nothing is drawn once it stops hurting.
+- **Whole screen:** hits every enemy visible on the current camera view.
+
+**A player's move always counts as used.** If the player fires a move and it reaches no enemy, that was the player's mistake: the move still plays its animation and its charge restarts. No damage, no XP. (Enemies are different: they only attack when the player is within their move's reach.)
+
+### 5.4 Move table
+
+| Type | Move 1 | Move 2 | Move 3 |
+|---|---|---|---|
+| **Normal** | **Tackle** — single target ≤1 tile | **Quick Attack** — dash 1 tile toward the nearest enemy (or facing direction), then single target ≤1 tile | **Growl** — notes burst out; every enemy they touch has 33% chance to be **paralyzed 1–3 s**. No damage |
+| **Fire** | **Ember** — fire on the 1 tile in front of the player for 1–3 s (ground zone) | **Fire Spin** — a ring of fireballs bursts out | **Flamethrower** — single target ≤6 tiles; the stream burns everything it crosses |
+| **Water** | **Water Gun** — single target ≤2 tiles | **Bubble Beam** — beam 3 tiles | **Surf** — whole screen |
+| **Electric** | **Thunder Shock** — single target ≤5 tiles | **Spark** — single target ≤5 tiles, 33% chance to **paralyze 3–5 s** | **Thunderbolt** — beam 10 tiles |
+| **Grass** | **Vine Whip** — single target ≤3 tiles | **Razor Leaf** — beam 3 tiles | **Solar Beam** — beam 6 tiles |
+| **Poison** | **Poison Sting** — single target ≤1 tile, 50% chance to **poison** | **Acid** — acid on a 3×3 tile area in front of the player for 3 s (ground zone) | **Toxic** — single target ≤4 tiles, 50% chance to **badly poison** |
+| **Flying** | **Gust** — beam 3 tiles | **Peck** — single target ≤1 tile | **Fly** — 3 s untouchable; player sprite replaced by a shadow, can move freely. No damage |
+| **Ghost** | **Lick** — single target ≤1 tile | **Night Shade** — beam 3 tiles | **Phase** (Ghost) — 16 ghost rings burst out all around the player; every enemy within 32 px is shoved 32 px straight away from the player (can't move or attack while it slides). No damage |
+| **Rock** | **Rock Throw** — single target ≤3 tiles | **Harden** — self, 3 s: defense 50 (every blow it takes does 50 less damage: a 60 hit does 10; at least 1); never misses; flickers dark grey; metallic clang; 10 s charge | **Rock Slide** — 3 random 2×2 tile spots on the visible screen get hit by falling rocks |
+
+### 5.5 Move power and accuracy
+
+| Move slot | Base power | Accuracy |
+|---|---|---|
+| Move 1 | 10 | 95% |
+| Move 2 | 18 | 90% |
+| Move 3 (damaging) | 40 | 100% |
+| Ground zones (Ember, Acid) | 4 per hit (on touch, then every 0.5 s per enemy) | 100% |
+| Status-only moves (Growl, Fly, Phase, Harden) | 0 | — |
+
+Accuracy roll fails → "MISS" over the target, no damage, no XP.
+
+### 5.6 Damage formula
+
+```
+damage = basePower × (1 + 0.15 × (attackerLevel − 1)) × typeMultiplier
+damage = max(1, round(damage))
+```
+
+### 5.7 Type chart
+
+Super effective = **×1.5**, not very effective = **×0.75**, neutral = ×1.0. There are **no immunities** — every enemy must be killable by every player type (otherwise a Normal player could never finish the run against Ghosts).
+
+| Attacker ↓ / Defender → | Nor | Fir | Wat | Ele | Gra | Poi | Fly | Gho | Roc |
+|---|---|---|---|---|---|---|---|---|---|
+| **Normal** | | | | | | | | 0.75 | 0.75 |
+| **Fire** | | 0.75 | 0.75 | | 1.5 | | | | 0.75 |
+| **Water** | | 1.5 | 0.75 | | 0.75 | | | | 1.5 |
+| **Electric** | | | 1.5 | 0.75 | 0.75 | | 1.5 | | |
+| **Grass** | | 0.75 | 1.5 | | 0.75 | 0.75 | 0.75 | | 1.5 |
+| **Poison** | | | | | 1.5 | 0.75 | | 0.75 | 0.75 |
+| **Flying** | | | | 0.75 | 1.5 | | | | 0.75 |
+| **Ghost** | 0.75 | | | | | | | 1.5 | |
+| **Rock** | | 1.5 | | | | | 1.5 | | |
+
+Empty cell = ×1.0.
+
+### 5.8 Status effects
+
+| Status | Effect | Label |
+|---|---|---|
+| Paralyzed | Can't move or attack for the duration. Sprite flashes yellow | `PAR` |
+| Poisoned | 1 damage per second for 5 s | `PSN` |
+| Badly poisoned | Damage per second grows: 1, 2, 3, 4… for 8 s | `TOX` |
+
+A new status replaces the old one. Poison damage gives XP like a hit (section 7).
+
+### 5.9 Animations and floating text
+
+Every move has its own animation (sprite effect, 4–8 frames): e.g. Ember = flickering flame tile, Bubble Beam = bubbles streaming ahead, Rock Slide = rock shadow growing then rock falling (it hurts where it lands, when it lands), Surf = wave sweeping across the screen. The animation is the move's hit area (section 5.3).
+
+**Every move animation plays in 3 steps**, so it is always clear who attacked whom. The animation keeps the length it had (its effect's time), split 20 % / 20 % / 60 %:
+1. **Out of the user** (20 %): the move's small travel picture (a spark, a fireball, a water drop, a leaf, a rock…, one per move) comes out from behind the monster, which stays fully visible.
+2. **On its way** (20 %): it flies to where the effect plays — the target, the end of a trail or beam (the trail or beam lights up as it passes), or the middle of a ground zone.
+3. **At the destination** (60 %): the move's effect plays there, sped up so it ends when it always did.
+
+Bursts and self moves (Fire Spin, Growl, Fly, Phase) come out from behind the monster and fly out (steps 1–2), then stay around it (step 3). Anything that would cover the user is drawn behind it. Whole-screen moves (Surf) and Rock Slide (rocks falling from the sky on screen spots) play as before: nothing comes from the user. **This is only a picture**: what a move hits, and when, is unchanged — the hit (flash, number, push) lands the moment the move is used, and the travel picture hurts no one.
+
+**The animation plays every time the player uses a move**, not only when it hits: on a hit, on a MISS, and when it reaches no enemy at all.
+- Single target: on the target, or straight ahead at full range when no enemy is in range.
+- Beam, burst, whole screen: over the whole area (that is what they hit).
+- Ground zones: on their tiles, for as long as they last.
+- Status / self moves (Growl, Fly, Phase): around the player or across the screen. Harden has no effect picture: the user flickers dark grey while it lasts.
+
+Floating text appears over the target and rises for ~0.75 s:
+- Damage number (e.g. `12`)
+- `MISS`
+- `PAR`, `PSN`, `TOX`
+- `×1.5!` in a bright color when super effective, `×0.75` in grey when not very effective
+- Over the player: `LV UP!`, `NEW MOVE!`
+- Over a Furrbit (the player's, a wild one or the Alpha) whose attack hits twice: `2X` (yellow)
+
+Hit feedback:
+- **Enemy hit by the player:** blinks **red** for 4 frames (clearer than white against the bright map) and gets knocked back 2 px.
+- **Player hit by an enemy:** flashes white for 4 frames and gets knocked back 2 px.
+
+### 5.10 Collisions
+
+- Bodies block each other (player and enemies can't overlap), but **touching never causes damage**.
+- Ghost's Phase disables blocking for the player for 3 s.
+- Fly makes the player untargetable for 3 s.
+
+---
+
+## 6. Monsters
+
+### 6.1 Roster — 9 species (one per type)
+
+All original designs.
+
+| # | Name | Type | Look |
+|---|---|---|---|
+| 1 | **Furrbit** | Normal | Round cream-colored rabbit with big ears |
+| 2 | **Emberpup** | Fire | Small red puppy with a flame-tipped tail |
+| 3 | **Splashell** | Water | Blue snail with a spiral shell that sprays water |
+| 4 | **Voltail** | Electric | Yellow ferret with a lightning-shaped tail |
+| 5 | **Sproutle** | Grass | Green turtle with a leafy sprout on its back |
+| 6 | **Venomole** | Poison | Purple mole with toxic-green claws |
+| 7 | **Gustling** | Flying | Small white-and-sky-blue bird with oversized wings |
+| 8 | **Wispook** | Ghost | Floating violet wisp with a little cloth tail |
+| 9 | **Pebbulk** | Rock | Stubby grey rock creature with moss on top |
+
+Any of the 9 can be the player. Enemies use the same species.
+
+### 6.1b Walking speed
+
+**The farther a monster's Move 1 reaches, the slower it walks** — a long-range attacker pays for its safety with speed. The speed applies wherever the species walks: as the player and as a wild monster (wander and chase speeds alike).
+
+| Move 1 reaches | Speed | Species |
+|---|---|---|
+| 1 tile (melee) | 100 % | Furrbit (Tackle), Emberpup (Ember, the tile in front), Venomole (Poison Sting), Wispook (Lick) |
+| 2 tiles | 50 % | Splashell (Water Gun): slower than its reach asks, because it heals (below) |
+| 3 tiles | 80 % | Sproutle (Vine Whip), Gustling (Gust), Pebbulk (Rock Throw) |
+| 4 tiles or more | 70 % | Voltail (Thunder Shock, 5 tiles) |
+
+**Three species have a trait of their own**, in every mode, as the player, a wild monster or the Alpha:
+- **Splashell (Water) heals 2 HP every second**, up to its max HP. It pays for it with the slowest walk of all (50 %).
+- **Gustling (Flying) is harder to hit**: every move aimed at it has 10 points less accuracy (a 100 % move hits 90 %, a 95 % move 85 %). Ground zones and status-only moves still never miss.
+- **Furrbit (Normal) can hit twice**: each time Tackle or Quick Attack lands, a 50 % coin flip makes every monster it hit take the same blow again 0.2 s later (same damage, its own number, flash and hit sound; it never misses), and `2X` floats up over Furrbit's head.
+
+### 6.2 Enemy population — 25 total
+
+When the player picks a type, the other **8 types** populate the map:
+- **3 of each of the 8 types = 24 regular enemies**
+- **+1 Alpha** = 25
+
+The **Alpha** is a random species from the 8 enemy types, drawn with an alternate palette and a small crown/aura effect. It has 3× HP and its moves hit harder. It stays dormant in a fixed spot (a clearing in a corner screen) and only wakes up once the other 24 are defeated — a final fight. It gives 3× kill XP.
+
+**The Alpha grows while it sleeps:** it starts every run at **level 4** and gains **+1 level at each whole minute** of the run timer (1:00 → 5, 2:00 → 6, …), up to **level 14** (reached at 10:00). Once all 24 wild monsters are defeated and it wakes, its level stays where it is. A fast run meets a weaker boss. Its HP stays 180 at any level, but its damage grows with its level: its 40-power move 3 hits for 58 at level 4 and 118 at level 14 (87 to 177 when super effective), so from level 10 up a super-effective move 3 can knock out a full-HP player in one blow.
+
+### 6.3 Enemy stats
+
+| Enemy | Level | HP |
+|---|---|---|
+| First 8 spawned (one per type) | 2 | 30 |
+| Next 8 | 4 | 45 |
+| Last 8 | 6 | 60 |
+| Alpha | 4, +1 per minute until it wakes (max 14) | 180 |
+
+Weaker enemies are placed closer to the center screen, stronger ones in outer screens.
+
+### 6.4 Enemy behavior (AI)
+
+States:
+1. **Wander** — walks randomly within its home area, pausing often.
+2. **Hostile** — triggered when the player is within **5 tiles**. Walks toward the player and attacks.
+3. **Return** — if the player gets more than 10 tiles away, it walks back home and returns to Wander.
+
+Enemy attacks:
+- Enemies use only their type's **Move 1** (with the same shape/range rules), on a **4 s** charge, at their own level.
+- At most **3 enemies can be Hostile at the same time**. Others that would become hostile wait in Wander until one is defeated. This keeps the screen calm.
+
+When an enemy dies: death animation (flash + fade out, ~0.5 s), then it disappears from the map for good. No respawns.
+
+---
+
+## 7. Progression
+
+### 7.1 XP
+
+| Event | XP |
+|---|---|
+| Each hit that deals damage (incl. poison/ground ticks) | 2 |
+| Killing an enemy | 20 |
+| Killing the Alpha | 60 |
+
+### 7.2 Levels
+
+Max level = **25**. Each level costs 50 XP more than the last (level 2 at 40 XP). Thresholds are set so **20 kills always reaches level 10** (20 kills × 20 XP + at least 20 hits × 2 XP = 440). A full run (all 24 wild monsters + the Alpha = 540 XP, plus at least 25 hits × 2 XP) always reaches **level 13**; more hits push it higher, but level 25 is headroom that a single run does not reach with this curve.
+
+| Level | Total XP | Unlock |
+|---|---|---|
+| 1 | 0 | Move 1 |
+| 2 | 40 | |
+| 3 | 90 | |
+| 4 | 140 | **Move 2** (≈ minute 3) |
+| 5 | 190 | |
+| 6 | 240 | |
+| 7 | 290 | **Move 3** (≈ minute 6) |
+| 8 | 340 | |
+| 9 | 390 | |
+| 10 | 440 | |
+| 11 | 490 | |
+| 12 | 540 | |
+| 13 | 590 | |
+| 14 | 640 | |
+| 15 | 690 | |
+| 16 | 740 | |
+| 17 | 790 | |
+| 18 | 840 | |
+| 19 | 890 | |
+| 20 | 940 | |
+| 21 | 990 | |
+| 22 | 1040 | |
+| 23 | 1090 | |
+| 24 | 1140 | |
+| 25 | 1190 | Max |
+
+These numbers are the tuning knobs for hitting the minute 3 / minute 6 targets; adjust after playtesting.
+
+### 7.3 Player stats
+
+| Stat | Value |
+|---|---|
+| Max HP | 60 at level 1, +8 per level (252 at level 25) |
+| Speed | 1 px per frame (diagonals normalized) × its species' walking speed (section 6.1b) |
+
+Level-up raises max HP by 8 **and refills current HP to the new max** (a full heal). This is the only way HP goes up, so fighting for XP is how the player recovers, not running away.
+
+### 7.4 Floor items
+
+Five items lie on the ground, one of each kind. Each run every item is at a random one of its own 9 spots (one per screen of the map), all reachable, out from under the tree tops, away from the start, the monsters' homes and the Alpha's clearing. Only the player can pick them up (monsters walk over them). Picking one up plays a chime, floats its boost over the player in yellow and keeps the boost until the run ends.
+
+| Item | Look | Boost | Words |
+|---|---|---|---|
+| Swift Feather | pale blue feather | walks 10% faster | `+10% SPEED` |
+| Power Gem | red faceted gem | every move does 10% more damage (ground zones too) | `+10% POWER` |
+| Aim Charm | red and white target | the player's moves are 5 points more accurate (95% → 100%, 90% → 95%) | `-5% MISS` |
+| Mist Orb | purple orb with a misty swirl | wild monsters' moves are 10 points less accurate against the player (95% → 85%; even 100% moves can miss); ground zones still never miss | `+10% DODGE` |
+| Quick Hourglass | hourglass with yellow sand | every move recharges in 10% less time (Move 1: 3 s → 2.7 s) | `-10% RECHARGE` |
+
+The items share the move effects' palette, drawn like the monsters (dark outline, lit from the top-left), and bob over a small shadow with a twinkle so they stand out on the grass.
+
+**Waves mode drops:** the waves mode has no items on the ground at the start. Instead, every wave monster that faints (the boss too) has a **25% chance to drop one of these 5 items**, picked at random, with the same look, words and boost as above. Each item drops **at most 3 times per run**: a faint that rolls an item already dropped 3 times drops nothing, so drops get rarer late in the run. The item appears at the monster's feet; a monster that fainted in the arena's dark edge (where the player can't walk) leaves it on the nearest spot of lit floor instead. Only the player can pick it up, and it stays until picked up or the run ends. Its boost adds to the level-up card of the same kind (e.g. a Power Gem card and a dropped Power Gem make +20% damage).
+
+### 7.5 Shiny monsters
+
+There are **18 different runs**: the 9 monsters' classic runs and their 9 waves runs (the 18 menu entries). **Every 5 different runs won make one monster shiny**, and the count starts over at 0. Winning a run already counted since the last shiny counts nothing; once a monster becomes shiny, every run can count again toward the next one.
+
+- **Which monster:** the one that won the 5th run, if it isn't shiny yet; otherwise a random monster that isn't. Never the same monster twice, until all 9 are shiny; after that, wins count nothing more.
+- **Stronger:** a shiny monster's moves hit **20% harder** (power 100% → 120%, before floor items, cards and the home world) and it starts every run with **40% more HP** (60 → 84; Furrbit's 72 → 101). In both modes.
+- **Looks:** wherever it shows (every animation in the run, the menu portrait, the victory screens), it **shimmers through the rainbow**: 8 hues, a new one every 4 frames (the whole rainbow about twice a second), each color half its own and half the hue, lighter colors a little further along the rainbow (a sheen), the dark outline kept. Its moves' effects keep their colors. When a wild monster's move hurts it, it blinks **red 3 times** (like the wild monsters) instead of the shimmer, so every hit is easy to see.
+- **The shiny screen:** after the victory screen of the win that made a monster shiny, START opens **A SHINY MONSTER!**: the monster's portrait shimmering in a night sky with stars spraying out, its name (`<NAME> NOW SHINES!`) and its bonuses, with a sparkling jingle. Only then is it made shiny and saved. START goes back to the menu. Wins that make no monster shiny go straight back to the menu as before.
+- Saved on the cartridge; clearing the saved progress makes every monster plain again and forgets the runs counted.
+
+### 7.6 Items won
+
+**Every won run gives 3 items for the next run**, in both modes, with any monster, even a run already won before.
+
+- **Which:** 3 different items out of the 5 floor items (section 7.4), picked at random (every set of 3 equally likely), with the same boosts: Swift Feather `+10% SPEED`, Power Gem `+10% POWER`, Aim Charm `-5% MISS`, Mist Orb `+10% DODGE`, Quick Hourglass `-10% RECHARGE`.
+- **The items screen:** after the victory screen, START opens **YOU WON 3 ITEMS!** (THEY BOOST YOUR NEXT RUN) over the meadow sky: the 3 items bobbing and twinkling as on the ground, each with its name and its boost, a chime for each. Only after a win. START goes on to the shiny screen when the win made a monster shiny (section 7.5), otherwise back to the menu.
+- **Used on the next run:** when the next run starts (any monster, any mode), the 3 boosts are added for that whole run and the items are used up, so the run after it doesn't get them again. Their words float up over the player one after the other at the start, in yellow, with the item chime, like the home world's bonus; in its home world the player gets both: the home world's 3 words, then the 3 items' (6 in a row). The boosts add to the home world, to floor items picked up and to the waves cards.
+- **They never add up:** a win always replaces them with 3 new ones; to have items again the next run must be won. A run lost, quit or restarted from the pause menu has already used them.
+- Saved on the cartridge with the win (they survive switching the game off); clearing the saved progress drops them.
+
+### 7.7 Seeds and the garden
+
+**Seeds** found in the runs grow in a garden on the menu into 2 permanent boosts.
+
+- **On the map:** every run (classic and waves) has **one seed** lying on the ground: a cream seed with a little green sprout, twinkling now and then, at a random one of its spots (classic: 27 spots, away from the start, the floor items' spots, the sleeping Alpha and the monsters' homes; waves: 18 spots on the lit floor, away from the start). Only the player picks it up, with a sprouting chirp.
+- **No seed** lies on the map while all 4 garden plots are in use, or once the 10 garden items are owned or on their way (owned + plants in the soil = 10).
+- **Kept when the run ends:** a seed picked up is kept only if the run is finished, won or lost (the victory or game over screen saves it). Quitting or restarting the run from the pause menu loses it.
+- **The garden:** 4 plots of tilled soil (16 x 16 each) sit on the menu map at the top left, just under the rock wall. Each finished run (won or lost; a quit run doesn't count) grows every plant **one step** when the menu opens next, then plants the run's seed in the first empty plot. The steps: empty soil → seed → sprout → young plant → budding plant → full grown (a golden flower) → its item lying on the soil, 5 finished runs after planting.
+- **The items:** a full-grown plant gives, at random, one of:
+  - **HP UP** (a red heart): **+10 HP** at the start of every run. At most 5 (+50 HP).
+  - **POWER UP** (a fist): **+3% power** on all moves in every run. At most 5 (+15%).
+  Never more than 5 of one kind in all (owned + lying on the soil): once one kind has its 5, the plants give the other.
+- **Picking an item:** walking onto it on the menu picks it up (a chime) and saves it at once; the plot is empty soil again, ready for the next seed.
+- **How they apply:** silently (no words, no sound) at the start of every run, in both modes, with any monster, on top of everything else (species, shiny, items, home world, cards). A restarted run gets them again, exactly the same.
+- Saved on the cartridge; clearing the saved progress (its question in red, listing everything lost) takes the garden items, the plants and a seed waiting to be planted too.
+
+---
+
+## 8. Map
+
+### 8.1 Layout (3×3 screens)
+
+Original tileset drawn in the style of GBA monster-game overworlds: soft outlines, bright greens, chunky trees, tall grass patches, dirt paths, flowers, fences, small ponds.
+
+```
++-------------+-------------+-------------+
+| NW          | N           | NE          |
+| Dense       | Hill path   | Rocky       |
+| forest      | with ledges | outcrop     |
++-------------+-------------+-------------+
+| W           | CENTER      | E           |
+| Pond and    | Start:      | Flower      |
+| reeds       | open meadow | field       |
++-------------+-------------+-------------+
+| SW          | S           | SE          |
+| Old ruins   | Long tall-  | Alpha       |
+| (graves)    | grass field | clearing    |
++-------------+-------------+-------------+
+```
+
+- Map border = solid row of trees (impassable).
+- Paths connect all 9 screens; no dead ends that trap the player.
+- Solid tiles: trees, rocks, water, fences, ruin walls. Tall grass and flowers are walkable (visual only).
+- Enemy home areas spread so each screen has 2–3 enemies; the center screen has the weakest.
+- Collision map stored as a 90×60 array of tile flags (walkable / solid).
+
+### 8.2 Camera
+
+Follows the player with the player kept in the center; stops at map edges. "Whole screen" and "visible screen" moves use the current camera view.
+
+---
+
+## 9. HUD (Run Scene)
+
+```
+HP ██████████░░  LV 7          KILLS 15/25
+XP ████████░░░░               TIME 06:12
+
+                [ map ]
+
+[A ●]  [B ◔]  [R ○]
+```
+
+- HP bar (green → yellow → red), current level, XP bar to next level.
+- Kills counter `X/25`.
+- Run timer (mm:ss).
+- Bottom: 3 move icons with a fill showing charge progress. Locked moves show a padlock. A fully charged move blinks once.
+
+---
+
+## 10. Suggested nodes
+
+Following the project's node structure (each node in its own JSON, all listed in `nodes.json`; scenes at the root):
+
+```
+nodes.json
+scenes/
+  menu.json              # title anim, selector, music ref
+  run.json               # map ref, spawn table, HUD, win/lose rules
+  game_over.json
+  victory.json
+objects/
+  player.json
+    body.json            # sprite, animations per direction
+  enemy.json             # AI states, hostile cap
+  monsters/
+    furrbit.json ... pebbulk.json   # species: type, palette, sprites, cry
+  moves/
+    tackle.json ... rock_slide.json # shape, range, power, accuracy, status, anim
+  type_chart.json
+  progression.json       # XP values, level table, HP growth
+  map/
+    tileset.json
+    overworld.json       # 90×60 tile + collision data, enemy home areas
+  hud.json
+  floating_text.json
+audio/
+  menu_theme.json
+  run_theme.json
+  sfx.json               # cries, hit, miss, level up, new move
+```
+
+---
+
+## 11. Decisions taken (change if needed)
+
+These points weren't specified, so this doc picks a value:
+
+1. **9 species, 25 enemies** — 3 of each of the 8 enemy types (24) + 1 Alpha boss as the 25th.
+2. **No type immunities** — otherwise some player picks could never win.
+3. **Single-target moves auto-aim** at the nearest enemy in range.
+4. **Toxic** range = 4 tiles; **Harden** lasts 3 s; **Acid** lasts 3 s.
+5. **Growl** rolls 33% for each enemy its notes touch.
+6. Enemies use only **Move 1**, with a 4 s charge; at most 3 hostile at once.
+7. Level-up is a full heal (to the new max HP), to reward fighting over running.
+8. A player's move always fires and uses its charge, even with no enemy in reach (aiming is the player's job). Enemies only attack when the player is in reach.
+9. Moves have accuracy, which is where "MISS" comes from.
+10. Ghost's Move 3 is named **Phase** in this doc to avoid confusion with the Ghost type name.
+11. **A move hits exactly what its animation draws** (+2 px). Cones became straight beams, because that is what their animations draw.
+12. **Unlocks follow the roster order** (Normal first, Rock last), one per won run, so every player sees the same order. Locked monsters stay visible as silhouettes with their name and type. Clearing the save is on Select, behind a NO/YES question.
+13. **Long reach costs speed**: each species walks at 100 / 90 / 80 / 70 % for a Move 1 that reaches 1 / 2 / 3 / 4+ tiles (section 6.1b), as the player and as a wild monster.
+14. **The Alpha's level follows the clock**: level 4 + 1 per whole minute of the run timer, capped at 14, frozen when it wakes. Its HP stays 180.
+15. **Floor items**: one of each of the 5 boosts per run, each on a random one of its own 9 spots (one per screen), so two never share a spot.

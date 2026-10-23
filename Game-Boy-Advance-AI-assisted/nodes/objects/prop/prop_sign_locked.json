@@ -1,0 +1,21 @@
+{
+  "id": "prop_sign_locked",
+  "kind": "object",
+  "type": "prop",
+  "name": "Locked WAVES sign",
+  "notes": "The WAVES sign while the waves mode is still locked (fewer than 9 monsters freed on the map): the wooden sign greyed out, solid like the others. Walking up to it shows WAVES over the monster's head and, on the bottom line, how many monster types are still to free (8 MONSTER TYPES LEFT ... 1 MONSTER TYPE LEFT); A or B do nothing there. Gone once unlocked is 9 (appear_if).",
+  "body": "body_sign_grey",
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "unlocked",
+        "op": "<",
+        "value": 9
+      }
+    }
+  ],
+  "children": [
+    "body_sign_grey"
+  ]
+}

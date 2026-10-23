@@ -1,0 +1,25 @@
+{
+  "id": "pal_camp_voltail",
+  "kind": "object",
+  "type": "palette",
+  "name": "Voltail by the fire colors",
+  "notes": "Voltail's colors in the campfire's light (15 colors for all its seats): warmer and darker than in the game, bright on the side facing the fire.",
+  "colors": [
+    "#000000",
+    "#ffff6a",
+    "#392929",
+    "#c55a20",
+    "#ffffb4",
+    "#ffac20",
+    "#ffee29",
+    "#a48b41",
+    "#101010",
+    "#ff8b29",
+    "#834118",
+    "#f6c552",
+    "#cd9420",
+    "#a44a18",
+    "#292020",
+    "#ac7b18"
+  ]
+}

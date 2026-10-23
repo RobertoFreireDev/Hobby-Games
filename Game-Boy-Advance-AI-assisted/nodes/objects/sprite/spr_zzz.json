@@ -1,0 +1,42 @@
+{
+  "id": "spr_zzz",
+  "kind": "object",
+  "type": "sprite",
+  "name": "Sleeping Z",
+  "notes": "The Z that rises over the sleeping Alpha (white with a dark outline, then fading grey). Every frame keeps a 1 px empty border, so the picture is never cut at the edge of its sprite.",
+  "palette": "pal_fx",
+  "width": 8,
+  "height": 8,
+  "frames": {
+    "f0": [
+      "........",
+      ".111111.",
+      ".122221.",
+      ".11121..",
+      "..12111.",
+      ".122221.",
+      ".111111.",
+      "........"
+    ],
+    "f1": [
+      "........",
+      ".111111.",
+      ".122221.",
+      ".11121..",
+      "..12111.",
+      ".122221.",
+      ".111111.",
+      "........"
+    ],
+    "f2": [
+      "........",
+      ".111111.",
+      ".1cccc1.",
+      ".111c1..",
+      "..1c111.",
+      ".1cccc1.",
+      ".111111.",
+      "........"
+    ]
+  }
+}

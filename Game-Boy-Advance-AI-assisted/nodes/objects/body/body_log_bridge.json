@@ -1,0 +1,29 @@
+{
+  "id": "body_log_bridge",
+  "kind": "object",
+  "type": "body",
+  "name": "Log bridge body",
+  "notes": "Logs to walk over: centered on its spot; not solid.",
+  "origin": [
+    16,
+    16
+  ],
+  "hitbox": {
+    "x": -10,
+    "y": -16,
+    "w": 20,
+    "h": 32
+  },
+  "physics": {
+    "gravity": false,
+    "solid": false,
+    "collides_with": []
+  },
+  "animations": {
+    "idle": "anim_log_bridge"
+  },
+  "default_animation": "idle",
+  "children": [
+    "anim_log_bridge"
+  ]
+}

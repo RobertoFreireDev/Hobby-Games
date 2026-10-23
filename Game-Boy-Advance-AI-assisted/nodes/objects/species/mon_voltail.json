@@ -1,0 +1,29 @@
+{
+  "id": "mon_voltail",
+  "kind": "object",
+  "type": "species",
+  "name": "Voltail",
+  "notes": "Voltail: a yellow ferret with a round brown patch around each eye and a lightning-bolt tail. Type ELECTRIC. Moves: Thunder Shock (A), Spark (B) and Thunderbolt (R). Walks at 70 % speed: its move 1 (Thunder Shock) reaches 5 tiles, and the farther a monster's move 1 reaches, the slower it walks. Its moves hit 10 % softer than their power says (power 90 %), whether it is the player or a wild one, in every mode. It can be the player, and the 8 species that aren't picked live on the map.",
+  "title": "VOLTAIL",
+  "monster_type": "electric",
+  "speed": 70,
+  "power": 90,
+  "body": "body_voltail",
+  "alpha_palette": "pal_alpha_voltail",
+  "portrait": "spr_voltail_portrait",
+  "cry": "sfx_cry_voltail",
+  "moves": [
+    "mov_thunder_shock",
+    "mov_spark",
+    "mov_thunderbolt"
+  ],
+  "children": [
+    "body_voltail",
+    "spr_voltail_portrait",
+    "pal_alpha_voltail",
+    "sfx_cry_voltail",
+    "mov_thunder_shock",
+    "mov_spark",
+    "mov_thunderbolt"
+  ]
+}

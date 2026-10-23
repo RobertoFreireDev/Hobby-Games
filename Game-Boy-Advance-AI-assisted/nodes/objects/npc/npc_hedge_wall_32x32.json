@@ -1,0 +1,18 @@
+{
+  "id": "npc_hedge_wall_32x32",
+  "kind": "object",
+  "type": "npc",
+  "name": "Invisible hedge wall 32x32",
+  "notes": "Invisible and solid, 32 x 32 px from its top-left: a haunted hedge: every monster stops at it but Wispook, who floats through (its body doesn't collide with npcs). appear_if (set per instance) removes it when the way opens.",
+  "body": "body_block_32x32",
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "unlocked",
+        "op": ">=",
+        "value": 0
+      }
+    }
+  ]
+}

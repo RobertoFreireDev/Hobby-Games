@@ -1,0 +1,95 @@
+{
+  "id": "item_waves_seed",
+  "kind": "object",
+  "type": "pickup",
+  "name": "Seed (waves)",
+  "notes": "The one seed of the waves run. Only the player picks it up: a sprouting chime (sfx_seed) and run_seed becomes 1. It is planted in the menu's garden only if the run is finished, won or lost; quitting or restarting the run loses it. It lies at a random one of its 18 spots each run (the scene spawns it at the first), on the lit floor, away from the player's start. The scene leaves it out while all 4 garden plots are in use, or once the 10 garden items (5 HP UP + 5 POWER UP) are picked or growing.",
+  "body": "body_seed",
+  "logic": [
+    {
+      "behavior": "random_spot",
+      "params": {
+        "spots": [
+          [
+            340,
+            60
+          ],
+          [
+            484,
+            188
+          ],
+          [
+            60,
+            332
+          ],
+          [
+            340,
+            332
+          ],
+          [
+            484,
+            332
+          ],
+          [
+            116,
+            188
+          ],
+          [
+            268,
+            92
+          ],
+          [
+            476,
+            60
+          ],
+          [
+            196,
+            324
+          ],
+          [
+            268,
+            292
+          ],
+          [
+            428,
+            260
+          ],
+          [
+            196,
+            60
+          ],
+          [
+            204,
+            132
+          ],
+          [
+            388,
+            156
+          ],
+          [
+            124,
+            276
+          ],
+          [
+            340,
+            252
+          ],
+          [
+            412,
+            332
+          ]
+        ]
+      }
+    },
+    {
+      "behavior": "collectible",
+      "params": {
+        "var": "run_seed",
+        "amount": 1
+      }
+    }
+  ],
+  "sounds": {
+    "collect": "sfx_seed"
+  }
+}

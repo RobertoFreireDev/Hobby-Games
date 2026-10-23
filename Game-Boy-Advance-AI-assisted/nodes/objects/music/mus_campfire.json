@@ -1,0 +1,48 @@
+{
+  "id": "mus_campfire",
+  "kind": "object",
+  "type": "music",
+  "name": "By the campfire",
+  "notes": "The intro's quiet song, in A minor at 84 BPM: a slow plucked melody (each note fades like a guitar string) over long held notes and a soft bass, with the fire's crackle as faint high noise ticks here and there. Two 4-bar parts that loop. Played very quietly, like all the songs.",
+  "bpm": 84,
+  "rows_per_beat": 2,
+  "loop": true,
+  "instruments": {
+    "square1": {
+      "duty": 2,
+      "volume": 3,
+      "decay": 2
+    },
+    "square2": {
+      "duty": 1,
+      "volume": 2,
+      "decay": 4
+    },
+    "wave": {
+      "wave": "01234567765432100123456776543210",
+      "volume": 1
+    },
+    "noise": {
+      "volume": 1,
+      "decay": 1
+    }
+  },
+  "patterns": {
+    "A": {
+      "square1": "A4 -- C5 -- E5 -- D5 C5 | B4 -- -- -- G4 -- -- -- | A4 -- C5 -- E5 -- G5 E5 | D5 -- -- -- -- -- .. ..",
+      "square2": "E4 -- -- -- -- -- -- -- | D4 -- -- -- -- -- -- -- | E4 -- -- -- -- -- -- -- | F4 -- -- -- -- -- -- --",
+      "wave": "A2 -- -- -- E3 -- -- -- | G2 -- -- -- D3 -- -- -- | A2 -- -- -- E3 -- -- -- | F2 -- -- -- C3 -- -- --",
+      "noise": "Xc .. .. .. .. Xe .. .. | .. .. Xd .. .. .. .. Xf | .. Xc .. .. .. .. Xe .. | .. .. .. Xd .. .. .. .."
+    },
+    "B": {
+      "square1": "F4 -- A4 -- C5 -- A4 -- | G4 -- B4 -- D5 -- B4 -- | C5 -- B4 -- A4 -- E4 -- | A4 -- -- -- -- -- .. ..",
+      "square2": "C4 -- -- -- -- -- -- -- | D4 -- -- -- -- -- -- -- | E4 -- -- -- B3 -- -- -- | C4 -- -- -- -- -- -- --",
+      "wave": "F2 -- -- -- C3 -- -- -- | G2 -- -- -- D3 -- -- -- | A2 -- -- -- E2 -- -- -- | A2 -- -- -- -- -- -- --",
+      "noise": ".. .. Xe .. .. .. Xc .. | Xd .. .. .. .. Xf .. .. | .. .. .. Xc .. .. .. Xe | .. Xd .. .. .. .. .. .."
+    }
+  },
+  "order": [
+    "A",
+    "B"
+  ]
+}

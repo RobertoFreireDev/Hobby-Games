@@ -1,0 +1,162 @@
+{
+  "id": "hud_run",
+  "kind": "object",
+  "type": "hud",
+  "name": "Run HUD",
+  "notes": "Top: a deep indigo panel across the screen (the same color and white edge as the pause box, with a dark outline under it) holding the HP bar (green, yellow at half, red at a quarter; its length follows the max HP), the level and kills, the XP bar to the next level and the run timer. Bottom: the 3 moves as big A, B and R letters, each right next to its charge circle (a padlock while locked, a white blink when it becomes ready). Bottom right: BOSS LV+1 in the outlined floating-word letters (cyan, like the Alpha's level tag) for 3 s each time the sleeping Alpha gains a level (every whole minute of the run, while it sleeps; boss_up). No panel at the bottom, so the world stays in view there. When a run starts, the world's name (EMBER CRATER, HAUNTED HOLLOW...) shows for 3 s in the middle just under the top panel, in the thin gold info letters (font_info, in the yellow battle-word colors), like a location sign ('sign').",
+  "font": "font_default",
+  "box": {
+    "x": 0,
+    "y": 0,
+    "w": 240,
+    "h": 16,
+    "paper": 3,
+    "border": 2
+  },
+  "elements": [
+    {
+      "kind": "text",
+      "x": 8,
+      "y": 0,
+      "text": "HP"
+    },
+    {
+      "kind": "bar",
+      "x": 24,
+      "y": 0,
+      "var": "hp",
+      "max_var": "hp_max",
+      "length": 8,
+      "color": 9,
+      "mid_color": 4,
+      "low_color": 5,
+      "back": 13
+    },
+    {
+      "kind": "text",
+      "x": 96,
+      "y": 0,
+      "text": "LV{level}"
+    },
+    {
+      "kind": "text",
+      "x": 144,
+      "y": 0,
+      "text": "KILLS {kills}/25"
+    },
+    {
+      "kind": "text",
+      "x": 8,
+      "y": 8,
+      "text": "XP"
+    },
+    {
+      "kind": "bar",
+      "x": 24,
+      "y": 8,
+      "var": "xp_pct",
+      "max": 100,
+      "length": 8,
+      "color": 6,
+      "back": 13
+    },
+    {
+      "kind": "text",
+      "x": 144,
+      "y": 8,
+      "text": "TIME {time_min:02}:{time_sec:02}"
+    },
+    {
+      "kind": "text",
+      "x": 160,
+      "y": 144,
+      "text": "{boss_up||BOSS LV+1}",
+      "font": "font_float",
+      "palette": "pal_txt_cyan"
+    },
+    {
+      "kind": "text",
+      "x": 120,
+      "y": 32,
+      "align": "center",
+      "text": "{sign||{world|GREEN MEADOW|EMBER CRATER|CORAL LAGOON|STORM PLATEAU|VERDANT JUNGLE|MIASMA SWAMP|SKY ISLE|HAUNTED HOLLOW|BOULDER CANYON}}",
+      "font": "font_info",
+      "palette": "pal_txt_yellow"
+    },
+    {
+      "kind": "icon",
+      "x": 8,
+      "y": 144,
+      "icon": "icon_btn_a"
+    },
+    {
+      "kind": "gauge",
+      "x": 24,
+      "y": 144,
+      "var": "g1",
+      "icons": [
+        "icon_gauge_0",
+        "icon_gauge_1",
+        "icon_gauge_2",
+        "icon_gauge_3",
+        "icon_gauge_4",
+        "icon_gauge_5",
+        "icon_gauge_6"
+      ]
+    },
+    {
+      "kind": "icon",
+      "x": 40,
+      "y": 144,
+      "icon": "icon_btn_b"
+    },
+    {
+      "kind": "gauge",
+      "x": 56,
+      "y": 144,
+      "var": "g2",
+      "icons": [
+        "icon_gauge_0",
+        "icon_gauge_1",
+        "icon_gauge_2",
+        "icon_gauge_3",
+        "icon_gauge_4",
+        "icon_gauge_5",
+        "icon_gauge_6"
+      ]
+    },
+    {
+      "kind": "icon",
+      "x": 72,
+      "y": 144,
+      "icon": "icon_btn_r"
+    },
+    {
+      "kind": "gauge",
+      "x": 88,
+      "y": 144,
+      "var": "g3",
+      "icons": [
+        "icon_gauge_0",
+        "icon_gauge_1",
+        "icon_gauge_2",
+        "icon_gauge_3",
+        "icon_gauge_4",
+        "icon_gauge_5",
+        "icon_gauge_6"
+      ]
+    }
+  ],
+  "children": [
+    "icon_btn_a",
+    "icon_btn_b",
+    "icon_btn_r",
+    "icon_gauge_0",
+    "icon_gauge_1",
+    "icon_gauge_2",
+    "icon_gauge_3",
+    "icon_gauge_4",
+    "icon_gauge_5",
+    "icon_gauge_6"
+  ]
+}

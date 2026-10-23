@@ -1,0 +1,26 @@
+{
+  "id": "body_block_32x32",
+  "kind": "object",
+  "type": "body",
+  "name": "Invisible block 32x32",
+  "notes": "An invisible solid box 32 x 32 px (its top-left on the spot it is placed): it shows nothing (the hole, ravine or hedge is drawn on the map) and stops the monsters whose bodies list its kind.",
+  "origin": [
+    0,
+    0
+  ],
+  "hitbox": {
+    "x": 0,
+    "y": 0,
+    "w": 32,
+    "h": 32
+  },
+  "physics": {
+    "gravity": false,
+    "solid": true,
+    "collides_with": []
+  },
+  "animations": {
+    "idle": "anim_blank"
+  },
+  "default_animation": "idle"
+}

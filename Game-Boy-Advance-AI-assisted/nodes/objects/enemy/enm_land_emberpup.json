@@ -1,0 +1,126 @@
+{
+  "id": "enm_land_emberpup",
+  "kind": "object",
+  "type": "enemy",
+  "name": "Emberpup guard (Ember Crater)",
+  "notes": "A guard of the Ember Crater's challenge screen (G3, Crater Floor): a level 5 Emberpup with 50 HP, at most 2 of them come at you at once, attacking every 4.0 s with its first move; chasing at 0.45 px a tick, giving up beyond 6 tiles. They never leave their screen, give no XP and drop nothing; leaving the screen before they are all down brings every one back at full HP. Only there while Voltail is still trapped (appear_if unlocked == 3, per place). When the last of the 8 faints (kills, reset on every screen), Voltail is unlocked and saved at once, then the world freezes a moment, it appears with a sparkle and its cry, the new-monster jingle plays and the middle of the screen says VOLTAIL UNLOCKED! / PICK IT IN THE CAVE.",
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "unlocked",
+        "op": "==",
+        "value": 3
+      }
+    },
+    {
+      "behavior": "monster",
+      "params": {
+        "species": "mon_emberpup",
+        "level": 5,
+        "hp": 50,
+        "flash_palette": "pal_flash_red",
+        "flash_ticks": 4,
+        "flashes": 3,
+        "level_tag": 180,
+        "level_tag_reset": 300,
+        "level_tag_margin": 32,
+        "level_tag_text": "LV",
+        "level_tag_palette": "pal_txt_cyan",
+        "level_tag_matchup": true,
+        "alert_text": "!",
+        "alert_palette": "pal_txt_yellow",
+        "alert_cry": true,
+        "xp_reward": 0,
+        "kills_var": "kills",
+        "on_death": [
+          {
+            "do": "if_var",
+            "var": "kills",
+            "op": ">=",
+            "value": 8,
+            "then": [
+              {
+                "do": "set_var",
+                "var": "unlocked",
+                "value": 4
+              },
+              {
+                "do": "set_var",
+                "var": "new_mon",
+                "value": 3
+              },
+              {
+                "do": "save_game"
+              },
+              {
+                "do": "play_music",
+                "music": "mus_menu"
+              },
+              {
+                "do": "pause_world",
+                "ticks": 40
+              },
+              {
+                "do": "spawn",
+                "object": "ptc_freed",
+                "x": 1560,
+                "y": 400,
+                "relative": false
+              },
+              {
+                "do": "spawn",
+                "object": "prop_freed_voltail",
+                "x": 1560,
+                "y": 408,
+                "relative": false
+              },
+              {
+                "do": "play_sfx",
+                "sfx": "sfx_cry_voltail"
+              },
+              {
+                "do": "set_var",
+                "var": "banner",
+                "value": 1
+              },
+              {
+                "do": "wait",
+                "ticks": 30
+              },
+              {
+                "do": "play_sfx",
+                "sfx": "sfx_new_move"
+              },
+              {
+                "do": "wait",
+                "ticks": 210
+              },
+              {
+                "do": "set_var",
+                "var": "banner",
+                "value": 0
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "behavior": "monster_ai",
+      "params": {
+        "speed": 0.4,
+        "chase_speed": 0.45,
+        "roam": 32,
+        "sight": 5,
+        "give_up": 6,
+        "max_hostile": 2,
+        "charge": 240,
+        "moves": 1,
+        "moves_charge": 100,
+        "moves_ready": false,
+        "spread": 1
+      }
+    }
+  ]
+}

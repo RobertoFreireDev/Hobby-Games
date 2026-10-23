@@ -1,0 +1,25 @@
+{
+  "id": "pal_camp_splashell",
+  "kind": "object",
+  "type": "palette",
+  "name": "Splashell by the fire colors",
+  "notes": "Splashell's colors in the campfire's light (15 colors for all its seats): warmer and darker than in the game, bright on the side facing the fire.",
+  "colors": [
+    "#000000",
+    "#393129",
+    "#ffffd5",
+    "#62c57b",
+    "#9ccdc5",
+    "#317352",
+    "#ffa483",
+    "#6a8ba4",
+    "#6ade8b",
+    "#c5d5a4",
+    "#4a9c6a",
+    "#eef6b4",
+    "#201820",
+    "#b4e6de",
+    "#185241",
+    "#8bb4b4"
+  ]
+}

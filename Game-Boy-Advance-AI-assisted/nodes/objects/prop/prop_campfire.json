@@ -1,0 +1,12 @@
+{
+  "id": "prop_campfire",
+  "kind": "object",
+  "type": "prop",
+  "name": "Campfire",
+  "notes": "The fire pit in the middle of the intro screen, drawn in front of everything (it is the first thing placed): a ring of stones, two logs and flickering flames. The light on the cave and the monsters' shadows are painted into the picture around where it stands.",
+  "body": "body_campfire",
+  "logic": [],
+  "children": [
+    "body_campfire"
+  ]
+}

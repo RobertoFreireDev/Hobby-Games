@@ -1,0 +1,25 @@
+{
+  "id": "pal_alpha_sproutle",
+  "kind": "object",
+  "type": "palette",
+  "name": "Sproutle Alpha colors",
+  "notes": "The rare colors Sproutle wears when it is the Alpha (the boss of the run): the same slots as its sprite's palette, with Sproutle's own 6 colors changed.",
+  "colors": [
+    "#000000",
+    "#202030",
+    "#f8f8f8",
+    "#f8e080",
+    "#e0a830",
+    "#a06818",
+    "#f88878",
+    "#d04848",
+    "#882828",
+    "#d8b0f8",
+    "#a070d8",
+    "#6840a0",
+    "#d8f870",
+    "#88c830",
+    "#f098c0",
+    "#f88898"
+  ]
+}

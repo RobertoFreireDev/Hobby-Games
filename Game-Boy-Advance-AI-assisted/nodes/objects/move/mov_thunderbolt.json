@@ -1,0 +1,23 @@
+{
+  "id": "mov_thunderbolt",
+  "kind": "object",
+  "type": "move",
+  "name": "Thunderbolt",
+  "notes": "Voltail's move 3 (R). A blast of electricity shoots 10 tiles straight ahead of the user; every monster it touches is hurt. Charge: 40 s.",
+  "title": "THUNDERBOLT",
+  "monster_type": "electric",
+  "shape": "beam",
+  "range": 10,
+  "power": 40,
+  "accuracy": 100,
+  "charge": 2400,
+  "effect": "ptc_fx_orb",
+  "effect_at": "axis",
+  "travel": "anim_travel_thunderbolt",
+  "sfx": "sfx_mv_electric",
+  "children": [
+    "spr_fx_orb",
+    "ptc_fx_orb",
+    "anim_travel_thunderbolt"
+  ]
+}

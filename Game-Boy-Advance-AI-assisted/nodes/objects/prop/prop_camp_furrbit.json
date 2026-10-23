@@ -1,0 +1,61 @@
+{
+  "id": "prop_camp_furrbit",
+  "kind": "object",
+  "type": "prop",
+  "name": "Furrbit at the campfire",
+  "notes": "Furrbit on the intro screen. It only shows once it is unlocked (unlocked >= 1) and sits on the half circle behind the fire: its seat depends on how many monsters are unlocked, all of them spread evenly from left to right in roster order, so with 1 unlocked it takes seat 1. It always looks at the fire (view per number unlocked: 1: down, 2: down-right, 3: down-right, 4: side, 5: side, 6: side, 7: side, 8: side, 9: side). When it is shiny it shimmers through the rainbow, like everywhere else.",
+  "body": "body_camp_furrbit",
+  "logic": [
+    {
+      "behavior": "spot_by_count",
+      "params": {
+        "var": "unlocked",
+        "need": 1,
+        "spots": [
+          [
+            3,
+            -30
+          ],
+          [
+            -38,
+            -24
+          ],
+          [
+            -53,
+            -19
+          ],
+          [
+            -61,
+            -16
+          ],
+          [
+            -66,
+            -13
+          ],
+          [
+            -69,
+            -11
+          ],
+          [
+            -71,
+            -10
+          ],
+          [
+            -73,
+            -9
+          ],
+          [
+            -75,
+            -8
+          ]
+        ],
+        "frames": 3,
+        "shiny_var": "shiny",
+        "shiny_slot": 0
+      }
+    }
+  ],
+  "children": [
+    "body_camp_furrbit"
+  ]
+}

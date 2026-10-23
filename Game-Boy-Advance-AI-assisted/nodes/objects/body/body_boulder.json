@@ -1,0 +1,29 @@
+{
+  "id": "body_boulder",
+  "kind": "object",
+  "type": "body",
+  "name": "Boulder body",
+  "notes": "A boulder across a path 32 px tall: a solid box 16 x 32.",
+  "origin": [
+    16,
+    31
+  ],
+  "hitbox": {
+    "x": -8,
+    "y": -32,
+    "w": 16,
+    "h": 32
+  },
+  "physics": {
+    "gravity": false,
+    "solid": true,
+    "collides_with": []
+  },
+  "animations": {
+    "idle": "anim_boulder"
+  },
+  "default_animation": "idle",
+  "children": [
+    "anim_boulder"
+  ]
+}

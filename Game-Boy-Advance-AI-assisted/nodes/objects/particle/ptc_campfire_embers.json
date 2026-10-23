@@ -1,0 +1,24 @@
+{
+  "id": "ptc_campfire_embers",
+  "kind": "object",
+  "type": "particle",
+  "name": "Campfire sparks",
+  "notes": "Sparks drifting up out of the fire, one every 13 ticks, in front of the monsters.",
+  "animation": "anim_campfire_ember",
+  "mode": "stream",
+  "rate": 13,
+  "lifetime": 60,
+  "speed": [
+    0.3,
+    0.6
+  ],
+  "angle": [
+    78,
+    102
+  ],
+  "gravity": 0,
+  "on_top": true,
+  "children": [
+    "anim_campfire_ember"
+  ]
+}

@@ -1,0 +1,41 @@
+{
+  "id": "prop_camp_venomole",
+  "kind": "object",
+  "type": "prop",
+  "name": "Venomole at the campfire",
+  "notes": "Venomole on the intro screen. It only shows once it is unlocked (unlocked >= 6) and sits on the half circle behind the fire: its seat depends on how many monsters are unlocked, all of them spread evenly from left to right in roster order, so with 6 unlocked it takes seat 6. It always looks at the fire (view per number unlocked: 6: left, 7: down-left, 8: down-left, 9: down). When it is shiny it shimmers through the rainbow, like everywhere else.",
+  "body": "body_camp_venomole",
+  "logic": [
+    {
+      "behavior": "spot_by_count",
+      "params": {
+        "var": "unlocked",
+        "need": 6,
+        "spots": [
+          [
+            72,
+            -11
+          ],
+          [
+            49,
+            -22
+          ],
+          [
+            33,
+            -27
+          ],
+          [
+            21,
+            -29
+          ]
+        ],
+        "frames": 3,
+        "shiny_var": "shiny",
+        "shiny_slot": 5
+      }
+    }
+  ],
+  "children": [
+    "body_camp_venomole"
+  ]
+}

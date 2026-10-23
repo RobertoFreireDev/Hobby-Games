@@ -1,0 +1,16 @@
+{
+  "id": "anim_hedge",
+  "kind": "object",
+  "type": "animation",
+  "name": "Haunted hedge",
+  "notes": "Haunted hedge, standing still.",
+  "sprite": "spr_hedge",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "hedge",
+      "ticks": 60
+    }
+  ],
+  "events": []
+}

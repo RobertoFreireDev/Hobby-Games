@@ -1,0 +1,52 @@
+{
+  "id": "anim_wispook_idle",
+  "kind": "object",
+  "type": "animation",
+  "name": "Wispook idle side",
+  "notes": "Wispook hovering facing sideways: it bobs slowly up and down and blinks now and then. Loops.",
+  "sprite": "spr_wispook",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "side",
+      "ticks": 14
+    },
+    {
+      "frame": "side_float_u",
+      "ticks": 18
+    },
+    {
+      "frame": "side",
+      "ticks": 14
+    },
+    {
+      "frame": "side_float_d",
+      "ticks": 18
+    },
+    {
+      "frame": "side",
+      "ticks": 14
+    },
+    {
+      "frame": "side_float_u",
+      "ticks": 18
+    },
+    {
+      "frame": "side",
+      "ticks": 8
+    },
+    {
+      "frame": "side_blink",
+      "ticks": 6
+    },
+    {
+      "frame": "side",
+      "ticks": 8
+    },
+    {
+      "frame": "side_float_d",
+      "ticks": 18
+    }
+  ],
+  "events": []
+}

@@ -1,0 +1,30 @@
+{
+  "id": "body_camp_gustling",
+  "kind": "object",
+  "type": "body",
+  "name": "Gustling by the fire body",
+  "notes": "How Gustling looks at the intro's campfire. No collisions: it only sits there.",
+  "origin": [
+    8,
+    15
+  ],
+  "hitbox": {
+    "x": -4,
+    "y": -4,
+    "w": 8,
+    "h": 4
+  },
+  "physics": {
+    "gravity": false,
+    "solid": false,
+    "collides_with": []
+  },
+  "animations": {
+    "idle": "anim_camp_gustling"
+  },
+  "default_animation": "idle",
+  "children": [
+    "spr_camp_gustling",
+    "anim_camp_gustling"
+  ]
+}

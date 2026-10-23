@@ -1,0 +1,22 @@
+{
+  "id": "ptc_gate_melt",
+  "kind": "object",
+  "type": "particle",
+  "name": "Melting",
+  "notes": "Bubbles of acid as the boulder melts away.",
+  "animation": "anim_fx_acid",
+  "mode": "burst",
+  "count": 10,
+  "lifetime": 30,
+  "speed": [
+    0.2,
+    0.6
+  ],
+  "angle": [
+    30,
+    150
+  ],
+  "gravity": 0,
+  "on_top": true,
+  "even": true
+}

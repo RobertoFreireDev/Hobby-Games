@@ -1,0 +1,59 @@
+{
+  "id": "prop_boulder",
+  "kind": "object",
+  "type": "prop",
+  "name": "Boulder",
+  "notes": "A big boulder on the Lagoon's east path to the Swamp. Solid. A POISON move melts it (Acid's puddle is the easy one): it hisses away for good (gate_6, saved); any other move thuds.",
+  "body": "body_boulder",
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "gate_6",
+        "op": "==",
+        "value": 0
+      }
+    },
+    {
+      "behavior": "move_switch",
+      "params": {
+        "types": [
+          "poison"
+        ],
+        "on_open": [
+          {
+            "do": "set_var",
+            "var": "gate_6",
+            "value": 1
+          },
+          {
+            "do": "save_game"
+          },
+          {
+            "do": "play_sfx",
+            "sfx": "sfx_melt"
+          },
+          {
+            "do": "spawn",
+            "object": "ptc_gate_melt",
+            "x": 0,
+            "y": -12,
+            "relative": true
+          },
+          {
+            "do": "destroy_self"
+          }
+        ],
+        "on_wrong": [
+          {
+            "do": "play_sfx",
+            "sfx": "sfx_thud"
+          }
+        ]
+      }
+    }
+  ],
+  "children": [
+    "body_boulder"
+  ]
+}

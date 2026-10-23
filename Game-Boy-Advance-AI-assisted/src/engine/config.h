@@ -1,0 +1,27 @@
+// config.h - pool sizes and limits. The engine never allocates memory: everything is a fixed pool.
+// tools/validate.py reads the MAX_* values below to check that scenes fit.
+#ifndef ENGINE_CONFIG_H
+#define ENGINE_CONFIG_H
+
+#define MAX_ACTORS      96      // actors alive at once (players, enemies, shots, pickups...); lives in EWRAM
+#define MAX_LOGIC       10      // behaviors per actor
+#define BSTATE_WORDS    5       // private state words each behavior gets per actor
+#define MAX_PARTICLES   80      // particles alive at once (a zone's effect may hold 25 of them for its whole time)
+#define MAX_EMITTERS    8       // particle emitters placed directly in a scene
+#define MAX_SCRIPTS     24      // action lists running at once (waits, fades...)
+#define SCRIPT_DEPTH    6       // nested if_var / if_chance levels inside one action list
+#define MAX_SPRITE_SHEETS 32    // different sprite sheets in OBJ VRAM at once
+#define MAX_OBJ_TILES   1024    // OBJ VRAM tiles (32 KB, 4bpp)
+#define STREAM_MIN_TILES 64     // a sprite sheet with more OBJ tiles than this streams: only the frames on screen sit in VRAM
+#define STREAM_SLOTS    48      // frames of streamed sheets in OBJ VRAM at once (each slot = the largest streamed frame)
+#define MAX_ICONS       24      // different icons in UI VRAM at once
+#define MAX_UPGRADE_CHOICES 3   // cards on a level-up (upgrade) menu
+#define MAX_QUEUED_SPRITES 40  // extra sprites behaviors draw each frame (portraits, crowns, paralysis sparks)
+#define MAX_FLOAT_TEXTS 8       // floating words at once (damage numbers, MISS, LV UP!)
+#define MAX_PINNED_TEXTS 8      // words pinned over actors at once (monsters' level tags)
+#define MAX_SPRITE_FONTS 2      // fonts whose letters are drawn as sprites (floating words, HUD texts with a font)
+#define MAX_ZONES       12      // move zones on the ground at once (fire, acid, falling rocks)
+#define MAX_SHINY       9       // rainbow-shimmering palette copies at once (shiny monsters: one per palette shown; the intro's 9)
+#define MOVE_HIT_MARGIN 2       // pixels: a move hurts every monster its effect's picture comes this close to
+
+#endif

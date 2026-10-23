@@ -1,0 +1,37 @@
+{
+  "id": "prop_camp_gustling",
+  "kind": "object",
+  "type": "prop",
+  "name": "Gustling at the campfire",
+  "notes": "Gustling on the intro screen. It only shows once it is unlocked (unlocked >= 7) and sits on the half circle behind the fire: its seat depends on how many monsters are unlocked, all of them spread evenly from left to right in roster order, so with 7 unlocked it takes seat 7. It always looks at the fire (view per number unlocked: 7: left, 8: down-left, 9: down-left). When it is shiny it shimmers through the rainbow, like everywhere else.",
+  "body": "body_camp_gustling",
+  "logic": [
+    {
+      "behavior": "spot_by_count",
+      "params": {
+        "var": "unlocked",
+        "need": 7,
+        "spots": [
+          [
+            74,
+            -10
+          ],
+          [
+            54,
+            -21
+          ],
+          [
+            39,
+            -26
+          ]
+        ],
+        "frames": 4,
+        "shiny_var": "shiny",
+        "shiny_slot": 6
+      }
+    }
+  ],
+  "children": [
+    "body_camp_gustling"
+  ]
+}

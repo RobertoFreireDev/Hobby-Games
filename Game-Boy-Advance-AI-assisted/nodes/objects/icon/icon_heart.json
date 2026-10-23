@@ -1,0 +1,18 @@
+{
+  "id": "icon_heart",
+  "kind": "object",
+  "type": "icon",
+  "name": "Heart",
+  "notes": "One heart of health, for a HUD.",
+  "palette": "pal_ui",
+  "pixels": [
+    ".11.11..",
+    "1551551.",
+    "1525551.",
+    "1555551.",
+    ".15551..",
+    "..151...",
+    "...1....",
+    "........"
+  ]
+}

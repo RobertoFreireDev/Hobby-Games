@@ -1,0 +1,46 @@
+{
+  "id": "sfx_hit_fire",
+  "kind": "object",
+  "type": "sfx",
+  "name": "Fire hit",
+  "notes": "The player's FIRE move lands: crackling pops of flame that roar and fade.",
+  "channel": "noise",
+  "priority": 2,
+  "steps": [
+    {
+      "pitch": 9,
+      "ticks": 1,
+      "volume": 15
+    },
+    {
+      "pitch": 6,
+      "ticks": 2,
+      "volume": 15
+    },
+    {
+      "pitch": 10,
+      "ticks": 1,
+      "volume": 15
+    },
+    {
+      "pitch": 6,
+      "ticks": 2,
+      "volume": 15
+    },
+    {
+      "pitch": 9,
+      "ticks": 1,
+      "volume": 15
+    },
+    {
+      "pitch": 5,
+      "ticks": 4,
+      "volume": 13
+    },
+    {
+      "pitch": 4,
+      "ticks": 5,
+      "volume": 9
+    }
+  ]
+}

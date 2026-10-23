@@ -1,0 +1,33 @@
+{
+  "id": "prop_camp_wispook",
+  "kind": "object",
+  "type": "prop",
+  "name": "Wispook at the campfire",
+  "notes": "Wispook on the intro screen. It only shows once it is unlocked (unlocked >= 8) and sits on the half circle behind the fire: its seat depends on how many monsters are unlocked, all of them spread evenly from left to right in roster order, so with 8 unlocked it takes seat 8. It always looks at the fire (view per number unlocked: 8: left, 9: down-left). When it is shiny it shimmers through the rainbow, like everywhere else.",
+  "body": "body_camp_wispook",
+  "logic": [
+    {
+      "behavior": "spot_by_count",
+      "params": {
+        "var": "unlocked",
+        "need": 8,
+        "spots": [
+          [
+            75,
+            -9
+          ],
+          [
+            57,
+            -19
+          ]
+        ],
+        "frames": 4,
+        "shiny_var": "shiny",
+        "shiny_slot": 7
+      }
+    }
+  ],
+  "children": [
+    "body_camp_wispook"
+  ]
+}

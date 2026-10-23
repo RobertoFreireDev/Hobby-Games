@@ -1,0 +1,28 @@
+{
+  "id": "anim_gustling_walk",
+  "kind": "object",
+  "type": "animation",
+  "name": "Gustling walk side",
+  "notes": "Gustling flying along facing sideways: quicker wing beats than when it hovers (raised 5 ticks, level 4, down 5, level 4), feet tucked away, its body at the same height the whole time. Loops.",
+  "sprite": "spr_gustling",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "side_wings_up",
+      "ticks": 5
+    },
+    {
+      "frame": "side",
+      "ticks": 4
+    },
+    {
+      "frame": "side_wings_down",
+      "ticks": 5
+    },
+    {
+      "frame": "side",
+      "ticks": 4
+    }
+  ],
+  "events": []
+}

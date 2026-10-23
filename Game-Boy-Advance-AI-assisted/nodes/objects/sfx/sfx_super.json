@@ -1,0 +1,27 @@
+{
+  "id": "sfx_super",
+  "kind": "object",
+  "type": "sfx",
+  "name": "Super effective hit",
+  "notes": "A bright rising ping when a move is super effective. On square1, so for the player's hits it rings on top of the type's hit sound.",
+  "channel": "square1",
+  "duty": 1,
+  "priority": 2,
+  "steps": [
+    {
+      "note": "C6",
+      "ticks": 2,
+      "volume": 12
+    },
+    {
+      "note": "G6",
+      "ticks": 3,
+      "volume": 11
+    },
+    {
+      "note": "C7",
+      "ticks": 4,
+      "volume": 8
+    }
+  ]
+}

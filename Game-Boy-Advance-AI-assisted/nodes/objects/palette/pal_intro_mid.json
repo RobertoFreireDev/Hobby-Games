@@ -1,0 +1,25 @@
+{
+  "id": "pal_intro_mid",
+  "kind": "object",
+  "type": "palette",
+  "name": "Intro cave colors (mid)",
+  "notes": "The 15 colors of the middle (tunnel, walls, monsters) band of the intro's cave picture (tile rows 7-13), picked from every version of it (1 to 9 monsters at the fire) so they all share one palette. Warm browns and oranges: the cave lit by the campfire.",
+  "colors": [
+    "#000000",
+    "#100808",
+    "#eed57b",
+    "#835a20",
+    "#4a2010",
+    "#f69431",
+    "#734118",
+    "#391808",
+    "#ac8341",
+    "#fff673",
+    "#c57329",
+    "#201008",
+    "#cdac5a",
+    "#622910",
+    "#ffc552",
+    "#a45220"
+  ]
+}

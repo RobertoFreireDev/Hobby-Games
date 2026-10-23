@@ -1,0 +1,16 @@
+{
+  "id": "anim_blank",
+  "kind": "object",
+  "type": "animation",
+  "name": "Nothing",
+  "notes": "Nothing, standing still.",
+  "sprite": "spr_blank",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "none",
+      "ticks": 60
+    }
+  ],
+  "events": []
+}

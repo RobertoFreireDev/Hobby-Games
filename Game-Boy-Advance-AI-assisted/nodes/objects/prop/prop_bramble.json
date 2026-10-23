@@ -1,0 +1,59 @@
+{
+  "id": "prop_bramble",
+  "kind": "object",
+  "type": "prop",
+  "name": "Bramble wall",
+  "notes": "A wall of thorny bramble across the Jungle's path, right past the Meadow's south opening. Solid: nobody gets past. A FIRE move that touches it (Ember's flame on the tile in front is the easy one; Fire Spin and Flamethrower work too) burns it: it flares and crackles away for good (gate_2 = 1, saved). Any other move only makes a dull thud. The one in the Bramble Thicket (E6) closes the way to the Clearing: it burns the same way but grows back each time you come in, until Splashell is freed.",
+  "body": "body_bramble",
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "gate_2",
+        "op": "==",
+        "value": 0
+      }
+    },
+    {
+      "behavior": "move_switch",
+      "params": {
+        "types": [
+          "fire"
+        ],
+        "on_open": [
+          {
+            "do": "set_var",
+            "var": "gate_2",
+            "value": 1
+          },
+          {
+            "do": "save_game"
+          },
+          {
+            "do": "play_sfx",
+            "sfx": "sfx_burn"
+          },
+          {
+            "do": "spawn",
+            "object": "ptc_gate_burn",
+            "x": 0,
+            "y": -12,
+            "relative": true
+          },
+          {
+            "do": "destroy_self"
+          }
+        ],
+        "on_wrong": [
+          {
+            "do": "play_sfx",
+            "sfx": "sfx_thud"
+          }
+        ]
+      }
+    }
+  ],
+  "children": [
+    "body_bramble"
+  ]
+}

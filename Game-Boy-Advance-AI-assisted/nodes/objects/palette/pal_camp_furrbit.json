@@ -1,0 +1,25 @@
+{
+  "id": "pal_camp_furrbit",
+  "kind": "object",
+  "type": "palette",
+  "name": "Furrbit by the fire colors",
+  "notes": "Furrbit's colors in the campfire's light (15 colors for all its seats): warmer and darker than in the game, bright on the side facing the fire.",
+  "colors": [
+    "#000000",
+    "#101010",
+    "#ffffbd",
+    "#837b62",
+    "#d5b48b",
+    "#413129",
+    "#ee944a",
+    "#ffcd94",
+    "#b46a31",
+    "#f6b462",
+    "#b49473",
+    "#735a41",
+    "#292020",
+    "#ffeea4",
+    "#ffb48b",
+    "#ff7b6a"
+  ]
+}

@@ -1,0 +1,733 @@
+{
+  "id": "scn_run",
+  "kind": "scene",
+  "type": "level",
+  "name": "Run",
+  "notes": "The run. It happens in one of 9 worlds, one per monster type, picked by the 'world' variable: its ground and its border (forest, lava sea, ocean, crystal ridge, jungle, sludge bog, clouds, dead forest or canyon walls) are swapped in when the scene loads (the tree borders, forest, jungle and dead forest, are drawn over the monsters, so you walk under their leaves; the others lie at ground level under them, inside the solid band, so nobody ever walks over lava, water or sludge); every world has the same size, the same solid band around the edge and nothing solid inside, so every monster and item keeps its place. Monsters whose type is the world's are at home for the whole run: wild ones and the Alpha get +10% power, +10% speed and -10% recharge, the player's monster half that (+5% power, +5% speed, -5% recharge). The player's monster starts in the middle of the 3x3-screen world; 27 wild monsters live around it (3 per screen: levels 2 near the center, 4 and 6 farther out), but the player's own species stays away, leaving 24, plus the sleeping Alpha in the south-east clearing (level 5, +1 each minute up to 15 until it wakes). 5 floor items (Swift Feather, Power Gem, Aim Charm, Mist Orb, Quick Hourglass) each lie at a random one of their 9 spots, one spot per screen; only the player picks them up, each giving a small boost for the rest of the run. A run started after a win also has the 3 items that win gave (their boosts for the whole run, their words over the player at the start). Defeat all 25 to win; if HP runs out it's game over. Music: the run theme (mus_run) until the Alpha wakes, then the boss theme (mus_boss) for the final fight; a restarted run starts again with the run theme. Seed: one seed lies on the map each run, at a random one of its 27 spots (away from the floor items' spots, the start, the Alpha and the monsters' homes); only the player picks it up. It is planted in the menu's garden only if the run is finished, won or lost (see run_seed); quitting or restarting the run loses it. No seed lies on the map while all 4 garden plots are in use, or once the 10 garden items (5 HP UP + 5 POWER UP) are picked up or growing. Garden items: each HP UP picked up adds 5 to the starting HP (and max HP), each POWER UP 2% or 1% to the moves' power (2, 1, 2, 1, 2: +8% for all 5), added silently when the scene starts, so a RESTART gets them again, just the same. World sign: right after the fade-in, the world's name (GREEN MEADOW, EMBER CRATER, CORAL LAGOON, STORM PLATEAU, VERDANT JUNGLE, MIASMA SWAMP, SKY ISLE, HAUNTED HOLLOW or BOULDER CANYON) shows for 3 s in the middle near the top of the screen, like a location sign (the 'sign' variable, drawn by the HUD); the words over the player at the start come after it. Shiny seed: when the Alpha faints, if its species (boss_species) is unlocked and not shiny yet, it leaves a rainbow-shimmering shiny seed where it fell and the run waits until the player picks it up; winning that way makes the Alpha's species shiny (see enm_alpha, item_shiny_seed). Without a seed the screen holds 3 s after the Alpha has blinked out, then the victory screen. Each run starts with new_shiny at -1 (no shiny to give).",
+  "backdrop": "#78c050",
+  "music": "mus_run",
+  "camera": {
+    "follow": "player",
+    "bounds": "map"
+  },
+  "instances": [
+    {
+      "id": "ground",
+      "object": "map_ground_normal",
+      "variants": {
+        "var": "world",
+        "objects": [
+          "map_ground_normal",
+          "map_ground_fire",
+          "map_ground_water",
+          "map_ground_electric",
+          "map_ground_grass",
+          "map_ground_poison",
+          "map_ground_flying",
+          "map_ground_ghost",
+          "map_ground_rock"
+        ]
+      }
+    },
+    {
+      "id": "border",
+      "object": "map_border_normal",
+      "variants": {
+        "var": "world",
+        "objects": [
+          "map_border_normal",
+          "map_border_fire",
+          "map_border_water",
+          "map_border_electric",
+          "map_border_grass",
+          "map_border_poison",
+          "map_border_flying",
+          "map_border_ghost",
+          "map_border_rock"
+        ]
+      }
+    },
+    {
+      "id": "player",
+      "object": "plr_monster",
+      "x": 360,
+      "y": 244
+    },
+    {
+      "id": "furrbit_1",
+      "object": "enm_wild",
+      "x": 268,
+      "y": 247,
+      "overrides": {
+        "monster": {
+          "species": "mon_furrbit",
+          "level": 2,
+          "hp": 30
+        }
+      }
+    },
+    {
+      "id": "emberpup_1",
+      "object": "enm_wild",
+      "x": 452,
+      "y": 231,
+      "overrides": {
+        "monster": {
+          "species": "mon_emberpup",
+          "level": 2,
+          "hp": 30
+        }
+      }
+    },
+    {
+      "id": "gustling_1",
+      "object": "enm_wild",
+      "x": 452,
+      "y": 279,
+      "overrides": {
+        "monster": {
+          "species": "mon_gustling",
+          "level": 2,
+          "hp": 30
+        }
+      }
+    },
+    {
+      "id": "splashell_1",
+      "object": "enm_wild",
+      "x": 148,
+      "y": 191,
+      "overrides": {
+        "monster": {
+          "species": "mon_splashell",
+          "level": 2,
+          "hp": 30
+        }
+      }
+    },
+    {
+      "id": "sproutle_1",
+      "object": "enm_wild",
+      "x": 92,
+      "y": 207,
+      "overrides": {
+        "monster": {
+          "species": "mon_sproutle",
+          "level": 2,
+          "hp": 30
+        }
+      }
+    },
+    {
+      "id": "voltail_1",
+      "object": "enm_wild",
+      "x": 60,
+      "y": 255,
+      "overrides": {
+        "monster": {
+          "species": "mon_voltail",
+          "level": 2,
+          "hp": 30
+        }
+      }
+    },
+    {
+      "id": "venomole_1",
+      "object": "enm_wild",
+      "x": 652,
+      "y": 223,
+      "overrides": {
+        "monster": {
+          "species": "mon_venomole",
+          "level": 2,
+          "hp": 30
+        }
+      }
+    },
+    {
+      "id": "wispook_1",
+      "object": "enm_wild",
+      "x": 540,
+      "y": 287,
+      "overrides": {
+        "monster": {
+          "species": "mon_wispook",
+          "level": 2,
+          "hp": 30
+        }
+      }
+    },
+    {
+      "id": "pebbulk_1",
+      "object": "enm_wild",
+      "x": 604,
+      "y": 287,
+      "overrides": {
+        "monster": {
+          "species": "mon_pebbulk",
+          "level": 2,
+          "hp": 30
+        }
+      }
+    },
+    {
+      "id": "pebbulk_2",
+      "object": "enm_wild",
+      "x": 428,
+      "y": 87,
+      "overrides": {
+        "monster": {
+          "species": "mon_pebbulk",
+          "level": 4,
+          "hp": 45
+        }
+      }
+    },
+    {
+      "id": "gustling_2",
+      "object": "enm_wild",
+      "x": 348,
+      "y": 79,
+      "overrides": {
+        "monster": {
+          "species": "mon_gustling",
+          "level": 4,
+          "hp": 45
+        }
+      }
+    },
+    {
+      "id": "voltail_2",
+      "object": "enm_wild",
+      "x": 284,
+      "y": 79,
+      "overrides": {
+        "monster": {
+          "species": "mon_voltail",
+          "level": 4,
+          "hp": 45
+        }
+      }
+    },
+    {
+      "id": "sproutle_2",
+      "object": "enm_wild",
+      "x": 412,
+      "y": 367,
+      "overrides": {
+        "monster": {
+          "species": "mon_sproutle",
+          "level": 4,
+          "hp": 45
+        }
+      }
+    },
+    {
+      "id": "furrbit_2",
+      "object": "enm_wild",
+      "x": 300,
+      "y": 383,
+      "overrides": {
+        "monster": {
+          "species": "mon_furrbit",
+          "level": 4,
+          "hp": 45
+        }
+      }
+    },
+    {
+      "id": "venomole_2",
+      "object": "enm_wild",
+      "x": 396,
+      "y": 447,
+      "overrides": {
+        "monster": {
+          "species": "mon_venomole",
+          "level": 4,
+          "hp": 45
+        }
+      }
+    },
+    {
+      "id": "wispook_2",
+      "object": "enm_wild",
+      "x": 164,
+      "y": 87,
+      "overrides": {
+        "monster": {
+          "species": "mon_wispook",
+          "level": 4,
+          "hp": 45
+        }
+      }
+    },
+    {
+      "id": "emberpup_2",
+      "object": "enm_wild",
+      "x": 84,
+      "y": 79,
+      "overrides": {
+        "monster": {
+          "species": "mon_emberpup",
+          "level": 4,
+          "hp": 45
+        }
+      }
+    },
+    {
+      "id": "splashell_2",
+      "object": "enm_wild",
+      "x": 76,
+      "y": 127,
+      "overrides": {
+        "monster": {
+          "species": "mon_splashell",
+          "level": 4,
+          "hp": 45
+        }
+      }
+    },
+    {
+      "id": "pebbulk_3",
+      "object": "enm_wild",
+      "x": 676,
+      "y": 63,
+      "overrides": {
+        "monster": {
+          "species": "mon_pebbulk",
+          "level": 6,
+          "hp": 60
+        }
+      }
+    },
+    {
+      "id": "emberpup_3",
+      "object": "enm_wild",
+      "x": 564,
+      "y": 87,
+      "overrides": {
+        "monster": {
+          "species": "mon_emberpup",
+          "level": 6,
+          "hp": 60
+        }
+      }
+    },
+    {
+      "id": "voltail_3",
+      "object": "enm_wild",
+      "x": 604,
+      "y": 135,
+      "overrides": {
+        "monster": {
+          "species": "mon_voltail",
+          "level": 6,
+          "hp": 60
+        }
+      }
+    },
+    {
+      "id": "wispook_3",
+      "object": "enm_wild",
+      "x": 44,
+      "y": 415,
+      "overrides": {
+        "monster": {
+          "species": "mon_wispook",
+          "level": 6,
+          "hp": 60
+        }
+      }
+    },
+    {
+      "id": "venomole_3",
+      "object": "enm_wild",
+      "x": 180,
+      "y": 399,
+      "overrides": {
+        "monster": {
+          "species": "mon_venomole",
+          "level": 6,
+          "hp": 60
+        }
+      }
+    },
+    {
+      "id": "furrbit_3",
+      "object": "enm_wild",
+      "x": 212,
+      "y": 439,
+      "overrides": {
+        "monster": {
+          "species": "mon_furrbit",
+          "level": 6,
+          "hp": 60
+        }
+      }
+    },
+    {
+      "id": "splashell_3",
+      "object": "enm_wild",
+      "x": 676,
+      "y": 391,
+      "overrides": {
+        "monster": {
+          "species": "mon_splashell",
+          "level": 6,
+          "hp": 60
+        }
+      }
+    },
+    {
+      "id": "sproutle_3",
+      "object": "enm_wild",
+      "x": 652,
+      "y": 431,
+      "overrides": {
+        "monster": {
+          "species": "mon_sproutle",
+          "level": 6,
+          "hp": 60
+        }
+      }
+    },
+    {
+      "id": "gustling_3",
+      "object": "enm_wild",
+      "x": 572,
+      "y": 359,
+      "overrides": {
+        "monster": {
+          "species": "mon_gustling",
+          "level": 6,
+          "hp": 60
+        }
+      }
+    },
+    {
+      "id": "alpha",
+      "object": "enm_alpha",
+      "x": 576,
+      "y": 404
+    },
+    {
+      "id": "swift_feather",
+      "object": "item_swift_feather",
+      "x": 188,
+      "y": 116
+    },
+    {
+      "id": "power_gem",
+      "object": "item_power_gem",
+      "x": 68,
+      "y": 348
+    },
+    {
+      "id": "aim_charm",
+      "object": "item_aim_charm",
+      "x": 252,
+      "y": 212
+    },
+    {
+      "id": "mist_orb",
+      "object": "item_mist_orb",
+      "x": 500,
+      "y": 132
+    },
+    {
+      "id": "quick_hourglass",
+      "object": "item_quick_hourglass",
+      "x": 564,
+      "y": 324
+    },
+    {
+      "id": "hud",
+      "object": "hud_run"
+    }
+  ],
+  "on_start": [
+    {
+      "do": "set_var",
+      "var": "new_shiny",
+      "value": -1
+    },
+    {
+      "do": "set_var",
+      "var": "sign",
+      "value": 0
+    },
+    {
+      "do": "if_var",
+      "var": "hp_ups",
+      "op": ">=",
+      "value": 1,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "hp_max",
+          "value": 5
+        },
+        {
+          "do": "add_var",
+          "var": "hp",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "hp_ups",
+      "op": ">=",
+      "value": 2,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "hp_max",
+          "value": 5
+        },
+        {
+          "do": "add_var",
+          "var": "hp",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "hp_ups",
+      "op": ">=",
+      "value": 3,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "hp_max",
+          "value": 5
+        },
+        {
+          "do": "add_var",
+          "var": "hp",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "hp_ups",
+      "op": ">=",
+      "value": 4,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "hp_max",
+          "value": 5
+        },
+        {
+          "do": "add_var",
+          "var": "hp",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "hp_ups",
+      "op": ">=",
+      "value": 5,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "hp_max",
+          "value": 5
+        },
+        {
+          "do": "add_var",
+          "var": "hp",
+          "value": 5
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "power_ups",
+      "op": ">=",
+      "value": 1,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "boost_power",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "power_ups",
+      "op": ">=",
+      "value": 2,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "boost_power",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "power_ups",
+      "op": ">=",
+      "value": 3,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "boost_power",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "power_ups",
+      "op": ">=",
+      "value": 4,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "boost_power",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "power_ups",
+      "op": ">=",
+      "value": 5,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "boost_power",
+          "value": 2
+        }
+      ]
+    },
+    {
+      "do": "set_var",
+      "var": "run_seed",
+      "value": 0
+    },
+    {
+      "do": "set_var",
+      "var": "plots_used",
+      "value": 0
+    },
+    {
+      "do": "if_var",
+      "var": "plot_1",
+      "op": ">=",
+      "value": 1,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "plots_used",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "plot_2",
+      "op": ">=",
+      "value": 1,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "plots_used",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "plot_3",
+      "op": ">=",
+      "value": 1,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "plots_used",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "plot_4",
+      "op": ">=",
+      "value": 1,
+      "then": [
+        {
+          "do": "add_var",
+          "var": "plots_used",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "do": "set_var",
+      "var": "items_total",
+      "from": "hp_ups"
+    },
+    {
+      "do": "add_var",
+      "var": "items_total",
+      "from": "power_ups"
+    },
+    {
+      "do": "add_var",
+      "var": "items_total",
+      "from": "plots_used"
+    },
+    {
+      "do": "if_var",
+      "var": "plots_used",
+      "op": "<",
+      "value": 4,
+      "then": [
+        {
+          "do": "if_var",
+          "var": "items_total",
+          "op": "<",
+          "value": 10,
+          "then": [
+            {
+              "do": "spawn",
+              "object": "item_seed",
+              "x": 44,
+              "y": 52,
+              "relative": false
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "do": "fade_in",
+      "ticks": 20
+    },
+    {
+      "do": "set_var",
+      "var": "sign",
+      "value": 1
+    },
+    {
+      "do": "wait",
+      "ticks": 180
+    },
+    {
+      "do": "set_var",
+      "var": "sign",
+      "value": 0
+    }
+  ]
+}

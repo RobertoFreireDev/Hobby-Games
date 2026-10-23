@@ -1,0 +1,23 @@
+{
+  "id": "mov_bubble_beam",
+  "kind": "object",
+  "type": "move",
+  "name": "Bubble Beam",
+  "notes": "Splashell's move 2 (B). Bubbles stream straight ahead of the user (3 tiles) and drift apart as they pop; every monster a bubble touches is hurt. Charge: 10 s.",
+  "title": "BUBBLE BEAM",
+  "monster_type": "water",
+  "shape": "beam",
+  "range": 3,
+  "power": 18,
+  "accuracy": 90,
+  "charge": 600,
+  "effect": "ptc_fx_bubble",
+  "effect_at": "axis",
+  "travel": "anim_travel_bubble_beam",
+  "sfx": "sfx_mv_water",
+  "children": [
+    "spr_fx_bubble",
+    "ptc_fx_bubble",
+    "anim_travel_bubble_beam"
+  ]
+}

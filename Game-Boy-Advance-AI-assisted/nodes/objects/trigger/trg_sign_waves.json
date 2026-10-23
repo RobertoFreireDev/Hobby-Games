@@ -1,0 +1,60 @@
+{
+  "id": "trg_sign_waves",
+  "kind": "object",
+  "type": "trigger",
+  "name": "WAVES sign zone",
+  "notes": "The area around a menu sign (10 px on every side of it): while the monster is in it, 'spot' holds the sign's number, so its name shows over the monster's head and A or B know what to do (plr_menu); leaving it puts 'spot' back to 0. For the WAVES sign (there once all 9 monsters are freed): 'spot' 3. It also sets 'entry' to the chosen monster's waves run (9 + its number) and 'near', so the bottom line of the screen shows that monster's waves best time; leaving clears 'near'. Placed with the sign only when the waves mode is open.",
+  "zone": {
+    "w": 36,
+    "h": 36
+  },
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "unlocked",
+        "op": ">=",
+        "value": 9
+      }
+    },
+    {
+      "behavior": "trigger_zone",
+      "params": {
+        "on_enter": [
+          {
+            "do": "set_var",
+            "var": "spot",
+            "value": 3
+          },
+          {
+            "do": "set_var",
+            "var": "entry",
+            "from": "chosen"
+          },
+          {
+            "do": "add_var",
+            "var": "entry",
+            "value": 9
+          },
+          {
+            "do": "set_var",
+            "var": "near",
+            "value": 1
+          }
+        ],
+        "on_exit": [
+          {
+            "do": "set_var",
+            "var": "spot",
+            "value": 0
+          },
+          {
+            "do": "set_var",
+            "var": "near",
+            "value": 0
+          }
+        ]
+      }
+    }
+  ]
+}

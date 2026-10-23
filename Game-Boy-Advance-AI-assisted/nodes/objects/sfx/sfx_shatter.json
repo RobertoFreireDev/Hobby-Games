@@ -1,0 +1,42 @@
+{
+  "id": "sfx_shatter",
+  "kind": "object",
+  "type": "sfx",
+  "name": "Shatter",
+  "notes": "The storm crystal shatters: bright falling chimes.",
+  "channel": "square2",
+  "priority": 2,
+  "steps": [
+    {
+      "note": "E7",
+      "ticks": 2,
+      "volume": 15
+    },
+    {
+      "note": "B6",
+      "ticks": 2,
+      "volume": 14
+    },
+    {
+      "note": "G6",
+      "ticks": 2,
+      "volume": 13
+    },
+    {
+      "note": "D6",
+      "ticks": 3,
+      "volume": 12
+    },
+    {
+      "note": "B5",
+      "ticks": 4,
+      "volume": 10
+    },
+    {
+      "note": "G5",
+      "ticks": 6,
+      "volume": 7
+    }
+  ],
+  "duty": 1
+}

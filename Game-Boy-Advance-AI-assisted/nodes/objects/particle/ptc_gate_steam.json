@@ -1,0 +1,22 @@
+{
+  "id": "ptc_gate_steam",
+  "kind": "object",
+  "type": "particle",
+  "name": "Steam puff",
+  "notes": "A puff of steam as flames go out.",
+  "animation": "anim_fx_bubble",
+  "mode": "burst",
+  "count": 10,
+  "lifetime": 30,
+  "speed": [
+    0.3,
+    0.8
+  ],
+  "angle": [
+    40,
+    140
+  ],
+  "gravity": 0,
+  "on_top": true,
+  "even": true
+}

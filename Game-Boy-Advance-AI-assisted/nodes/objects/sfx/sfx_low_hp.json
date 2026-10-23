@@ -1,0 +1,22 @@
+{
+  "id": "sfx_low_hp",
+  "kind": "object",
+  "type": "sfx",
+  "name": "Low HP beep",
+  "notes": "A soft high-low beep that repeats once a second while the player's HP bar is red (a quarter of the max HP or less), like the classic low-HP alarm. Quiet on purpose (volume 6, half of the other sounds) and on the lowest priority, so every hit, miss and cry cuts it and is heard over it; on square2, so the song's melody keeps playing. Played by the player's monster (low_hp_sfx of plr_monster and plr_waves).",
+  "channel": "square2",
+  "duty": 2,
+  "priority": 0,
+  "steps": [
+    {
+      "note": "A5",
+      "ticks": 4,
+      "volume": 6
+    },
+    {
+      "note": "E5",
+      "ticks": 5,
+      "volume": 5
+    }
+  ]
+}

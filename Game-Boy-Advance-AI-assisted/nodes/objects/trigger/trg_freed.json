@@ -1,0 +1,28 @@
+{
+  "id": "trg_freed",
+  "kind": "object",
+  "type": "trigger",
+  "name": "Trapped monster zone",
+  "notes": "The zone around a monster trapped without guards (Splashell in the Jungle's Clearing, Wispook on the Sky Isle's pillar): walking up to it frees it (the unlock show, set per place).",
+  "zone": {
+    "w": 32,
+    "h": 32
+  },
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "unlocked",
+        "op": ">=",
+        "value": 0
+      }
+    },
+    {
+      "behavior": "trigger_zone",
+      "params": {
+        "on_enter": [],
+        "once": true
+      }
+    }
+  ]
+}

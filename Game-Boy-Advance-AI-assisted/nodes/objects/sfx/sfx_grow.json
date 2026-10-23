@@ -1,0 +1,37 @@
+{
+  "id": "sfx_grow",
+  "kind": "object",
+  "type": "sfx",
+  "name": "Grow",
+  "notes": "A vine bridge grows across: a quick rising run.",
+  "channel": "square1",
+  "priority": 2,
+  "steps": [
+    {
+      "note": "C5",
+      "ticks": 3,
+      "volume": 13
+    },
+    {
+      "note": "E5",
+      "ticks": 3,
+      "volume": 13
+    },
+    {
+      "note": "G5",
+      "ticks": 3,
+      "volume": 13
+    },
+    {
+      "note": "C6",
+      "ticks": 4,
+      "volume": 13
+    },
+    {
+      "note": "E6",
+      "ticks": 8,
+      "volume": 11
+    }
+  ],
+  "duty": 2
+}

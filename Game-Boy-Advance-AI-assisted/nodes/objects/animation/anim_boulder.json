@@ -1,0 +1,16 @@
+{
+  "id": "anim_boulder",
+  "kind": "object",
+  "type": "animation",
+  "name": "Boulder",
+  "notes": "Boulder, standing still.",
+  "sprite": "spr_boulder",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "boulder",
+      "ticks": 60
+    }
+  ],
+  "events": []
+}

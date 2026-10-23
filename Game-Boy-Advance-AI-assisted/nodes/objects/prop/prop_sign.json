@@ -1,0 +1,21 @@
+{
+  "id": "prop_sign",
+  "kind": "object",
+  "type": "prop",
+  "name": "Mode sign",
+  "notes": "A wooden sign of the menu map's Green Meadow, one per game mode: CLASSIC (left), CLEAR SAVE (middle) and, once all 9 monsters are freed, WAVES (right: its appear_if needs unlocked >= 9). The sign itself shows no words: walking up to it shows its name over the monster's head (plr_menu, head_label), and A or B there picks it. Solid: the monster bumps into it.",
+  "body": "body_sign",
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "unlocked",
+        "op": ">=",
+        "value": 0
+      }
+    }
+  ],
+  "children": [
+    "body_sign"
+  ]
+}

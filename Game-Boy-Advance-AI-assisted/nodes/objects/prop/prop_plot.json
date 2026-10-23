@@ -1,0 +1,22 @@
+{
+  "id": "prop_plot",
+  "kind": "object",
+  "type": "prop",
+  "name": "Garden plot",
+  "notes": "One of the 4 garden plots under the rock wall of the menu map (scn_menu places them, each reading its own variable, plot_1 to plot_4). It shows what the plot holds right now (0 soil, 1 seed, 2 sprout, 3 young plant, 4 budding plant, 5 full grown (golden flower), 6 HP UP ripe on the soil, 7 POWER UP ripe on the soil), and changes the moment that changes: picking up a ripe item turns it back into empty soil at once.",
+  "body": "body_plot",
+  "logic": [
+    {
+      "behavior": "frame_by_var",
+      "params": {
+        "var": "plot_1",
+        "first": 0,
+        "steps": 8,
+        "frames": 1
+      }
+    }
+  ],
+  "children": [
+    "body_plot"
+  ]
+}

@@ -1,0 +1,131 @@
+{
+  "id": "item_seed",
+  "kind": "object",
+  "type": "pickup",
+  "name": "Seed (classic)",
+  "notes": "The one seed of the classic run. Only the player picks it up: a sprouting chime (sfx_seed) and run_seed becomes 1. It is planted in the menu's garden only if the run is finished, won or lost; quitting or restarting the run loses it. It lies at a random one of its 27 spots each run (the scene spawns it at the first), away from the start, the floor items' spots, the sleeping Alpha and the monsters' homes. The scene leaves it out while all 4 garden plots are in use, or once the 10 garden items (5 HP UP + 5 POWER UP) are picked or growing.",
+  "body": "body_seed",
+  "logic": [
+    {
+      "behavior": "random_spot",
+      "params": {
+        "spots": [
+          [
+            388,
+            52
+          ],
+          [
+            596,
+            52
+          ],
+          [
+            44,
+            188
+          ],
+          [
+            300,
+            188
+          ],
+          [
+            676,
+            292
+          ],
+          [
+            164,
+            348
+          ],
+          [
+            436,
+            412
+          ],
+          [
+            668,
+            356
+          ],
+          [
+            196,
+            52
+          ],
+          [
+            268,
+            116
+          ],
+          [
+            676,
+            116
+          ],
+          [
+            196,
+            220
+          ],
+          [
+            292,
+            284
+          ],
+          [
+            564,
+            212
+          ],
+          [
+            60,
+            444
+          ],
+          [
+            276,
+            444
+          ],
+          [
+            484,
+            380
+          ],
+          [
+            140,
+            140
+          ],
+          [
+            420,
+            124
+          ],
+          [
+            540,
+            60
+          ],
+          [
+            44,
+            300
+          ],
+          [
+            476,
+            204
+          ],
+          [
+            676,
+            188
+          ],
+          [
+            236,
+            340
+          ],
+          [
+            372,
+            396
+          ],
+          [
+            532,
+            444
+          ]
+        ]
+      }
+    },
+    {
+      "behavior": "collectible",
+      "params": {
+        "var": "run_seed",
+        "amount": 1
+      }
+    }
+  ],
+  "sounds": {
+    "collect": "sfx_seed"
+  }
+}

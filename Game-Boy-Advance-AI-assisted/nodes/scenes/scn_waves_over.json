@@ -1,0 +1,50 @@
+{
+  "id": "scn_waves_over",
+  "kind": "scene",
+  "type": "game_over",
+  "name": "Waves game over",
+  "notes": "GAME OVER with the wave reached, the level, kills and time of the waves run. The run counts as finished for the garden (run_ended, saved at once with the seed if it was picked up): when the menu opens next, every plant in the garden counts one more finished run (5 make it grow one step) and the seed is planted. After 3 s (or START) it goes back to the menu.",
+  "backdrop": "#101020",
+  "music": "mus_game_over",
+  "camera": {
+    "x": 0,
+    "y": 0,
+    "bounds": "none"
+  },
+  "instances": [
+    {
+      "id": "hud",
+      "object": "hud_waves_over"
+    },
+    {
+      "id": "back",
+      "object": "prop_back"
+    }
+  ],
+  "on_start": [
+    {
+      "do": "set_var",
+      "var": "run_ended",
+      "value": 1
+    },
+    {
+      "do": "save_game"
+    },
+    {
+      "do": "fade_in",
+      "ticks": 20
+    },
+    {
+      "do": "wait",
+      "ticks": 180
+    },
+    {
+      "do": "fade_out",
+      "ticks": 20
+    },
+    {
+      "do": "goto_scene",
+      "scene": "scn_menu"
+    }
+  ]
+}

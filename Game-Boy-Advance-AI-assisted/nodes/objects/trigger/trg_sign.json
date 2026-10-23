@@ -1,0 +1,47 @@
+{
+  "id": "trg_sign",
+  "kind": "object",
+  "type": "trigger",
+  "name": "Sign zone",
+  "notes": "The area around a menu sign (10 px on every side of it): while the monster is in it, 'spot' holds the sign's number, so its name shows over the monster's head and A or B know what to do (plr_menu); leaving it puts 'spot' back to 0. Used for the CLASSIC (1) and CLEAR SAVE (2) signs, the number set per sign in the scene; the WAVES sign has its own, trg_sign_waves. By the CLASSIC sign it also sets 'entry' to the chosen monster's classic run and 'near', so the bottom line of the screen shows that monster's classic best time; leaving clears 'near'.",
+  "zone": {
+    "w": 36,
+    "h": 36
+  },
+  "logic": [
+    {
+      "behavior": "trigger_zone",
+      "params": {
+        "on_enter": [
+          {
+            "do": "set_var",
+            "var": "spot",
+            "value": 1
+          },
+          {
+            "do": "set_var",
+            "var": "entry",
+            "from": "chosen"
+          },
+          {
+            "do": "set_var",
+            "var": "near",
+            "value": 1
+          }
+        ],
+        "on_exit": [
+          {
+            "do": "set_var",
+            "var": "spot",
+            "value": 0
+          },
+          {
+            "do": "set_var",
+            "var": "near",
+            "value": 0
+          }
+        ]
+      }
+    }
+  ]
+}

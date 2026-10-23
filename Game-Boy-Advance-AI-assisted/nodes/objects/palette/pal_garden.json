@@ -1,0 +1,25 @@
+{
+  "id": "pal_garden",
+  "kind": "object",
+  "type": "palette",
+  "name": "Garden colors",
+  "notes": "The colors of the menu's garden plots (spr_plot): soil browns (the same as the garden bed's in pal_menu_field, for the little dug hole of a ripe item), leaf greens, the HP UP heart's reds and the POWER UP fist's skin and red cuff, all in one palette since a sprite has only one. Lit from the top-left like the rest of the game.",
+  "colors": [
+    "#000000",
+    "#201810",
+    "#f8f8f0",
+    "#4a2c18",
+    "#7a4c28",
+    "#a87444",
+    "#c8e8ff",
+    "#2c6c28",
+    "#58a838",
+    "#98d858",
+    "#c8f080",
+    "#e83838",
+    "#883010",
+    "#f0c098",
+    "#a0a0a8",
+    "#f8d038"
+  ]
+}

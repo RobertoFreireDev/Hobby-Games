@@ -1,0 +1,28 @@
+{
+  "id": "anim_seed",
+  "kind": "object",
+  "type": "animation",
+  "name": "Seed twinkle",
+  "notes": "Loops while the seed lies on the map: still, then a quick twinkle beside it.",
+  "sprite": "spr_seed",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "seed_a",
+      "ticks": 40
+    },
+    {
+      "frame": "seed_b",
+      "ticks": 5
+    },
+    {
+      "frame": "seed_c",
+      "ticks": 5
+    },
+    {
+      "frame": "seed_d",
+      "ticks": 20
+    }
+  ],
+  "events": []
+}

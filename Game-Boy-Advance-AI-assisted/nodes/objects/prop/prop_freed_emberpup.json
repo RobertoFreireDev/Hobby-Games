@@ -1,0 +1,18 @@
+{
+  "id": "prop_freed_emberpup",
+  "kind": "object",
+  "type": "prop",
+  "name": "Emberpup (trapped / freed)",
+  "notes": "Emberpup on the menu map, in its own look (its species' body) but a prop, so moves can't hit it: trapped on its land's challenge screen (with appear_if unlocked == 1, so it vanishes the moment it is freed), or freed (spawned by the unlock, happy until you leave the screen).",
+  "body": "body_emberpup",
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "unlocked",
+        "op": ">=",
+        "value": 0
+      }
+    }
+  ]
+}

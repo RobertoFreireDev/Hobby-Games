@@ -1,0 +1,42 @@
+{
+  "id": "spr_sparkle",
+  "kind": "object",
+  "type": "sprite",
+  "name": "Alpha sparkle",
+  "notes": "The golden sparkles rising around the Alpha (its aura). Every frame keeps a 1 px empty border, so the picture is never cut at the edge of its sprite.",
+  "palette": "pal_fx",
+  "width": 8,
+  "height": 8,
+  "frames": {
+    "f0": [
+      "........",
+      "........",
+      "........",
+      "........",
+      "....2...",
+      "........",
+      "........",
+      "........"
+    ],
+    "f1": [
+      "........",
+      "........",
+      "........",
+      "....3...",
+      "...323..",
+      "....3...",
+      "........",
+      "........"
+    ],
+    "f2": [
+      "........",
+      "........",
+      "........",
+      "........",
+      "....2...",
+      "........",
+      "........",
+      "........"
+    ]
+  }
+}

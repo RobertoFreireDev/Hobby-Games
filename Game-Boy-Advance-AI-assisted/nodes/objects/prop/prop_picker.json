@@ -1,0 +1,45 @@
+{
+  "id": "prop_picker",
+  "kind": "object",
+  "type": "prop",
+  "name": "Monster picker",
+  "notes": "Invisible: appears in the middle of the screen when the monster walks into the cave (trg_cave) and shows the chosen monster's big portrait, bobbing. Left / Right pick another of the 9 monsters in a loop (it slides and cries). Only the first 'unlocked' monsters can be picked (only Furrbit, the Normal type, at first, then one more, in roster order, for the first win of each monster); a locked one shows as a dark silhouette (pal_locked) without its cry, and A or B on it buzzes (sfx_error). A or B on an open one keeps it as the pick ('chosen'), brings back the map's HUD and sends that monster walking out of the cave (a new plr_menu, which walks down on its own for a moment); the picker then goes away. A shiny monster's portrait shimmers through the rainbow.",
+  "logic": [
+    {
+      "behavior": "species_select",
+      "params": {
+        "var": "chosen",
+        "unlocked_var": "unlocked",
+        "locked_palette": "pal_locked",
+        "locked_sound": "sfx_error",
+        "browse": true,
+        "button": "A_OR_B",
+        "slide": 40,
+        "slide_ticks": 6,
+        "bob": 2,
+        "move_sound": "sfx_select",
+        "shiny_var": "shiny",
+        "on_pick": [
+          {
+            "do": "play_sfx",
+            "sfx": "sfx_confirm"
+          },
+          {
+            "do": "show_hud",
+            "hud": "hud_menu"
+          },
+          {
+            "do": "spawn",
+            "object": "plr_menu",
+            "x": 840,
+            "y": 508,
+            "relative": false
+          },
+          {
+            "do": "destroy_self"
+          }
+        ]
+      }
+    }
+  ]
+}

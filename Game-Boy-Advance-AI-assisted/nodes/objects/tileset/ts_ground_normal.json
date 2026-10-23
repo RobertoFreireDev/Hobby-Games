@@ -1,0 +1,892 @@
+{
+  "id": "ts_ground_normal",
+  "kind": "object",
+  "type": "tileset",
+  "name": "Normal world ground tiles",
+  "notes": "Every 8x8 ground tile of the overworld, drawn in the style of the Game Boy Color Pokemon games (Gold/Silver/Crystal): flat light-green grass with small dark tufts, tall grass as rows of outlined clumps on that same light green, crisp dark outlines and a light top-left highlight on rocks and stone. Solid: water, reeds, trunks, the deep forest, boulders, big rocks, fences, ledges, ruin walls, pillars and graves. Grass, tall grass, flowers, paths and stairs are walkable. Paths and water have edge and corner pieces. Flowers and other small things stay a pixel inside their tile, so none is cut off where it meets plain grass. The old stone floors are plain grass now ('0' '1' '2': the tufts of 'a' moved about), and the Alpha's stone circle is ten flat stones lying in the grass round a grass bed, a 4x4-tile picture. Tiles: 'a' grass, 'b' grass with tufts, 'c' grass with a few tufts, 'd' tall grass, 'e' tall grass (offset), 'f' red flower and bud, 'g' white flower and bud, 'h' yellow flower and bud, 'i' path C, 'j' path N, 'k' path S, 'l' path E, 'm' path W, 'n' path NE, 'o' path NW, 'p' path SE, 'q' path SW, 'r' path iNE, 's' path iNW, 't' path iSE, 'u' path iSW, 'v' water C, 'w' water N, 'x' water S, 'y' water E, 'z' water W, 'A' water NE, 'B' water NW, 'C' water SE, 'D' water SW, 'E' water iNE, 'F' water iNW, 'G' water iSE, 'H' water iSW, 'I' tree trunk (left), 'J' tree trunk (right), 'K' deep forest floor, 'L' boulder, 'M' rock tl, 'N' rock tr, 'O' rock bl, 'P' rock br, 'Q' fence, 'R' ledge top, 'S' ledge wall, 'T' ledge foot, 'U' stone stairs, 'V' ruin wall top, 'W' ruin wall, 'X' pillar top, 'Y' pillar base, 'Z' grave, '0' '1' '2' grass (where stone floors were), '3' '4' '5' '6' / '7' '8' '9' '!' / '#' '$' '%' '&' / '(' ')' '*' '+' the Alpha's stone circle (4x4 tiles, row by row). The other worlds' ground tiles reuse this set's path (i-u) shapes in their own colors, so their palettes keep this one's slot layout.",
+  "palette": "pal_ground_normal",
+  "tiles": {
+    "a": {
+      "pixels": [
+        "44444444",
+        "44444444",
+        "45454444",
+        "44544444",
+        "44444444",
+        "44444444",
+        "44444444",
+        "44444444"
+      ]
+    },
+    "b": {
+      "pixels": [
+        "44444444",
+        "44445454",
+        "44444544",
+        "44444444",
+        "44444444",
+        "54544444",
+        "45444444",
+        "44444444"
+      ]
+    },
+    "c": {
+      "pixels": [
+        "44444444",
+        "44444444",
+        "44444444",
+        "44444444",
+        "44545454",
+        "44454544",
+        "44444444",
+        "44444444"
+      ]
+    },
+    "d": {
+      "pixels": [
+        "44444444",
+        "44144414",
+        "41314131",
+        "13531353",
+        "13553551",
+        "15555551",
+        "41656514",
+        "44111144"
+      ]
+    },
+    "e": {
+      "pixels": [
+        "44444444",
+        "41444144",
+        "13141314",
+        "35313531",
+        "15535531",
+        "15555551",
+        "41565614",
+        "44111144"
+      ]
+    },
+    "f": {
+      "pixels": [
+        "44444444",
+        "44ff4444",
+        "4f22f444",
+        "4f22f444",
+        "45ff5444",
+        "44554ff4",
+        "44444ff4",
+        "44444554"
+      ]
+    },
+    "g": {
+      "pixels": [
+        "44444444",
+        "44442244",
+        "44427724",
+        "44427724",
+        "44452254",
+        "42245544",
+        "42244444",
+        "45544444"
+      ]
+    },
+    "h": {
+      "pixels": [
+        "44444444",
+        "44444774",
+        "44444774",
+        "44774554",
+        "47997444",
+        "47997444",
+        "45775444",
+        "44554444"
+      ]
+    },
+    "i": {
+      "pixels": [
+        "77777777",
+        "77777777",
+        "78777777",
+        "77777777",
+        "77777777",
+        "77777887",
+        "77777777",
+        "77777777"
+      ]
+    },
+    "j": {
+      "pixels": [
+        "44444444",
+        "44444444",
+        "88888888",
+        "77777777",
+        "77777777",
+        "77777887",
+        "77777777",
+        "77777777"
+      ]
+    },
+    "k": {
+      "pixels": [
+        "77777777",
+        "77777777",
+        "78777777",
+        "77777777",
+        "77777777",
+        "88888888",
+        "45444444",
+        "44444444"
+      ]
+    },
+    "l": {
+      "pixels": [
+        "77777844",
+        "77777854",
+        "78777844",
+        "77777844",
+        "77777844",
+        "77777844",
+        "77777844",
+        "77777844"
+      ]
+    },
+    "m": {
+      "pixels": [
+        "44877777",
+        "44877777",
+        "45877777",
+        "44877777",
+        "44877777",
+        "44877887",
+        "44877777",
+        "44877777"
+      ]
+    },
+    "n": {
+      "pixels": [
+        "44444444",
+        "44444444",
+        "88884444",
+        "77778444",
+        "77777844",
+        "77777844",
+        "77777844",
+        "77777844"
+      ]
+    },
+    "o": {
+      "pixels": [
+        "44444444",
+        "44445454",
+        "44448888",
+        "44487777",
+        "44877777",
+        "54877887",
+        "45877777",
+        "44877777"
+      ]
+    },
+    "p": {
+      "pixels": [
+        "77777844",
+        "77777854",
+        "78777844",
+        "77777844",
+        "77778444",
+        "88884444",
+        "45444444",
+        "44444444"
+      ]
+    },
+    "q": {
+      "pixels": [
+        "44877777",
+        "44877777",
+        "45877777",
+        "44877777",
+        "44487777",
+        "44448888",
+        "44444444",
+        "44444444"
+      ]
+    },
+    "r": {
+      "pixels": [
+        "77777844",
+        "77777854",
+        "78777788",
+        "77777777",
+        "77777777",
+        "77777887",
+        "77777777",
+        "77777777"
+      ]
+    },
+    "s": {
+      "pixels": [
+        "44877777",
+        "44877777",
+        "88777777",
+        "77777777",
+        "77777777",
+        "77777887",
+        "77777777",
+        "77777777"
+      ]
+    },
+    "t": {
+      "pixels": [
+        "77777777",
+        "77777777",
+        "78777777",
+        "77777777",
+        "77777777",
+        "77777888",
+        "77777844",
+        "77777844"
+      ]
+    },
+    "u": {
+      "pixels": [
+        "77777777",
+        "77777777",
+        "78777777",
+        "77777777",
+        "77777777",
+        "88777887",
+        "45877777",
+        "44877777"
+      ]
+    },
+    "v": {
+      "pixels": [
+        "bbbbbbbb",
+        "baabbbbb",
+        "abbabbbb",
+        "bbbbbbbb",
+        "bbbbbbbb",
+        "bbbbbaab",
+        "bbbbabba",
+        "bbbbbbbb"
+      ],
+      "solid": true
+    },
+    "w": {
+      "pixels": [
+        "44444444",
+        "44444444",
+        "11111111",
+        "bbbbbbbb",
+        "bbbbbbbb",
+        "bbbbbaab",
+        "bbbbabba",
+        "bbbbbbbb"
+      ],
+      "solid": true
+    },
+    "x": {
+      "pixels": [
+        "bbbbbbbb",
+        "baabbbbb",
+        "abbabbbb",
+        "bbbbbbbb",
+        "bbbbbbbb",
+        "11111111",
+        "44444444",
+        "44444444"
+      ],
+      "solid": true
+    },
+    "y": {
+      "pixels": [
+        "bbbbb144",
+        "baabb144",
+        "abbab144",
+        "bbbbb144",
+        "bbbbb154",
+        "bbbbb144",
+        "bbbba144",
+        "bbbbb144"
+      ],
+      "solid": true
+    },
+    "z": {
+      "pixels": [
+        "441bbbbb",
+        "441bbbbb",
+        "451abbbb",
+        "441bbbbb",
+        "441bbbbb",
+        "441bbaab",
+        "441babba",
+        "441bbbbb"
+      ],
+      "solid": true
+    },
+    "A": {
+      "pixels": [
+        "44444444",
+        "44444444",
+        "11114444",
+        "bbbb1444",
+        "bbbbb144",
+        "bbbbb144",
+        "bbbba144",
+        "bbbbb144"
+      ],
+      "solid": true
+    },
+    "B": {
+      "pixels": [
+        "44444444",
+        "44444444",
+        "44441111",
+        "4441bbbb",
+        "441bbbbb",
+        "441bbaab",
+        "441babba",
+        "441bbbbb"
+      ],
+      "solid": true
+    },
+    "C": {
+      "pixels": [
+        "bbbbb144",
+        "baabb144",
+        "abbab144",
+        "bbbbb144",
+        "bbbb1454",
+        "11114544",
+        "44444444",
+        "44444444"
+      ],
+      "solid": true
+    },
+    "D": {
+      "pixels": [
+        "441bbbbb",
+        "441bbbbb",
+        "451abbbb",
+        "441bbbbb",
+        "4441bbbb",
+        "44441111",
+        "44444444",
+        "44444444"
+      ],
+      "solid": true
+    },
+    "E": {
+      "pixels": [
+        "bbbbb144",
+        "baabb144",
+        "abbabb11",
+        "bbbbbbbb",
+        "bbbbbbbb",
+        "bbbbbaab",
+        "bbbbabba",
+        "bbbbbbbb"
+      ],
+      "solid": true
+    },
+    "F": {
+      "pixels": [
+        "441bbbbb",
+        "441bbbbb",
+        "11babbbb",
+        "bbbbbbbb",
+        "bbbbbbbb",
+        "bbbbbaab",
+        "bbbbabba",
+        "bbbbbbbb"
+      ],
+      "solid": true
+    },
+    "G": {
+      "pixels": [
+        "bbbbbbbb",
+        "baabbbbb",
+        "abbabbbb",
+        "bbbbbbbb",
+        "bbbbbbbb",
+        "bbbbba11",
+        "bbbba144",
+        "bbbbb144"
+      ],
+      "solid": true
+    },
+    "H": {
+      "pixels": [
+        "bbbbbbbb",
+        "baabbbbb",
+        "abbabbbb",
+        "bbbbbbbb",
+        "bbbbbbbb",
+        "11bbbaab",
+        "441babba",
+        "441bbbbb"
+      ],
+      "solid": true
+    },
+    "I": {
+      "pixels": [
+        "44199914",
+        "44199814",
+        "44198914",
+        "44199914",
+        "44199814",
+        "41998914",
+        "41999991",
+        "46111116"
+      ],
+      "solid": true
+    },
+    "J": {
+      "pixels": [
+        "41999144",
+        "41899144",
+        "41989144",
+        "41999144",
+        "41899144",
+        "41989914",
+        "19999914",
+        "61111164"
+      ],
+      "solid": true
+    },
+    "K": {
+      "pixels": [
+        "66666666",
+        "66656666",
+        "66666616",
+        "66166666",
+        "66666666",
+        "66666566",
+        "61666666",
+        "66666661"
+      ],
+      "solid": true
+    },
+    "L": {
+      "pixels": [
+        "44111144",
+        "41c22c14",
+        "1c2ccdd1",
+        "1cccddd1",
+        "1ccddde1",
+        "1dddeee1",
+        "61eeee16",
+        "66111166"
+      ],
+      "solid": true
+    },
+    "M": {
+      "pixels": [
+        "44411111",
+        "4412222c",
+        "412cc2cc",
+        "12cccccc",
+        "12cccccc",
+        "1ccccccc",
+        "1ccccccc",
+        "1cccccc1"
+      ],
+      "solid": true
+    },
+    "N": {
+      "pixels": [
+        "11144444",
+        "cccc1444",
+        "cccdd144",
+        "1ccddd14",
+        "c1cddd14",
+        "c1dddd14",
+        "1ddddde1",
+        "dddddde1"
+      ],
+      "solid": true
+    },
+    "O": {
+      "pixels": [
+        "1dcccc1d",
+        "1ddddd1d",
+        "1dddddd1",
+        "61ddddd1",
+        "61eeddd1",
+        "661eeeee",
+        "66611111",
+        "46666666"
+      ],
+      "solid": true
+    },
+    "P": {
+      "pixels": [
+        "dddddee1",
+        "ddddeee1",
+        "dddeeee1",
+        "ddeeee16",
+        "deeee166",
+        "eeee1666",
+        "11116666",
+        "66666644"
+      ],
+      "solid": true
+    },
+    "Q": {
+      "pixels": [
+        "44411444",
+        "11129111",
+        "99929999",
+        "88818888",
+        "11129111",
+        "99929999",
+        "88818888",
+        "66619666"
+      ],
+      "solid": true
+    },
+    "R": {
+      "pixels": [
+        "44444444",
+        "44454444",
+        "44444445",
+        "33333333",
+        "11111111",
+        "cccccccc",
+        "dcdddcdd",
+        "dddddddd"
+      ],
+      "solid": true
+    },
+    "S": {
+      "pixels": [
+        "dddddddd",
+        "ddeddddd",
+        "eddeeedd",
+        "dddddded",
+        "dddddddd",
+        "ddddeddd",
+        "dedeeddd",
+        "dddddddd"
+      ],
+      "solid": true
+    },
+    "T": {
+      "pixels": [
+        "dddddddd",
+        "ddddedde",
+        "eedddeed",
+        "eeeeeeee",
+        "11111111",
+        "66666666",
+        "44444444",
+        "44454444"
+      ],
+      "solid": true
+    },
+    "U": {
+      "pixels": [
+        "1cccccc1",
+        "1222222e",
+        "1cccccce",
+        "1eeeeeee",
+        "1cccccc1",
+        "1222222e",
+        "1cccccce",
+        "1eeeeeee"
+      ]
+    },
+    "V": {
+      "pixels": [
+        "2222222c",
+        "2ccccccd",
+        "2ccccccd",
+        "cddddddd",
+        "1eeeeee1",
+        "11111111",
+        "dddddddd",
+        "cccccccc"
+      ],
+      "solid": true
+    },
+    "W": {
+      "pixels": [
+        "cccdcccc",
+        "ccdeccce",
+        "eeeeeeee",
+        "ccccdccc",
+        "cccdeccc",
+        "eeeeeeee",
+        "cdcccccd",
+        "dececcce"
+      ],
+      "solid": true
+    },
+    "X": {
+      "pixels": [
+        "1111111e",
+        "12222221",
+        "1cccccc1",
+        "1eeeeee1",
+        "e12cdd1e",
+        "e12cdd1e",
+        "e12cdd1e",
+        "e12cdd1e"
+      ],
+      "solid": true
+    },
+    "Y": {
+      "pixels": [
+        "e12cdd1e",
+        "e12cdd1e",
+        "e12cdd1e",
+        "e12cdd1e",
+        "1cccccc1",
+        "1dddddd1",
+        "11111111",
+        "66666666"
+      ],
+      "solid": true
+    },
+    "Z": {
+      "pixels": [
+        "44111144",
+        "41c22c14",
+        "1c2ccdd1",
+        "1c1111d1",
+        "1cccddd1",
+        "1c1111d1",
+        "1ddddde1",
+        "61111116"
+      ],
+      "solid": true
+    },
+    "0": {
+      "pixels": [
+        "44444444",
+        "44444444",
+        "44545444",
+        "44454444",
+        "44444444",
+        "44444444",
+        "44444444",
+        "44444444"
+      ]
+    },
+    "1": {
+      "pixels": [
+        "44444444",
+        "44445454",
+        "44444544",
+        "44444444",
+        "44444444",
+        "44444444",
+        "44444444",
+        "44444444"
+      ]
+    },
+    "2": {
+      "pixels": [
+        "44444444",
+        "44444444",
+        "44444444",
+        "44444444",
+        "44545444",
+        "44454444",
+        "44444444",
+        "44444444"
+      ]
+    },
+    "3": {
+      "pixels": [
+        "44444444",
+        "44444444",
+        "44444444",
+        "44445444",
+        "44454544",
+        "44444444",
+        "44444441",
+        "44444441"
+      ]
+    },
+    "4": {
+      "pixels": [
+        "44444444",
+        "44444444",
+        "44444444",
+        "44444411",
+        "444441cc",
+        "111441cd",
+        "ccc111ce",
+        "cdee1411"
+      ]
+    },
+    "5": {
+      "pixels": [
+        "44444444",
+        "44444444",
+        "44444444",
+        "11444444",
+        "cc144444",
+        "de144111",
+        "ee111ccc",
+        "1141ccde"
+      ]
+    },
+    "6": {
+      "pixels": [
+        "44444444",
+        "44444444",
+        "44454444",
+        "44545444",
+        "44444444",
+        "44444444",
+        "14444444",
+        "14444444"
+      ]
+    },
+    "7": {
+      "pixels": [
+        "44444441",
+        "44444444",
+        "44444114",
+        "44411cc1",
+        "4441ccde",
+        "4441ceee",
+        "44441111",
+        "44444444"
+      ]
+    },
+    "8": {
+      "pixels": [
+        "cee11444",
+        "11144444",
+        "44444444",
+        "14444444",
+        "14444445",
+        "14444444",
+        "44444454",
+        "44444545"
+      ]
+    },
+    "9": {
+      "pixels": [
+        "44411eee",
+        "44444111",
+        "44444444",
+        "54444441",
+        "45444441",
+        "44444441",
+        "44444444",
+        "44444444"
+      ]
+    },
+    "!": {
+      "pixels": [
+        "14444444",
+        "44444444",
+        "41144444",
+        "1cc11444",
+        "ccde1444",
+        "ceee1444",
+        "11114444",
+        "44444444"
+      ]
+    },
+    "#": {
+      "pixels": [
+        "44444444",
+        "44441111",
+        "4441cccc",
+        "4441cdee",
+        "44411ee1",
+        "44444114",
+        "44444444",
+        "44444441"
+      ]
+    },
+    "$": {
+      "pixels": [
+        "44444444",
+        "44444444",
+        "14444444",
+        "14444444",
+        "14444444",
+        "44444444",
+        "11144444",
+        "ccc11444"
+      ]
+    },
+    "%": {
+      "pixels": [
+        "44444444",
+        "44544444",
+        "45454441",
+        "44444441",
+        "44444441",
+        "44444444",
+        "44444111",
+        "44411ccc"
+      ]
+    },
+    "&": {
+      "pixels": [
+        "44444444",
+        "11114444",
+        "cccc1444",
+        "cdee1444",
+        "1ee11444",
+        "41144444",
+        "44444444",
+        "14444444"
+      ]
+    },
+    "(": {
+      "pixels": [
+        "44444441",
+        "44454441",
+        "44545444",
+        "44444444",
+        "44444444",
+        "44444444",
+        "44444444",
+        "44444444"
+      ]
+    },
+    ")": {
+      "pixels": [
+        "cdee1411",
+        "cee111cc",
+        "111441cd",
+        "444441ce",
+        "44444411",
+        "44444444",
+        "44444444",
+        "44444444"
+      ]
+    },
+    "*": {
+      "pixels": [
+        "1141ccde",
+        "cc111eee",
+        "de144111",
+        "ee144444",
+        "11444444",
+        "44444444",
+        "44444444",
+        "44444444"
+      ]
+    },
+    "+": {
+      "pixels": [
+        "14444444",
+        "14444444",
+        "44445444",
+        "44454544",
+        "44444444",
+        "44444444",
+        "44444444",
+        "44444444"
+      ]
+    }
+  }
+}

@@ -1,0 +1,18 @@
+{
+  "id": "hud_menu",
+  "kind": "object",
+  "type": "hud",
+  "name": "Menu map text",
+  "notes": "Over the menu map's Green Meadow: one line at the bottom middle of the screen, in the thin gold info letters (font_info, drawn as sprites). While a garden item's message is queued (msg_q / msg_i) it shows that message: 'HP UP! MAX HP +5 (n/5)' or 'POWER UP! POWER +2% (n/5)' (+1% for the 2nd and 4th POWER UP). Otherwise, by the CLASSIC or the open WAVES sign (near 1) it shows BEST TIME and that run's best time (--:-- if never won), and by the locked WAVES sign (near 2) how many monster types are still to free (8 MONSTER TYPES LEFT ... 1 MONSTER TYPE LEFT, from 'unlocked'). Outside the Meadow the map HUD (hud_map) takes its place.",
+  "font": "font_default",
+  "elements": [
+    {
+      "kind": "text",
+      "x": 120,
+      "y": 144,
+      "align": "center",
+      "font": "font_info",
+      "text": "{msg_q[msg_i]|{near||BEST TIME {best_time[entry]:time}|{unlocked||8 MONSTER TYPES LEFT|7 MONSTER TYPES LEFT|6 MONSTER TYPES LEFT|5 MONSTER TYPES LEFT|4 MONSTER TYPES LEFT|3 MONSTER TYPES LEFT|2 MONSTER TYPES LEFT|1 MONSTER TYPE LEFT}}|HP UP! MAX HP +5 (1/5)|HP UP! MAX HP +5 (2/5)|HP UP! MAX HP +5 (3/5)|HP UP! MAX HP +5 (4/5)|HP UP! MAX HP +5 (5/5)|POWER UP! POWER +2% (1/5)|POWER UP! POWER +1% (2/5)|POWER UP! POWER +2% (3/5)|POWER UP! POWER +1% (4/5)|POWER UP! POWER +2% (5/5)}"
+    }
+  ]
+}

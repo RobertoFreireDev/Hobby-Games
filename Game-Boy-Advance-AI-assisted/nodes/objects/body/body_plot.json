@@ -1,0 +1,30 @@
+{
+  "id": "body_plot",
+  "kind": "object",
+  "type": "body",
+  "name": "Garden plot body",
+  "notes": "How a garden plot looks (only its plant or item: the soil is the garden bed in the menu's ground, ts_menu_field). Its origin is the middle of its cell of the bed, on its mound. Not solid and touches nothing: the monster walks over it; picking up a ripe item is done by the plot's zone (trg_plot).",
+  "origin": [
+    8,
+    24
+  ],
+  "hitbox": {
+    "x": -8,
+    "y": -8,
+    "w": 16,
+    "h": 16
+  },
+  "physics": {
+    "gravity": false,
+    "solid": false,
+    "collides_with": []
+  },
+  "animations": {
+    "idle": "anim_plot"
+  },
+  "default_animation": "idle",
+  "children": [
+    "spr_plot",
+    "anim_plot"
+  ]
+}

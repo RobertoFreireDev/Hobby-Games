@@ -1,0 +1,25 @@
+{
+  "id": "pal_camp_emberpup",
+  "kind": "object",
+  "type": "palette",
+  "name": "Emberpup by the fire colors",
+  "notes": "Emberpup's colors in the campfire's light (15 colors for all its seats): warmer and darker than in the game, bright on the side facing the fire.",
+  "colors": [
+    "#000000",
+    "#312929",
+    "#ffffac",
+    "#ff5229",
+    "#ff9c4a",
+    "#ac2920",
+    "#ffde94",
+    "#ffff6a",
+    "#181018",
+    "#c55a31",
+    "#ff7b41",
+    "#e63920",
+    "#413131",
+    "#f6b483",
+    "#ffbd31",
+    "#f67b6a"
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "id": "spr_blank",
+  "kind": "object",
+  "type": "sprite",
+  "name": "Nothing",
+  "notes": "An empty 8 x 8 picture: the invisible blockers of the menu map (holes, ravines, hedge walls) have a body for collisions but nothing to show.",
+  "palette": "pal_fx",
+  "width": 8,
+  "height": 8,
+  "frames": {
+    "none": [
+      "........",
+      "........",
+      "........",
+      "........",
+      "........",
+      "........",
+      "........",
+      "........"
+    ]
+  }
+}

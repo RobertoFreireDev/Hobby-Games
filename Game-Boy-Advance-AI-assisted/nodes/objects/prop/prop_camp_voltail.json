@@ -1,0 +1,49 @@
+{
+  "id": "prop_camp_voltail",
+  "kind": "object",
+  "type": "prop",
+  "name": "Voltail at the campfire",
+  "notes": "Voltail on the intro screen. It only shows once it is unlocked (unlocked >= 4) and sits on the half circle behind the fire: its seat depends on how many monsters are unlocked, all of them spread evenly from left to right in roster order, so with 4 unlocked it takes seat 4. It always looks at the fire (view per number unlocked: 4: left, 5: down-left, 6: down, 7: down, 8: down, 9: down). When it is shiny it shimmers through the rainbow, like everywhere else.",
+  "body": "body_camp_voltail",
+  "logic": [
+    {
+      "behavior": "spot_by_count",
+      "params": {
+        "var": "unlocked",
+        "need": 4,
+        "spots": [
+          [
+            64,
+            -16
+          ],
+          [
+            35,
+            -27
+          ],
+          [
+            16,
+            -30
+          ],
+          [
+            3,
+            -30
+          ],
+          [
+            -7,
+            -30
+          ],
+          [
+            -14,
+            -29
+          ]
+        ],
+        "frames": 3,
+        "shiny_var": "shiny",
+        "shiny_slot": 3
+      }
+    }
+  ],
+  "children": [
+    "body_camp_voltail"
+  ]
+}

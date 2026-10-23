@@ -1,0 +1,2531 @@
+"""Check every node against the rules in CLAUDE.md. Stops the build on any error.
+
+Usage: python tools/validate.py      (exit code 0 = ok, 1 = errors)
+
+This file is one of the "four mirrors" (CLAUDE.md rule 8): each node type has a
+check function here (V_<type>) that must match CLAUDE.md §6.
+"""
+import os
+import re
+import sys
+
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import common as C  # noqa: E402
+
+
+class Report:
+    def __init__(self):
+        self.errors = []
+        self.warnings = []
+
+    def err(self, where, msg):
+        self.errors.append("%s: %s" % (where, msg))
+
+    def warn(self, where, msg):
+        self.warnings.append("%s: %s" % (where, msg))
+
+    @property
+    def ok(self):
+        return not self.errors
+
+
+COMMON_FIELDS = {"id", "kind", "type", "name", "notes", "tags", "children", "code"}
+ACTOR_FIELDS = {"body", "logic", "sounds"}
+TYPE_FIELDS = {
+    "scene": {"backdrop", "music", "camera", "instances", "on_start"},
+    "palette": {"colors"},
+    "sprite": {"palette", "width", "height", "frames"},
+    "tileset": {"palette", "palettes", "tiles"},
+    "tilemap": {"tileset", "layer", "rows", "parallax", "repeat_x", "over"},
+    "font": {"palette", "glyphs"},
+    "icon": {"palette", "pixels"},
+    "sfx": {"channel", "duty", "steps", "priority"},
+    "music": {"bpm", "rows_per_beat", "loop", "loop_from", "instruments", "patterns", "order"},
+    "animation": {"sprite", "loop", "frames", "events"},
+    "particle": {"animation", "mode", "count", "rate", "lifetime", "speed", "angle", "gravity", "on_top", "even"},
+    "body": {"origin", "hitbox", "physics", "animations", "default_animation"},
+    "trigger": {"zone", "logic"},
+    "hud": {"font", "elements", "box"},
+    "menu": {"font", "title", "options", "upgrades", "cursor", "layout", "on_cancel", "box", "sounds", "texts",
+             "color", "icons"},
+    "dialog": {"font", "box", "lines", "choices", "on_end", "ticks_per_char"},
+    "upgrade": {"category", "title", "icon", "var", "max_level", "descriptions", "requires", "replaces", "on_pick"},
+    "species": {"title", "monster_type", "speed", "hp_bonus", "power", "regen", "evasion", "double_hit", "body", "alpha_palette", "portrait", "cry", "moves"},
+    "move": {"title", "monster_type", "shape", "range", "power", "accuracy", "charge", "status", "dash", "zone", "buff",
+             "push", "effect", "effect_at", "travel", "sfx", "on_use"},
+}
+for _t in C.ACTOR_TYPES:
+    if _t != "trigger":
+        TYPE_FIELDS[_t] = ACTOR_FIELDS
+
+
+def is_int(v):
+    return isinstance(v, int) and not isinstance(v, bool)
+
+
+def is_num(v):
+    return isinstance(v, (int, float)) and not isinstance(v, bool)
+
+
+class Ctx:
+    """Context for checking one node: where errors go and how to resolve references."""
+
+    def __init__(self, project, report, node_id, node, where):
+        self.p, self.r, self.id, self.n, self.where = project, report, node_id, node, where
+
+    def err(self, msg):
+        self.r.err(self.where, msg)
+
+    def warn(self, msg):
+        self.r.warn(self.where, msg)
+
+    # ---- field helpers: return the value (or a default) and report problems ----
+    def get(self, obj, key, kind, label=None, required=True, default=None, lo=None, hi=None):
+        label = label or key
+        if not isinstance(obj, dict) or key not in obj:
+            if required:
+                self.err("'%s' is required" % label)
+            return default
+        v = obj[key]
+        okay = {"int": is_int(v), "num": is_num(v), "bool": isinstance(v, bool),
+                "str": isinstance(v, str), "list": isinstance(v, list),
+                "dict": isinstance(v, dict)}[kind]
+        if not okay:
+            self.err("'%s' must be %s" % (label, {"int": "a whole number", "num": "a number",
+                                                   "bool": "true or false", "str": "text",
+                                                   "list": "a list", "dict": "an object"}[kind]))
+            return default
+        if kind in ("int", "num"):
+            if lo is not None and v < lo or hi is not None and v > hi:
+                self.err("'%s' is %s but must be between %s and %s" % (label, v, lo, hi))
+                return default
+        return v
+
+    def ref(self, value, types, label, allow_empty=False):
+        """Check a reference to another node. types: list of object types, or 'scene'."""
+        if value is None or value == "":
+            if not allow_empty:
+                self.err("'%s' must name a node" % label)
+            return None
+        if not isinstance(value, str):
+            self.err("'%s' must be a node id" % label)
+            return None
+        if value not in self.p.by_id:
+            self.err("'%s' points to '%s', which does not exist" % (label, value))
+            return None
+        kind, t = self.p.kind_of(value), self.p.type_of(value)
+        if types == "scene":
+            if kind != "scene":
+                self.err("'%s' must be a scene, but '%s' is a %s" % (label, value, t))
+                return None
+        elif kind != "object" or t not in types:
+            self.err("'%s' must be a %s, but '%s' is a %s" % (label, " or ".join(types), value, t))
+            return None
+        return value
+
+    def color(self, v, label):
+        if not isinstance(v, str) or not C.COLOR_RE.match(v):
+            self.err("'%s' must be a color like \"#78c8f8\"" % label)
+
+    def palette_size(self, pal_id):
+        pal = self.p.nodes.get(pal_id) if pal_id else None
+        if pal and isinstance(pal.get("colors"), list):
+            return len(pal["colors"])
+        return 16
+
+    def pixels(self, rows, w, h, pal_id, label):
+        """Check a pixel grid: h rows of w chars, valid palette indexes."""
+        if not isinstance(rows, list) or not all(isinstance(r, str) for r in rows):
+            self.err("'%s' must be a list of text rows" % label)
+            return
+        if h is not None and len(rows) != h:
+            self.err("'%s' has %d rows but must have %d" % (label, len(rows), h))
+        if w is not None:
+            for i, r in enumerate(rows):
+                if len(r) != w:
+                    self.err("'%s' row %d is %d pixels wide but must be %d" % (label, i, len(r), w))
+                    break
+        ncolors = self.palette_size(pal_id)
+        for i, r in enumerate(rows):
+            for ch in r:
+                if ch not in C.PIXEL_CHARS:
+                    self.err("'%s' row %d uses '%s'; use '.', 1-9 or a-f" % (label, i, ch))
+                    return
+                if C.pixel_index(ch) >= ncolors:
+                    self.err("'%s' uses color %s but palette '%s' only has %d colors"
+                             % (label, ch, pal_id, ncolors))
+                    return
+
+    def box(self, box, label):
+        """Check a UI box {x, y, w, h, paper, border} in pixels, on the 8px grid."""
+        if not isinstance(box, dict):
+            self.err("'%s' must be an object {x, y, w, h}" % label)
+            return False
+        good = True
+        for k, hi in (("x", C.SCREEN_W - 16), ("y", C.SCREEN_H - 16), ("w", C.SCREEN_W), ("h", C.SCREEN_H)):
+            v = self.get(box, k, "int", "%s.%s" % (label, k), lo=0 if k in "xy" else 24, hi=hi)
+            if v is None:
+                good = False
+            elif v % 8:
+                self.err("'%s.%s' must be a multiple of 8 (text sits on the 8x8 tile grid)" % (label, k))
+                good = False
+        if good and (box["x"] + box["w"] > C.SCREEN_W or box["y"] + box["h"] > C.SCREEN_H):
+            self.err("'%s' goes off the 240x160 screen" % label)
+            good = False
+        self.get(box, "paper", "int", label + ".paper", required=False, lo=0, hi=15)
+        self.get(box, "border", "int", label + ".border", required=False, lo=0, hi=15)
+        return good
+
+    def text_in_font(self, text, font_id, label):
+        font = self.p.nodes.get(font_id) if font_id else None
+        if not font or not isinstance(font.get("glyphs"), dict):
+            return
+        glyphs = font["glyphs"]
+        for ch in set(text):
+            if ch in " \n":
+                continue
+            if ch not in glyphs and ch.upper() not in glyphs:
+                self.err("'%s' uses '%s' but font '%s' has no glyph for it" % (label, ch, font_id))
+
+    # ---- logic: actions and behaviors (checked against the catalogs) ----
+    def param_value(self, ptype, pdef, v, label):
+        if ptype in ("int", "ticks"):
+            if isinstance(v, bool) and ptype == "int":
+                return
+            if not is_int(v):
+                self.err("'%s' must be a whole number" % label)
+            elif ptype == "ticks" and not 0 <= v <= 65535:
+                self.err("'%s' must be between 0 and 65535 ticks" % label)
+        elif ptype == "fixed":
+            if not is_num(v):
+                self.err("'%s' must be a number" % label)
+        elif ptype == "bool":
+            if not isinstance(v, bool):
+                self.err("'%s' must be true or false" % label)
+        elif ptype == "string":
+            if not isinstance(v, str) or not re.match(r"^[A-Za-z_]\w*$", v):
+                self.err("'%s' must be a C function name" % label)
+        elif ptype == "text":
+            if not isinstance(v, str) or not v or not all(32 <= ord(ch) < 127 for ch in v):
+                self.err("'%s' must be plain text (letters, digits, punctuation)" % label)
+        elif ptype == "button":
+            if v not in C.BUTTONS:
+                self.err("'%s' must be one of %s" % (label, ", ".join(C.BUTTONS)))
+        elif ptype == "var":
+            if v == "" and not pdef.get("required"):
+                return
+            if v not in self.p.var_names():
+                self.err("'%s' names variable '%s', which is not in nodes.json game.variables" % (label, v))
+            elif self.p.var_count(v) > 1 and not pdef.get("list"):
+                self.err("'%s' names '%s', a list of %d values: only set_var / add_var / if_var (with 'index') "
+                         "and text placeholders ({%s[index]}) can use it" % (label, v, self.p.var_count(v), v))
+        elif ptype == "choice":
+            if v not in pdef.get("options", []):
+                self.err("'%s' must be one of %s" % (label, ", ".join(pdef.get("options", []))))
+        elif ptype == "types":
+            names = battle_types(self.p)
+            if not isinstance(v, list) or (pdef.get("required") and not v):
+                self.err("'%s' must be a list of monster types (game.battle.types)" % label)
+            else:
+                for t in v:
+                    if t not in names:
+                        self.err("'%s' names type '%s', which is not in game.battle.types" % (label, t))
+        elif ptype == "actions":
+            self.actions(v, label)
+        elif ptype == "points":
+            if not isinstance(v, list) or not v or not all(
+                    isinstance(pt, list) and len(pt) == 2 and all(is_int(c) for c in pt) for pt in v):
+                self.err("'%s' must be a list of [x, y] points" % label)
+            elif len(v) > 32:
+                self.err("'%s' has more than 32 points" % label)
+        elif ptype.startswith("node:"):
+            t = ptype[5:]
+            allow_empty = not pdef.get("required")
+            if t == "scene":
+                self.ref(v, "scene", label, allow_empty)
+            elif t == "spawnable":
+                self.ref(v, C.ACTOR_TYPES + ["particle"], label, allow_empty)
+            elif t == "actor":
+                self.ref(v, C.ACTOR_TYPES, label, allow_empty)
+            else:
+                self.ref(v, [t], label, allow_empty)
+        else:
+            self.err("'%s' has unknown param type '%s' in the catalog" % (label, ptype))
+
+    def actions(self, lst, label):
+        if not isinstance(lst, list):
+            self.err("'%s' must be a list of actions" % label)
+            return
+        if not label.endswith((".then", ".else")):      # a whole list: the engine skips lists nested too deep
+            limit = C.read_engine_limits().get("SCRIPT_DEPTH", 6) - 1
+            deep = action_depth(lst)
+            if deep > limit:
+                self.err("'%s' nests if_var / if_chance lists %d levels deep; the engine runs at most %d "
+                         "(SCRIPT_DEPTH - 1) and skips the deeper ones" % (label, deep, limit))
+        for i, a in enumerate(lst):
+            where = "%s[%d]" % (label, i)
+            if not isinstance(a, dict) or not isinstance(a.get("do"), str):
+                self.err("'%s' must be an action like {\"do\": \"goto_scene\", ...}" % where)
+                continue
+            spec = self.p.actions.get(a["do"])
+            if spec is None:
+                self.err("'%s' uses unknown action '%s' (see catalog/actions.json)" % (where, a["do"]))
+                continue
+            params = spec.get("params", {})
+            for k in a:
+                if k != "do" and k not in params:
+                    self.err("'%s' (%s) has unknown param '%s'" % (where, a["do"], k))
+            for pname, pdef in params.items():
+                if pname not in a:
+                    if pdef.get("required"):
+                        self.err("'%s' (%s) needs '%s'" % (where, a["do"], pname))
+                    continue
+                self.param_value(pdef["type"], pdef, a[pname], "%s.%s" % (where, pname))
+            if a["do"] in ("set_var", "add_var", "if_var") and "value" in a and a.get("from"):
+                self.err("'%s' (%s) has both 'value' and 'from'; use one" % (where, a["do"]))
+            if a["do"] in ("set_var", "add_var", "if_var") and "value" not in a and not a.get("from"):
+                self.err("'%s' (%s) needs 'value' (or 'from')" % (where, a["do"]))
+            if a["do"] in ("set_var", "add_var", "if_var") and a.get("var") in self.p.var_names():
+                count = self.p.var_count(a["var"])
+                if a.get("index") and count == 1:
+                    self.err("'%s.index' only works on a list variable ('%s' has no 'count')" % (where, a["var"]))
+                if a["do"] == "if_var" and count > 1 and not a.get("index"):
+                    self.err("'%s' checks '%s', a list of %d values: say which one with 'index'"
+                             % (where, a["var"], count))
+            if a["do"] == "if_chance" and is_int(a.get("percent")) and not 0 <= a["percent"] <= 100:
+                self.err("'%s.percent' must be between 0 and 100" % where)
+            if a["do"] == "random_var" and is_int(a.get("max")) and is_int(a.get("min", 0)) and a["max"] < a.get("min", 0):
+                self.err("'%s.max' must be at least 'min'" % where)
+            if a["do"] == "float_text" and not isinstance(self.p.game.get("battle"), dict):
+                self.err("'%s' uses float_text, which needs game.battle (its font) in nodes.json" % where)
+            if a["do"] == "float_text" and isinstance(a.get("text"), str):
+                font = (self.p.game.get("battle") or {}).get("font")
+                self.text_in_font(a["text"], font, where + ".text")
+                if len(a["text"]) > 15:
+                    self.err("'%s.text' is longer than 15 characters" % where)
+            if a["do"] in ("save_game", "load_game") and not self.p.game.get("save"):
+                self.err("'%s' uses %s but game.save is false in nodes.json" % (where, a["do"]))
+            if a["do"] == "call" and isinstance(a.get("function"), str):
+                if a["function"] not in find_game_functions():
+                    self.err("'%s' calls '%s' but no src/game/*.c defines void %s(Actor *self)"
+                             % (where, a["function"], a["function"]))
+
+    def logic(self, lst, label="logic"):
+        if not isinstance(lst, list):
+            self.err("'%s' must be a list" % label)
+            return
+        limit = C.read_engine_limits().get("MAX_LOGIC", 6)
+        if len(lst) > limit:
+            self.err("'%s' has %d behaviors; the engine allows %d (MAX_LOGIC)" % (label, len(lst), limit))
+        for i, entry in enumerate(lst):
+            where = "%s[%d]" % (label, i)
+            if not isinstance(entry, dict) or not isinstance(entry.get("behavior"), str):
+                self.err("'%s' must be {\"behavior\": name, \"params\": {...}}" % where)
+                continue
+            for k in entry:
+                if k not in ("behavior", "params"):
+                    self.err("'%s' has unknown field '%s'" % (where, k))
+            b = entry["behavior"]
+            spec = self.p.behaviors.get(b)
+            if spec is None:
+                self.err("'%s' uses unknown behavior '%s' (see catalog/behaviors.json)" % (where, b))
+                continue
+            self.behavior_params(b, entry.get("params", {}), "%s.%s" % (where, b), check_required=True)
+
+    def behavior_params(self, b, params, label, check_required):
+        spec = self.p.behaviors[b].get("params", {})
+        if not isinstance(params, dict):
+            self.err("'%s' params must be an object" % label)
+            return
+        for k, v in params.items():
+            if k not in spec:
+                self.err("'%s' has unknown param '%s'" % (label, k))
+                continue
+            self.param_value(spec[k]["type"], spec[k], v, "%s.%s" % (label, k))
+        if check_required:
+            for k, pdef in spec.items():
+                if pdef.get("required") and k not in params:
+                    self.err("'%s' needs param '%s'" % (label, k))
+
+
+_game_functions = None
+
+
+def find_game_functions():
+    """Names of every `void name(` function defined in src/game/*.c."""
+    global _game_functions
+    if _game_functions is None:
+        _game_functions = set()
+        gdir = os.path.join(C.SRC_DIR, "game")
+        if os.path.isdir(gdir):
+            for fn in os.listdir(gdir):
+                if fn.endswith(".c"):
+                    with open(os.path.join(gdir, fn), "r", encoding="utf-8") as f:
+                        _game_functions.update(re.findall(r"^\s*void\s+(\w+)\s*\(", f.read(), re.M))
+    return _game_functions
+
+
+# --------------------------------------------------------------------------------------
+# One check function per node type
+# --------------------------------------------------------------------------------------
+def V_scene(c):
+    n = c.n
+    if "backdrop" in n:
+        c.color(n["backdrop"], "backdrop")
+    if n.get("music") is not None:
+        c.ref(n["music"], ["music"], "music")
+    insts = c.get(n, "instances", "list", default=[])
+    ids, layers = {}, {}
+    huds = boxes = actors = 0
+    for i, inst in enumerate(insts):
+        where = "instances[%d]" % i
+        if not isinstance(inst, dict):
+            c.err("'%s' must be an object" % where)
+            continue
+        for k in inst:
+            if k not in ("id", "object", "x", "y", "overrides", "variants"):
+                c.err("'%s' has unknown field '%s'" % (where, k))
+        iid = c.get(inst, "id", "str", where + ".id")
+        if iid is not None:
+            if not C.ID_RE.match(iid):
+                c.err("'%s.id' must be snake_case" % where)
+            if iid in ids:
+                c.err("instance id '%s' is used twice" % iid)
+            ids[iid] = inst
+            where = "instance '%s'" % iid
+        obj = c.ref(inst.get("object"), C.INSTANCE_TYPES, where + ".object")
+        if obj is None:
+            continue
+        t = c.p.type_of(obj)
+        node = c.p.nodes.get(obj, {})
+        c.get(inst, "x", "int", where + ".x", required=False, lo=-4096, hi=16384)
+        c.get(inst, "y", "int", where + ".y", required=False, lo=-4096, hi=16384)
+        if t in C.ACTOR_TYPES:
+            actors += 1
+        elif t == "tilemap":
+            layer = node.get("layer")
+            if layer in layers:
+                c.err("'%s' and '%s' both use background layer %s" % (layers[layer], iid, layer))
+            layers[layer] = iid
+        elif t == "hud":
+            huds += 1
+        elif t in ("menu", "dialog"):
+            boxes += 1
+        if inst.get("variants") is not None:
+            check_variants(c, inst, obj, t, node, where)
+        ov = inst.get("overrides")
+        if ov is not None:
+            if t not in C.ACTOR_TYPES:
+                c.err("'%s' has overrides, but only actors (with logic) can have them" % where)
+            elif not isinstance(ov, dict):
+                c.err("'%s.overrides' must be an object keyed by behavior name" % where)
+            else:
+                used = [e.get("behavior") for e in node.get("logic", []) if isinstance(e, dict)]
+                for b, params in ov.items():
+                    if b not in used:
+                        c.err("'%s' overrides behavior '%s', but '%s' does not use it" % (where, b, obj))
+                    elif used.count(b) > 1:
+                        c.err("'%s' overrides behavior '%s', but '%s' lists it %d times (which one?)"
+                              % (where, b, obj, used.count(b)))
+                    elif b in c.p.behaviors:
+                        c.behavior_params(b, params, "%s.overrides.%s" % (where, b), False)
+    if huds > 1:
+        c.err("a scene can show only one HUD")
+    if boxes > 1:
+        c.err("a scene can open only one menu or dialog at start")
+    limit = C.read_engine_limits().get("MAX_ACTORS", 48)
+    cam = n.get("camera")
+    if actors > limit and not (isinstance(cam, dict) and cam.get("mode") == "screens"):
+        c.err("has %d actors but the engine allows %d (MAX_ACTORS)" % (actors, limit))
+    if cam is not None:
+        if not isinstance(cam, dict):
+            c.err("'camera' must be an object")
+        else:
+            for k in cam:
+                if k not in ("follow", "bounds", "x", "y", "mode", "screen_var", "on_screen", "screen_names"):
+                    c.err("'camera' has unknown field '%s'" % k)
+            if cam.get("mode", "follow") not in ("follow", "screens"):
+                c.err("'camera.mode' must be \"follow\" or \"screens\"")
+            if cam.get("screen_var"):
+                c.param_value("var", {}, cam["screen_var"], "camera.screen_var")
+            if "on_screen" in cam:
+                c.actions(cam["on_screen"], "camera.on_screen")
+            names = cam.get("screen_names")
+            if names is not None and (not isinstance(names, list) or not all(isinstance(x, str) for x in names)):
+                c.err("'camera.screen_names' must be a list of texts (one per screen, for the visualizer)")
+            if cam.get("mode") != "screens" and (cam.get("screen_var") or cam.get("on_screen") or names):
+                c.err("'camera.screen_var', 'camera.on_screen' and 'camera.screen_names' only work with camera.mode \"screens\"")
+            f = cam.get("follow")
+            if f is not None:
+                if f not in ids:
+                    c.err("'camera.follow' names instance '%s', which is not in this scene" % f)
+                elif c.p.type_of(ids[f].get("object")) not in C.ACTOR_TYPES:
+                    c.err("'camera.follow' must name an actor instance")
+            if cam.get("bounds", "map") not in ("map", "none"):
+                c.err("'camera.bounds' must be \"map\" or \"none\"")
+            c.get(cam, "x", "int", "camera.x", required=False)
+            c.get(cam, "y", "int", "camera.y", required=False)
+    if "on_start" in n:
+        c.actions(n["on_start"], "on_start")
+    check_random_spots(c, ids, layers)
+    if isinstance(cam, dict) and cam.get("mode") == "screens":
+        check_screens(c, insts, cam)
+    else:
+        scene_budget(c, insts)
+
+
+def instance_rect(p, inst):
+    """What an actor instance covers (world px: left, top, right, bottom, inclusive): a trigger's zone
+    from its x, y; an actor's hitbox around its origin (a monster: its species' body); None = nothing."""
+    node = p.nodes.get(inst.get("object"), {})
+    x, y = inst.get("x", 0), inst.get("y", 0)
+    if not (is_int(x) and is_int(y)):
+        return None
+    if node.get("type") == "trigger":
+        z = node.get("zone") or {}
+        return (x, y, x + z.get("w", 1) - 1, y + z.get("h", 1) - 1)
+    body = node.get("body")
+    mon = monster_entry(node)
+    if body is None and mon is not None and p.type_of(mon.get("species")) == "species":
+        body = p.nodes[mon["species"]].get("body")
+    hb = p.nodes.get(body, {}).get("hitbox") if body else None
+    if not isinstance(hb, dict):
+        return (x, y, x, y)
+    l, t = x + hb.get("x", 0), y + hb.get("y", 0)
+    return (l, t, l + hb.get("w", 1) - 1, t + hb.get("h", 1) - 1)
+
+
+def check_screens(c, insts, cam):
+    """A screens-camera scene: the map is a whole number of screens, each actor stands inside one
+    screen (the one its x, y is in: it only exists while that screen shows), and every screen fits
+    the GBA's limits with what is always there (maps, HUD, the player)."""
+    p = c.p
+    w, h = C.scene_map_size(p, c.n)
+    if w % C.SCREEN_W or h % C.SCREEN_H:
+        c.err("camera mode \"screens\": the map is %dx%d px, not a whole number of %dx%d screens"
+              % (w, h, C.SCREEN_W, C.SCREEN_H))
+    if not cam.get("follow"):
+        c.err("camera mode \"screens\" needs camera.follow (the screen shown is the one it stands in)")
+    cols = max(1, w // C.SCREEN_W)
+    always, rooms = [], {}
+    for inst in insts:
+        if not isinstance(inst, dict) or inst.get("object") not in p.nodes:
+            continue
+        t = p.type_of(inst["object"])
+        if t not in C.ACTOR_TYPES + ["particle"] or inst.get("id") == cam.get("follow"):
+            always.append(inst)
+            continue
+        x, y = inst.get("x", 0), inst.get("y", 0)
+        room = C.screen_of(x, y, cols)
+        rooms.setdefault(room, []).append(inst)
+        r = instance_rect(p, inst) if t != "particle" else None
+        if r is not None:
+            sx, sy = (room % cols) * C.SCREEN_W, (room // cols) * C.SCREEN_H
+            if r[0] < sx or r[1] < sy or r[2] >= sx + C.SCREEN_W or r[3] >= sy + C.SCREEN_H:
+                c.err("instance '%s' sticks out of its screen (%d): it is only there while that screen shows, "
+                      "so all of it must be inside it" % (inst.get("id"), room))
+    spawns = scene_spawns(c.n.get("on_start")) + scene_spawns(cam.get("on_screen"))
+    extra = [{"id": "(spawned)", "object": a.get("object")} for a in spawns if a.get("object") in p.nodes]
+    if not rooms:
+        scene_budget(c, always + extra)
+    limit = C.read_engine_limits().get("MAX_ACTORS", 48)
+    for room in sorted(rooms):
+        before = len(c.r.errors)
+        here = always + rooms[room]
+        actors = sum(1 for i in here if p.type_of(i.get("object")) in C.ACTOR_TYPES)
+        if actors > limit:
+            c.err("has %d actors on one screen but the engine allows %d (MAX_ACTORS)" % (actors, limit))
+        scene_budget(c, here + extra, quiet_vars=screen_quiet_vars(cam, room))
+        for i in range(before, len(c.r.errors)):            # say which screen is over the limit
+            c.r.errors[i] = c.r.errors[i] + " (screen %d)" % room
+
+
+def screen_quiet_vars(cam, room):
+    """Variables on_screen sets to 0 when this screen shows (an `if_var <screen_var> == room` at its top
+    level): a move_buttons with such an enable_var fires no move on this screen (the menu's Meadow)."""
+    out = set()
+    for a in cam.get("on_screen") or []:
+        if not isinstance(a, dict) or a.get("do") != "if_var" or a.get("var") != cam.get("screen_var"):
+            continue
+        if a.get("op", "==") == "==" and a.get("value") == room:
+            out |= {b.get("var") for b in a.get("then") or [] if isinstance(b, dict) and b.get("do") == "set_var"
+                    and b.get("value") == 0 and not b.get("from")}
+    return out
+
+
+def instance_objects(inst):
+    """Every object an instance may place: its variants (one is picked when the scene loads), else its object."""
+    v = inst.get("variants")
+    objs = v.get("objects") if isinstance(v, dict) else None
+    if isinstance(objs, list) and objs and all(isinstance(o, str) for o in objs):
+        return objs
+    return [inst.get("object")]
+
+
+def check_variants(c, inst, obj, t, node, where):
+    """A tilemap instance with 'variants' {var, objects}: one of the objects is placed when the
+    scene loads, picked by the variable (a world's map). They all take the same background layer
+    and parallax; each keeps its own 'over' (a forest's tree tops over the monsters, a lava sea under them)."""
+    v = inst["variants"]
+    if t != "tilemap":
+        c.err("'%s' has variants, but only tilemap instances can have them" % where)
+        return
+    if not isinstance(v, dict):
+        c.err("'%s.variants' must be an object {var, objects}" % where)
+        return
+    for k in v:
+        if k not in ("var", "objects"):
+            c.err("'%s.variants' has unknown field '%s'" % (where, k))
+    c.param_value("var", {"required": True}, v.get("var"), where + ".variants.var")
+    objs = v.get("objects")
+    if not isinstance(objs, list) or len(objs) < 2:
+        c.err("'%s.variants.objects' must list at least 2 tilemaps" % where)
+        return
+    # the same tilemap may stand for several values (one picture for 1 to 3 monsters)
+    if obj not in objs:
+        c.err("'%s.object' ('%s') must be one of its variants (the one the visualizer shows first)" % (where, obj))
+    for j, o in enumerate(objs):
+        if c.ref(o, ["tilemap"], "%s.variants.objects[%d]" % (where, j)) is None:
+            continue
+        on = c.p.nodes.get(o, {})
+        for f, dflt in (("layer", None), ("parallax", 1)):
+            if on.get(f, dflt) != node.get(f, dflt):
+                c.err("'%s' variant '%s' has %s %s, but '%s' has %s: every variant takes the same place"
+                      % (where, o, f, on.get(f, dflt), obj, node.get(f, dflt)))
+
+
+def check_random_spots(c, ids, layers):
+    """random_spot actors: every place they may appear (the placed one and their spots) has the
+    body's hitbox inside the collision map and off solid and hazard tiles (so it can be reached),
+    and a warning when the picture would be under an 'over' layer (hidden by tree tops). A layer
+    with variants is checked in each of them."""
+    p = c.p
+
+    def layer_maps(layer):
+        iid = layers.get(layer)
+        objs = instance_objects(ids[iid]) if iid in ids else []
+        return [m for m in (p.nodes.get(o) for o in objs) if isinstance(m, dict) and isinstance(m.get("rows"), list)]
+
+    def tile_at(m, tx, ty):
+        rows = m["rows"]
+        return rows[ty][tx] if 0 <= ty < len(rows) and 0 <= tx < len(rows[ty]) else "."
+
+    grounds = layer_maps(1)
+    overs = [m for m in layer_maps(2) + layer_maps(3) if m.get("over") and m.get("parallax", 1) == 1]
+    places = list(ids.items())
+    for k, a in enumerate(scene_spawns(c.n.get("on_start", []))):
+        if a.get("relative") is False:                  # spawned by the scene at a fixed spot (the seed)
+            places.append(("on_start spawn %d (%s)" % (k + 1, a.get("object")), a))
+    for iid, inst in places:
+        node = p.nodes.get(inst.get("object"), {})
+        entry = next((e for e in node.get("logic", []) or []
+                      if isinstance(e, dict) and e.get("behavior") == "random_spot"), None)
+        if entry is None:
+            continue
+        spots = ((inst.get("overrides") or {}).get("random_spot") or {}).get("spots", (entry.get("params") or {}).get("spots"))
+        if not isinstance(spots, list):
+            continue                                    # the params check reports it
+        body = p.nodes.get(node.get("body"), {})
+        hb = body.get("hitbox") if isinstance(body.get("hitbox"), dict) else {"x": 0, "y": 0, "w": 1, "h": 1}
+        anim = p.nodes.get((body.get("animations") or {}).get(body.get("default_animation")), {})
+        spr = p.nodes.get(anim.get("sprite"), {})
+        ox, oy = (body.get("origin") or [0, 0])[:2]
+        for pt in [[inst.get("x", 0), inst.get("y", 0)]] + spots:
+            if not (isinstance(pt, list) and len(pt) == 2 and all(is_int(v) for v in pt)):
+                continue
+            x, y = pt
+            here = "instance '%s' may appear at (%d, %d), but" % (iid, x, y)
+            outside = False
+            for ground in grounds:
+                on = " in '%s'" % ground.get("id") if len(grounds) > 1 else ""
+                tiles = p.nodes.get(ground.get("tileset"), {}).get("tiles", {}) or {}
+                l, t = x + hb.get("x", 0), y + hb.get("y", 0)
+                r, b = l + hb.get("w", 1) - 1, t + hb.get("h", 1) - 1
+                w, h = max(len(row) for row in ground["rows"]) * 8, len(ground["rows"]) * 8
+                if l < 0 or t < 0 or r >= w or b >= h:
+                    c.err("%s its hitbox is outside the map%s" % (here, on))
+                    outside = True
+                    break
+                bad = sorted({tile_at(ground, tx, ty) for ty in range(t // 8, b // 8 + 1) for tx in range(l // 8, r // 8 + 1)
+                              if (tiles.get(tile_at(ground, tx, ty)) or {}).get("solid") or (tiles.get(tile_at(ground, tx, ty)) or {}).get("hazard")})
+                if bad:
+                    c.err("%s its hitbox touches solid or hazard tiles ('%s')%s, where it can't be reached"
+                          % (here, "', '".join(bad), on))
+            if outside:
+                continue
+            if spr.get("width") and spr.get("height"):
+                l, t = x - ox, y - oy
+                for m in overs:
+                    if any(tile_at(m, tx, ty) != "." for ty in range(t // 8, (t + spr["height"] - 1) // 8 + 1)
+                           for tx in range(l // 8, (l + spr["width"] - 1) // 8 + 1)):
+                        c.warn("%s it would be hidden under '%s' (drawn over the actors)" % (here, m.get("id")))
+                        break
+
+
+def action_depth(actions):
+    """How many levels of then / else lists sit inside an action list (0 = none)."""
+    deep = 0
+    for a in actions if isinstance(actions, list) else []:
+        if isinstance(a, dict):
+            for k in ("then", "else"):
+                if isinstance(a.get(k), list) and a[k]:
+                    deep = max(deep, 1 + action_depth(a[k]))
+    return deep
+
+
+def scene_spawns(actions):
+    """Every spawn action in a list, its then / else lists included, in order."""
+    out = []
+    for a in actions if isinstance(actions, list) else []:
+        if not isinstance(a, dict):
+            continue
+        if a.get("do") == "spawn":
+            out.append(a)
+        out += scene_spawns(a.get("then")) + scene_spawns(a.get("else"))
+    return out
+
+
+def scene_budget(c, insts, quiet_vars=()):
+    """GBA limits for one scene: OBJ VRAM, palettes, BG tiles. quiet_vars = variables that are 0 here: a
+    move_buttons whose enable_var is one of them fires no move (no move effects, no one hit)."""
+    p = c.p
+    sprites, obj_pals, bg_pals, icons = set(), set(), set(), set()
+    flash_sets = []                                     # per monster: (its plain hit flash, its shiny colors or None)
+    # A monster with neither move_buttons nor monster_ai never uses its moves (the menu's walker), and
+    # until something in the scene fights no one is hit: its hit colors wait in `quiet` until then.
+    fighting, quiet = [False], []
+
+    def add_anim(a):
+        an = p.nodes.get(a, {})
+        s = an.get("sprite")
+        if s in p.nodes:
+            sprites.add(s)
+            obj_pals.add(p.nodes[s].get("palette"))
+
+    def add_particle(pt):
+        add_anim(p.nodes.get(pt, {}).get("animation"))
+
+    def add_body(b):
+        for a in (p.nodes.get(b, {}).get("animations") or {}).values():
+            add_anim(a)
+
+    def add_species(s, alpha=False, moves=True):
+        sp = p.nodes.get(s, {})
+        add_body(sp.get("body"))
+        if alpha:
+            obj_pals.add("(alpha colors)")        # one Alpha (of any species) at a time
+        for mv in (sp.get("moves") or []) if moves else []:
+            add_particle(p.nodes.get(mv, {}).get("effect"))
+            bf = p.nodes.get(mv, {}).get("buff")
+            if isinstance(bf, dict) and p.type_of(bf.get("palette")) == "palette":
+                obj_pals.add(bf["palette"])            # a defense buff's flicker colors
+
+    followed = set()
+
+    def fires_moves(node):
+        """A monster that uses its moves here (a move_buttons switched off here doesn't)."""
+        return any(isinstance(f, dict) and f.get("behavior") in ("move_buttons", "monster_ai")
+                   and (f.get("params") or {}).get("enable_var") not in quiet_vars
+                   for f in node.get("logic", []) or [])
+
+    def add_object(o, inst=None):
+        node = p.nodes.get(o, {})
+        t = p.type_of(o)
+        followed.add(o)
+        if t == "particle":
+            add_particle(o)
+        add_body(node.get("body"))
+        for e in node.get("logic", []) or []:
+            if not isinstance(e, dict):
+                continue
+            prm = dict(e.get("params") or {})
+            prm.update(((inst or {}).get("overrides") or {}).get(e.get("behavior"), {}))
+            for m in re.findall(r"'do': 'open_menu', [^}]*'menu': '(\w+)'", str(prm)):
+                if p.type_of(m) == "menu":
+                    add_object(m)                       # a menu it opens (a pause menu) shows in this scene
+            for s in re.findall(r"'do': 'spawn', [^}]*'object': '(\w+)'", str(prm)):
+                if s in p.nodes and s not in followed:
+                    add_object(s)                       # what its actions spawn (a monster's drop)
+            for k, v in prm.items():                    # sprites and particles a behavior shows
+                if k == "shadow" and e.get("behavior") == "monster" and not fires_moves(node):
+                    continue                            # (shown only while its Fly move keeps it up)
+                if isinstance(v, str) and p.type_of(v) == "sprite":
+                    sprites.add(v)
+                    obj_pals.add(p.nodes[v].get("palette"))
+                elif isinstance(v, str) and p.type_of(v) == "particle":
+                    add_particle(v)
+                elif isinstance(v, str) and p.type_of(v) == "palette" and e.get("behavior") != "monster":
+                    obj_pals.add(v)
+                elif isinstance(v, str) and p.type_of(v) in C.ACTOR_TYPES and v not in followed:
+                    add_object(v)                       # an actor it brings in (a wave director's monsters)
+            if e.get("behavior") == "species_select":     # the portraits it shows (and their shimmering copies)
+                for s in species_nodes(p):
+                    pal = p.nodes.get(p.nodes[s].get("portrait"), {}).get("palette")
+                    obj_pals.add(pal)
+                    if prm.get("shiny_var") and pal:
+                        obj_pals.add("%s (shiny copy)" % pal)
+            if e.get("behavior") == "monster":
+                bt = p.game.get("battle") if isinstance(p.game.get("battle"), dict) else {}
+                fights = fires_moves(node)
+                fighting[0] = fighting[0] or fights
+                if p.type_of(prm.get("species")) == "species":
+                    add_species(prm["species"], prm.get("alpha"), fights)
+                elif prm.get("species_var") or prm.get("random"):
+                    for s in species_nodes(p):
+                        add_species(s, prm.get("alpha"), fights)
+                quiet.append((prm, bt))
+        if t == "tilemap":
+            ts = p.nodes.get(node.get("tileset"), {})
+            bg_pals.add(ts.get("palette"))
+            bg_pals.update(ts.get("palettes") or [])          # its tiles' other palettes (a big map's lands)
+            ntiles = len(ts.get("tiles", {}) or {})
+            if ntiles > (254 if node.get("layer") == 3 else 255):
+                c.err("tileset '%s' has %d tiles, too many for layer %s" % (node.get("tileset"), ntiles, node.get("layer")))
+        if t in ("hud", "menu", "dialog"):
+            bg_pals.add(p.nodes.get(node.get("font"), {}).get("palette"))
+            for e in node.get("elements") or [] if t == "hud" else []:
+                if isinstance(e, dict) and e.get("font"):      # a text drawn as sprites
+                    obj_pals.add(e.get("palette") or p.nodes.get(e["font"], {}).get("palette"))
+            if t == "menu":                             # each new color of its texts: a recolored copy
+                font = p.nodes.get(node.get("font"), {})
+                fcols = p.nodes.get(font.get("palette"), {}).get("colors") or []
+                ink = C.font_ink(font)
+                own = C.color_to_bgr555(fcols[ink]) if ink < len(fcols) and C.COLOR_RE.match(str(fcols[ink])) else None
+                for tx in (node.get("texts") or []) + ([{"color": node["color"]}] if node.get("color") else []):
+                    for col in C.menu_text_colors(tx)[0] if isinstance(tx, dict) else []:
+                        if isinstance(col, str) and C.COLOR_RE.match(col) and C.color_to_bgr555(col) != own:
+                            bg_pals.add("%s@%04x" % (font.get("palette"), C.color_to_bgr555(col)))
+            refs = set(re.findall(r'"(icon_\w+)"', str(node).replace("'", '"')))
+            if t == "menu" and node.get("upgrades"):
+                refs |= {u.get("icon") for u in upgrade_nodes(p).values() if u.get("icon")}
+            for ref in refs:
+                bg_pals.add(p.nodes.get(ref, {}).get("palette"))
+                icons.add(ref)
+
+    def add_hit(prm, bt):
+        """A monster's colors when hit: the paralysis flicker and sparks, its hit flash, the battle words."""
+        obj_pals.add(bt.get("par_palette"))
+        # Its hit flash: its own colors, else the game's. A shiny one flashes in its shiny colors
+        # (when it has them) and is drawn in a shimmering copy instead: counted in both states.
+        own = prm["flash_palette"] if p.type_of(prm.get("flash_palette")) == "palette" else bt.get("flash_palette")
+        shiny = None
+        if prm.get("shiny_var"):
+            sf = prm["shiny_flash_palette"] if p.type_of(prm.get("shiny_flash_palette")) == "palette" else own
+            shiny = {"(shiny colors)", sf}         # one shiny monster (the player's) at a time
+        flash_sets.append(({own}, shiny))
+        if p.type_of(bt.get("par_effect")) == "animation":
+            add_anim(bt["par_effect"])          # the sparks over a paralyzed monster
+        obj_pals.update(t.get("palette") for t in (bt.get("texts") or {}).values() if isinstance(t, dict))
+        if prm.get("level_tag") and prm.get("level_tag_palette"):
+            obj_pals.add(prm["level_tag_palette"])
+
+    picked = []                                         # instances placing one of several maps
+    for inst in insts:
+        if isinstance(inst, dict) and len(instance_objects(inst)) > 1:
+            picked.append([o for o in instance_objects(inst) if o in p.nodes])
+        elif isinstance(inst, dict) and inst.get("object") in p.nodes:
+            add_object(inst["object"], inst)
+    for a in re.findall(r"'do': 'spawn', [^}]*'object': '(\w+)'", str(c.n.get("on_start", []))):
+        add_object(a)                                   # things the scene spawns when it starts
+    # Only one variant of each is loaded: count the one adding the most palettes (the worst world).
+    base_bg = set(bg_pals)
+    for objs in picked:
+        worst = set()
+        for o in objs:
+            bg_pals.clear()
+            add_object(o)
+            if len(bg_pals - base_bg) > len(worst):
+                worst = bg_pals - base_bg
+        base_bg |= {"%s (or another variant)" % w for w in worst}
+    bg_pals.clear()
+    bg_pals.update(base_bg)
+    for prm, bt in quiet if fighting[0] else []:
+        add_hit(prm, bt)
+    if not fighting[0]:                                 # no one is hit: a shiny one only shimmers
+        flash_sets.extend((set(), {"(shiny colors)"} if prm.get("shiny_var") else None) for prm, bt in quiet)
+    # Sheets kept whole, plus the slots streamed sheets load their frames into (reserved by the
+    # engine whenever the game has one: src/engine/sprites.iwram.c).
+    limits = C.read_engine_limits()
+    tiles = sum(C.sprite_tiles(p.nodes[s]) for s in sprites if not C.sprite_streams(p.nodes[s], limits))
+    all_sprites = [n for n in p.nodes.values() if n.get("type") == "sprite"]
+    tiles += limits.get("STREAM_SLOTS", 0) * C.stream_slot_tiles(all_sprites, limits)
+    if tiles > 1024:
+        c.err("sprites in this scene need %d OBJ tiles; the GBA has 1024" % tiles)
+    # Palette banks only load when something draws with them: count the worse of the shiny-capable
+    # monsters all plain (their plain flash) or all shiny (their shimmering copy and shiny flash).
+    plain = set().union(*(f[0] for f in flash_sets))
+    shiny = set().union(*(f[1] or f[0] for f in flash_sets))
+    obj_pals = max(obj_pals | plain, obj_pals | shiny, key=lambda s: len(s - {None}))
+    obj_pals.discard(None)
+    bg_pals.discard(None)
+    if len(obj_pals) > 16:
+        c.err("sprites use %d palettes; the GBA has 16 sprite palettes" % len(obj_pals))
+    if len(bg_pals) > 16:
+        c.err("backgrounds and UI use %d palettes; the GBA has 16" % len(bg_pals))
+    icons.discard(None)
+    max_icons = C.read_engine_limits().get("MAX_ICONS", 24)
+    if len(icons) > max_icons:
+        c.err("HUD, menus and dialogs here can show %d different icons; the engine holds %d (MAX_ICONS)"
+              % (len(icons), max_icons))
+
+
+def upgrade_nodes(p):
+    return {nid: n for nid, n in p.nodes.items() if p.type_of(nid) == "upgrade"}
+
+
+def V_palette(c):
+    cols = c.get(c.n, "colors", "list", default=[])
+    if not 1 <= len(cols) <= 16:
+        c.err("'colors' must have 1 to 16 colors (index 0 is the transparent slot)")
+    for i, col in enumerate(cols):
+        c.color(col, "colors[%d]" % i)
+
+
+def V_sprite(c):
+    n = c.n
+    pal = c.ref(n.get("palette"), ["palette"], "palette")
+    w = c.get(n, "width", "int")
+    h = c.get(n, "height", "int")
+    if w is not None and h is not None and (w, h) not in C.OBJ_SIZES:
+        c.err("%dx%d is not a valid sprite size. Valid: %s" % (
+            w, h, ", ".join("%dx%d" % s for s in C.OBJ_SIZES)))
+        w = h = None
+    frames = c.get(n, "frames", "dict", default={})
+    if not frames:
+        c.err("'frames' needs at least one frame")
+    for name, rows in frames.items():
+        if not C.ID_RE.match(name):
+            c.err("frame name '%s' must be snake_case" % name)
+        c.pixels(rows, w, h, pal, "frames.%s" % name)
+    if w and h and len(frames) > 0xFFFF:
+        c.err("this sheet has more than 65535 frames")   # a sheet bigger than VRAM streams (C.sprite_streams)
+
+
+def tile_palette(tileset, tile):
+    """The palette a tile of a tileset is drawn in: 0 = the tileset's 'palette', k = palettes[k - 1]."""
+    k = tile.get("palette", 0) if isinstance(tile, dict) else 0
+    more = tileset.get("palettes") or []
+    return more[k - 1] if is_int(k) and 1 <= k <= len(more) else tileset.get("palette")
+
+
+def V_tileset(c):
+    pal = c.ref(c.n.get("palette"), ["palette"], "palette")
+    more = c.get(c.n, "palettes", "list", required=False, default=[])
+    for i, q in enumerate(more):
+        c.ref(q, ["palette"], "palettes[%d]" % i)
+    if len(more) > 15:
+        c.err("'palettes' lists %d palettes; a tileset can use at most 16 with its own 'palette'" % len(more))
+    tiles = c.get(c.n, "tiles", "dict", default={})
+    if not tiles:
+        c.err("'tiles' needs at least one tile")
+    if len(tiles) > 255:
+        c.err("a tileset holds at most 255 tiles (it has %d)" % len(tiles))
+    for ch, t in tiles.items():
+        label = "tiles['%s']" % ch
+        if len(ch) != 1 or ch in ". " or not ch.isprintable() or ord(ch) > 0xFFFF:
+            c.err("%s: tile keys must be one printable character, not '.' or space" % label)
+        if not isinstance(t, dict):
+            c.err("%s must be an object with 'pixels'" % label)
+            continue
+        for k in t:
+            if k not in ["pixels", "palette"] + C.TILE_FLAGS:
+                c.err("%s has unknown field '%s'" % (label, k))
+        if "palette" in t:
+            c.get(t, "palette", "int", label + ".palette", lo=0, hi=len(more))
+        c.pixels(t.get("pixels"), 8, 8, tile_palette(c.n, t) if "palette" in t else pal, label + ".pixels")
+        for f in C.TILE_FLAGS:
+            c.get(t, f, "bool", "%s.%s" % (label, f), required=False)
+        if t.get("solid") and t.get("one_way"):
+            c.err("%s cannot be both solid and one_way" % label)
+
+
+def V_tilemap(c):
+    n = c.n
+    ts = c.ref(n.get("tileset"), ["tileset"], "tileset")
+    layer = c.get(n, "layer", "int", lo=1, hi=3)
+    par = c.get(n, "parallax", "num", required=False, default=1, lo=0, hi=4)
+    c.get(n, "repeat_x", "bool", required=False)
+    c.get(n, "over", "bool", required=False)
+    if layer == 1 and n.get("over"):
+        c.err("layer 1 is the ground (collision) layer; only layers 2-3 can be drawn over the sprites")
+    if layer == 1 and par != 1:
+        c.err("layer 1 is the collision layer and must have parallax 1")
+    rows = c.get(n, "rows", "list", default=[])
+    if not rows:
+        c.err("'rows' needs at least one row")
+        return
+    w = len(rows[0]) if isinstance(rows[0], str) else 0
+    chars = set((c.p.nodes.get(ts, {}).get("tiles") or {}).keys()) if ts else None
+    for i, r in enumerate(rows):
+        if not isinstance(r, str):
+            c.err("rows[%d] must be text" % i)
+            return
+        if len(r) != w:
+            c.err("rows[%d] is %d tiles wide but row 0 is %d" % (i, len(r), w))
+            return
+        if chars is not None:
+            for ch in r:
+                if ch != "." and ch not in chars:
+                    c.err("rows[%d] uses '%s' but tileset '%s' has no such tile" % (i, ch, ts))
+                    return
+    if w > 1024 or len(rows) > 1024:
+        c.err("map is larger than 1024 tiles in one direction")
+    if layer == 1 and (w * 8 < C.SCREEN_W or len(rows) * 8 < C.SCREEN_H):
+        c.warn("collision map is smaller than the 240x160 screen")
+
+
+def V_font(c):
+    pal = c.ref(c.n.get("palette"), ["palette"], "palette")
+    glyphs = c.get(c.n, "glyphs", "dict", default={})
+    if not glyphs:
+        c.err("'glyphs' needs at least one glyph")
+    for ch, rows in glyphs.items():
+        if len(ch) != 1 or not 32 <= ord(ch) <= 126:
+            c.err("glyph key '%s' must be one printable ASCII character" % ch)
+        c.pixels(rows, 8, 8, pal, "glyphs['%s']" % ch)
+
+
+def V_icon(c):
+    pal = c.ref(c.n.get("palette"), ["palette"], "palette")
+    rows = c.get(c.n, "pixels", "list", default=[])
+    size = len(rows)
+    if size not in (8, 16):
+        c.err("an icon must be 8x8 or 16x16 pixels")
+        return
+    c.pixels(rows, size, size, pal, "pixels")
+
+
+def V_sfx(c):
+    n = c.n
+    ch = n.get("channel")
+    if ch not in C.CHANNELS:
+        c.err("'channel' must be one of %s" % ", ".join(C.CHANNELS))
+    c.get(n, "duty", "int", required=False, lo=0, hi=3)
+    c.get(n, "priority", "int", required=False, lo=0, hi=255)
+    steps = c.get(n, "steps", "list", default=[])
+    if not 1 <= len(steps) <= 64:
+        c.err("'steps' must have 1 to 64 steps")
+    total = 0
+    for i, s in enumerate(steps):
+        label = "steps[%d]" % i
+        if not isinstance(s, dict):
+            c.err("%s must be an object" % label)
+            continue
+        for k in s:
+            if k not in ("note", "pitch", "ticks", "volume"):
+                c.err("%s has unknown field '%s'" % (label, k))
+        total += c.get(s, "ticks", "int", label + ".ticks", lo=1, hi=255) or 0
+        c.get(s, "volume", "int", label + ".volume", required=False, lo=0, hi=4 if ch == "wave" else 15)
+        if ch == "noise":
+            c.get(s, "pitch", "int", label + ".pitch", lo=0, hi=15)
+        else:
+            note = s.get("note")
+            if note != ".." and not (isinstance(note, str) and C.note_ok(note)):
+                c.err("%s.note must be a note C2..B7 like \"C#5\", or \"..\" for silence" % label)
+    if total > 30:
+        c.warn("sound lasts %d ticks; sound effects should be 30 ticks or shorter" % total)
+
+
+def V_music(c):
+    n = c.n
+    c.get(n, "bpm", "int", lo=30, hi=300)
+    c.get(n, "rows_per_beat", "int", lo=1, hi=16)
+    c.get(n, "loop", "bool", required=False)
+    inst = c.get(n, "instruments", "dict", default={})
+    for ch, ins in inst.items():
+        label = "instruments.%s" % ch
+        if ch not in C.CHANNELS:
+            c.err("'%s': unknown channel (use %s)" % (label, ", ".join(C.CHANNELS)))
+            continue
+        if not isinstance(ins, dict):
+            c.err("'%s' must be an object" % label)
+            continue
+        allowed = {"square1": ("duty", "volume", "decay"), "square2": ("duty", "volume", "decay"),
+                   "wave": ("wave", "volume"), "noise": ("volume", "decay")}[ch]
+        for k in ins:
+            if k not in allowed:
+                c.err("'%s' has unknown field '%s'" % (label, k))
+        if ch == "wave":
+            w = ins.get("wave")
+            if not isinstance(w, str) or not re.match(r"^[0-9a-fA-F]{32}$", w):
+                c.err("'%s.wave' must be 32 hex digits (one 4-bit waveform)" % label)
+            c.get(ins, "volume", "int", label + ".volume", required=False, lo=0, hi=4)
+        else:
+            c.get(ins, "volume", "int", label + ".volume", required=False, lo=0, hi=15)
+            c.get(ins, "decay", "int", label + ".decay", required=False, lo=0, hi=7)
+            if ch != "noise":
+                c.get(ins, "duty", "int", label + ".duty", required=False, lo=0, hi=3)
+    pats = c.get(n, "patterns", "dict", default={})
+    if not pats:
+        c.err("'patterns' needs at least one pattern")
+    for pname, pat in pats.items():
+        label = "patterns.%s" % pname
+        if not isinstance(pat, dict) or not pat:
+            c.err("'%s' must map channels to note strings" % label)
+            continue
+        lengths = {}
+        for ch, text in pat.items():
+            if ch not in C.CHANNELS:
+                c.err("'%s' uses unknown channel '%s'" % (label, ch))
+                continue
+            if ch not in inst:
+                c.err("'%s' plays %s, but there is no instruments.%s" % (label, ch, ch))
+            if not isinstance(text, str):
+                c.err("'%s.%s' must be a string of notes" % (label, ch))
+                continue
+            toks = C.split_music_tokens(text)
+            lengths[ch] = len(toks)
+            for t in toks:
+                if t in ("--", ".."):
+                    continue
+                if ch == "noise":
+                    if not C.NOISE_RE.match(t):
+                        c.err("'%s.noise' has '%s'; noise uses X0..Xf, -- or .." % (label, t))
+                        break
+                elif not C.note_ok(t):
+                    c.err("'%s.%s' has '%s'; use notes C2..B7 like C#5, -- (hold) or .. (silence)" % (label, ch, t))
+                    break
+        if len(set(lengths.values())) > 1:
+            c.err("'%s': every channel must have the same number of rows (%s)" % (
+                label, ", ".join("%s=%d" % kv for kv in lengths.items())))
+    order = c.get(n, "order", "list", default=[])
+    if not order:
+        c.err("'order' must list at least one pattern")
+    total = 0
+    for i, o in enumerate(order):
+        if o not in pats:
+            c.err("order[%d] names pattern '%s', which does not exist" % (i, o))
+        else:
+            pat = pats[o]
+            if isinstance(pat, dict) and pat:
+                first = next(iter(pat.values()))
+                total += len(C.split_music_tokens(first)) if isinstance(first, str) else 0
+    if total > 8192:
+        c.err("song is %d rows long; keep it under 8192" % total)
+    lf = c.get(n, "loop_from", "int", required=False, lo=0, hi=max(0, len(order) - 1))
+    if lf and n.get("loop") is False:
+        c.warn("'loop_from' does nothing on a song that does not loop")
+
+
+def V_animation(c):
+    n = c.n
+    spr = c.ref(n.get("sprite"), ["sprite"], "sprite")
+    names = set((c.p.nodes.get(spr, {}).get("frames") or {}).keys()) if spr else set()
+    c.get(n, "loop", "bool", required=False)
+    frames = c.get(n, "frames", "list", default=[])
+    if not 1 <= len(frames) <= 64:
+        c.err("'frames' must have 1 to 64 frames")
+    for i, f in enumerate(frames):
+        label = "frames[%d]" % i
+        if not isinstance(f, dict):
+            c.err("%s must be an object" % label)
+            continue
+        for k in f:
+            if k not in ("frame", "ticks", "flip_x", "flip_y"):
+                c.err("%s has unknown field '%s'" % (label, k))
+        if spr and f.get("frame") not in names:
+            c.err("%s uses frame '%s' but sprite '%s' has %s" % (label, f.get("frame"), spr, ", ".join(sorted(names))))
+        c.get(f, "ticks", "int", label + ".ticks", lo=1, hi=255)
+        c.get(f, "flip_x", "bool", label + ".flip_x", required=False)
+        c.get(f, "flip_y", "bool", label + ".flip_y", required=False)
+    for i, ev in enumerate(c.get(n, "events", "list", required=False, default=[])):
+        label = "events[%d]" % i
+        if not isinstance(ev, dict):
+            c.err("%s must be an object" % label)
+            continue
+        c.get(ev, "at", "int", label + ".at", lo=0, hi=max(0, len(frames) - 1))
+        if "action" in ev:
+            c.actions([ev["action"]], label + ".action")
+        elif "actions" in ev:
+            c.actions(ev["actions"], label + ".actions")
+        else:
+            c.err("%s needs 'action' (or 'actions')" % label)
+
+
+def V_particle(c):
+    n = c.n
+    c.ref(n.get("animation"), ["animation"], "animation")
+    mode = n.get("mode")
+    if mode not in ("burst", "stream"):
+        c.err("'mode' must be \"burst\" or \"stream\"")
+    c.get(n, "count", "int", required=mode == "burst", lo=1, hi=32)
+    c.get(n, "rate", "int", required=mode == "stream", lo=1, hi=255)
+    c.get(n, "lifetime", "int", lo=1, hi=600)
+    c.get(n, "gravity", "num", required=False, lo=-4, hi=4)
+    c.get(n, "on_top", "bool", required=False)
+    if c.get(n, "even", "bool", required=False) and mode != "burst":
+        c.err("'even' spreads a burst's particles evenly, so it is only for mode \"burst\"")
+    for k, lo, hi in (("speed", 0, 8), ("angle", -360, 720)):
+        v = c.get(n, k, "list")
+        if v is not None:
+            if len(v) != 2 or not all(is_num(x) for x in v) or v[0] > v[1] or v[0] < lo or v[1] > hi:
+                c.err("'%s' must be [min, max] with min <= max, between %s and %s" % (k, lo, hi))
+
+
+def V_body(c):
+    n = c.n
+    o = c.get(n, "origin", "list")
+    if o is not None and (len(o) != 2 or not all(is_int(v) and 0 <= v <= 64 for v in o)):
+        c.err("'origin' must be [x, y] in pixels from the art's top-left")
+    hb = c.get(n, "hitbox", "dict")
+    if hb is not None:
+        for k in ("x", "y"):
+            c.get(hb, k, "int", "hitbox." + k, lo=-64, hi=64)
+        for k in ("w", "h"):
+            c.get(hb, k, "int", "hitbox." + k, lo=1, hi=64)
+    ph = c.get(n, "physics", "dict", required=False, default={})
+    for k in ph:
+        if k not in ("gravity", "solid", "collides_with"):
+            c.err("'physics' has unknown field '%s'" % k)
+    c.get(ph, "gravity", "bool", "physics.gravity", required=False)
+    c.get(ph, "solid", "bool", "physics.solid", required=False)
+    for cat in c.get(ph, "collides_with", "list", "physics.collides_with", required=False, default=[]):
+        if cat not in C.CATEGORIES:
+            c.err("'physics.collides_with' has '%s'; use %s" % (cat, ", ".join(C.CATEGORIES)))
+    anims = c.get(n, "animations", "dict", default={})
+    if not anims:
+        c.err("'animations' needs at least one slot")
+    for slot, a in anims.items():
+        if slot not in C.ANIM_SLOTS:
+            c.err("animation slot '%s' is unknown; use %s" % (slot, ", ".join(C.ANIM_SLOTS)))
+        c.ref(a, ["animation"], "animations.%s" % slot)
+    # A direction is drawn with its idle, walk and attack together: a missing one falls back to
+    # another direction's art (the plain slot, or the right one mirrored), which looks like a turn.
+    for suffix, _, _ in C.DIRECTIONS[1:]:
+        have = [b for b in ("idle", "walk", "attack") if b + suffix in anims]
+        if have and len(have) < 3:
+            c.warn("has %s but not %s: that direction falls back to other art" % (
+                ", ".join(b + suffix for b in have),
+                ", ".join(b + suffix for b in ("idle", "walk", "attack") if b not in have)))
+    d = n.get("default_animation")
+    if d not in anims:
+        c.err("'default_animation' must be one of the animation slots (%s)" % ", ".join(anims))
+
+
+def V_actor(c):
+    n = c.n
+    if c.p.type_of(c.id) == "trigger":
+        z = c.get(n, "zone", "dict")
+        if z is not None:
+            c.get(z, "w", "int", "zone.w", lo=1, hi=1024)
+            c.get(z, "h", "int", "zone.h", lo=1, hi=1024)
+    else:
+        if c.p.type_of(c.id) == "prop" and n.get("body") is None:
+            pass                # an invisible prop: only runs its logic (a director, a timer...)
+        elif n.get("body") is None and monster_entry(n):
+            pass                # a monster: its body comes from its species
+        else:
+            c.ref(n.get("body"), ["body"], "body")
+        snd = c.get(n, "sounds", "dict", required=False, default={})
+        for ev, s in snd.items():
+            if ev not in C.SOUND_EVENTS:
+                c.err("sound '%s' is unknown; use %s" % (ev, ", ".join(C.SOUND_EVENTS)))
+            c.ref(s, ["sfx"], "sounds.%s" % ev)
+    c.logic(c.get(n, "logic", "list", required=False, default=[]))
+    mon = monster_entry(n)
+    if mon is not None and mon.get("level_tag"):
+        check_level_tag(c, mon)
+    if mon is not None:
+        check_walk_dodge(c, mon)
+        check_home(c, mon)
+        check_alert(c, n, mon)
+    check_shiny(c, n)
+    check_spot_by_count(c, n)
+    check_frame_by_var(c, n)
+    check_speed_step(c, n)
+    check_head_label(c, n)
+    logic = [e for e in n.get("logic", []) or [] if isinstance(e, dict)]
+    for i, e in enumerate(logic):
+        prm = e.get("params") or {}
+        if e.get("behavior") == "free_spot":
+            reach = prm.get("reach", 64)
+            if is_int(reach) and not 8 <= reach <= 128:
+                c.err("'free_spot.reach' must be 8 to 128 pixels")
+        if e.get("behavior") == "appear_if" and any(f.get("behavior") != "appear_if" for f in logic[:i]):
+            c.err("'appear_if' must come first in the logic (before %s), so nothing else of it starts when "
+                  "it is not wanted" % logic[0].get("behavior"))
+        if e.get("behavior") == "move_switch" and is_int(prm.get("hits", 1)) and not 1 <= prm.get("hits", 1) <= 9:
+            c.err("'move_switch.hits' must be 1 to 9")
+        if e.get("behavior") == "monster" and is_int(prm.get("armor", 0)) and not 0 <= prm.get("armor", 0) <= 999:
+            c.err("'monster.armor' must be 0 to 999")
+
+
+def check_head_label(c, n):
+    """head_label: every word fits a pinned word (15 characters) and the font has its letters."""
+    for e in n.get("logic", []) or []:
+        if not isinstance(e, dict) or e.get("behavior") != "head_label":
+            continue
+        prm = e.get("params") or {}
+        words = prm.get("words")
+        if not isinstance(words, str):
+            continue
+        for w in words.split("|"):
+            if len(w) > 15:
+                c.err("'head_label.words': '%s' is longer than 15 characters" % w)
+        c.text_in_font(words.replace("|", ""), prm.get("font"), "head_label.words")
+
+
+def check_spot_by_count(c, n):
+    """spot_by_count: each spot's frames (the animation shifted k x frames on) are in the sheet."""
+    for e in n.get("logic", []) or []:
+        if not isinstance(e, dict) or e.get("behavior") != "spot_by_count":
+            continue
+        prm = e.get("params") or {}
+        spots, frames = prm.get("spots") or [], prm.get("frames", 0)
+        if len(spots) > 32:
+            c.err("'spot_by_count.spots' holds at most 32 spots")
+        if not is_int(frames) or frames < 0:
+            c.err("'spot_by_count.frames' must be 0 or more")
+            continue
+        if frames and not spots:
+            c.err("'spot_by_count.frames' needs 'spots' (one per count it shows)")
+            continue
+        shift = (len(spots) - 1) * frames if spots else 0
+        if shift > 255:
+            c.err("'spot_by_count': the last spot shows its frames %d frames on; at most 255" % shift)
+        body = c.p.nodes.get(n.get("body"), {})
+        anim = c.p.nodes.get((body.get("animations") or {}).get(body.get("default_animation")), {})
+        sheet = c.p.nodes.get(anim.get("sprite"), {})
+        names = list((sheet.get("frames") or {}).keys())
+        used = [names.index(f.get("frame")) for f in anim.get("frames") or []
+                if isinstance(f, dict) and f.get("frame") in names]
+        if used and max(used) + shift >= len(names):
+            c.err("'spot_by_count': its last spot shows frame %d of '%s', which has %d frames"
+                  % (max(used) + shift, anim.get("sprite"), len(names)))
+
+
+def check_frame_by_var(c, n):
+    """frame_by_var: every picture (the animation shifted k x frames on) is in the sheet."""
+    for e in n.get("logic", []) or []:
+        if not isinstance(e, dict) or e.get("behavior") != "frame_by_var":
+            continue
+        prm = e.get("params") or {}
+        steps, frames = prm.get("steps", 2), prm.get("frames", 1)
+        if not is_int(steps) or steps < 1 or not is_int(frames) or frames < 1:
+            c.err("'frame_by_var.steps' and 'frame_by_var.frames' must be 1 or more")
+            continue
+        shift = (steps - 1) * frames
+        if shift > 255:
+            c.err("'frame_by_var': its last picture is %d frames on; at most 255" % shift)
+        body = c.p.nodes.get(n.get("body"), {})
+        anim = c.p.nodes.get((body.get("animations") or {}).get(body.get("default_animation")), {})
+        sheet = c.p.nodes.get(anim.get("sprite"), {})
+        names = list((sheet.get("frames") or {}).keys())
+        used = [names.index(f.get("frame")) for f in anim.get("frames") or []
+                if isinstance(f, dict) and f.get("frame") in names]
+        if used and max(used) + shift >= len(names):
+            c.err("'frame_by_var': its last picture shows frame %d of '%s', which has %d frames"
+                  % (max(used) + shift, anim.get("sprite"), len(names)))
+
+
+def check_speed_step(c, n):
+    """topdown_controller: each speed_var point adds a percent of speed the engine can apply."""
+    for e in n.get("logic", []) or []:
+        if not isinstance(e, dict) or e.get("behavior") != "topdown_controller":
+            continue
+        step = (e.get("params") or {}).get("speed_step", 10)
+        if is_int(step) and not 1 <= step <= 100:
+            c.err("'topdown_controller.speed_step' must be 1 to 100 (percent per point)")
+
+
+def check_shiny(c, n):
+    """Shiny monsters and portraits: shiny_var holds one flag per species; the bonuses are percents."""
+    for e in n.get("logic", []) or []:
+        if not isinstance(e, dict) or e.get("behavior") not in ("monster", "species_select", "spot_by_count"):
+            continue
+        prm, b = e.get("params") or {}, e["behavior"]
+        var = prm.get("shiny_var")
+        if var and var in c.p.var_names() and c.p.var_count(var) < len(species_nodes(c.p)):
+            c.err("'%s.shiny_var' names '%s', which needs one slot per species: give it \"count\": %d"
+                  % (b, var, len(species_nodes(c.p))))
+        if b == "spot_by_count":
+            slot = prm.get("shiny_slot", 0)
+            if is_int(slot) and not 0 <= slot < max(1, len(species_nodes(c.p))):
+                c.err("'spot_by_count.shiny_slot' must be a species number, 0 to %d" % (len(species_nodes(c.p)) - 1))
+            continue
+        if b != "monster":
+            continue
+        for k, default, hi in (("shiny_power", 20, 100), ("shiny_hp", 40, 100), ("shiny_flashes", 0, 10)):
+            v = prm.get(k, default)
+            if is_int(v) and not 0 <= v <= hi:
+                c.err("'monster.%s' must be 0 to %d" % (k, hi))
+        if not var and any(k in prm for k in ("shiny_power", "shiny_hp", "shiny_flash_palette", "shiny_flashes")):
+            c.warn("'monster' shiny params do nothing without 'shiny_var'")
+
+
+def check_home(c, mon):
+    """A monster's home-world bonus: percents the engine can apply (a recharge can't be cut to nothing)."""
+    for k, hi in (("home_power", 100), ("home_speed", 100), ("home_charge", 90)):
+        v = mon.get(k, 10)
+        if is_int(v) and not 0 <= v <= hi:
+            c.err("'monster.%s' must be 0 to %d (percent)" % (k, hi))
+    if mon.get("on_home") and not mon.get("home_var"):
+        c.warn("'monster.on_home' never runs: the monster has no home_var")
+
+
+def check_walk_dodge(c, mon):
+    """A monster's walking dodge: percent points, and a look-back that fits its 16-tick history."""
+    for k in ("dodge_walk", "dodge_away"):
+        v = mon.get(k, 0)
+        if is_int(v) and not 0 <= v <= 100:
+            c.err("'monster.%s' must be 0 to 100 (accuracy points)" % k)
+    ticks = mon.get("dodge_ticks", 6)
+    if is_int(ticks) and not 1 <= ticks <= 16:
+        c.err("'monster.dodge_ticks' must be 1 to 16 ticks (the engine keeps 16 ticks of walking)")
+
+
+def check_alert(c, n, mon):
+    """A monster's alert when it spots the player, and the player's low-HP beep."""
+    text = mon.get("alert_text", "")
+    if isinstance(text, str) and text:
+        if len(text) > 15:
+            c.err("'monster.alert_text' must be at most 15 characters (a floating word)")
+        bt = c.p.game.get("battle") if isinstance(c.p.game.get("battle"), dict) else {}
+        c.text_in_font(text, bt.get("font"), "monster.alert_text")
+        if not any(isinstance(e, dict) and e.get("behavior") == "monster_ai" for e in n.get("logic") or []):
+            c.warn("'monster.alert_text' never shows: it pops up when monster_ai turns hostile, and this actor has none")
+    every = mon.get("low_hp_every", 60)
+    if is_int(every) and not 10 <= every <= 600:
+        c.err("'monster.low_hp_every' must be 10 to 600 ticks")
+    if mon.get("low_hp_sfx") and not (mon.get("hp_var") and mon.get("hp_max_var")):
+        c.err("'monster.low_hp_sfx' needs hp_var and hp_max_var (it beeps while the HP variable is a quarter of the max or less)")
+
+
+def check_level_tag(c, mon):
+    """A monster's level tag: battle-font words short enough for the number, a view that fits it."""
+    bt = c.p.game.get("battle") if isinstance(c.p.game.get("battle"), dict) else {}
+    text = mon.get("level_tag_text", "LV")
+    if isinstance(text, str):
+        if not 1 <= len(text) <= 4:
+            c.err("'monster.level_tag_text' must be 1 to 4 characters (the level number follows it)")
+        c.text_in_font(text, bt.get("font"), "monster.level_tag_text")
+    margin = mon.get("level_tag_margin", 32)
+    if is_int(margin) and not 0 <= margin <= 60:
+        c.err("'monster.level_tag_margin' must be 0 to 60 pixels (the view must still hold a monster)")
+
+
+def hud_text_width(text):
+    return C.placeholder_width(text)
+
+
+def check_placeholders(c, text, font, label):
+    """Placeholders must name game variables (and species fields); the rest must be in the font."""
+    for m in C.PLACEHOLDER_RE.finditer(text):
+        var, index, field, pick = m.group("var"), m.group("index"), m.group("field"), m.group("pick")
+        if var not in c.p.var_names():
+            c.err("%s uses {%s}, which is not a game variable" % (label, var))
+        elif index is None and c.p.var_count(var) > 1:
+            c.err("%s uses {%s}, a list of %d values: say which one, like {%s[chosen]}"
+                  % (label, var, c.p.var_count(var), var))
+        elif index is not None and c.p.var_count(var) == 1:
+            c.err("%s uses {%s[%s]}, but '%s' is not a list (it has no 'count')" % (label, var, index, var))
+        if index is not None and index not in c.p.var_names():
+            c.err("%s uses [%s], which is not a game variable" % (label, index))
+        elif index is not None and c.p.var_count(index) > 1:
+            c.err("%s uses [%s] as an index, but it is a list itself" % (label, index))
+        if field is not None:
+            if field not in C.SPECIES_FIELDS:
+                c.err("%s uses {%s.%s}; a species field is one of %s" % (label, var, field, ", ".join(C.SPECIES_FIELDS)))
+            if not species_nodes(c.p):
+                c.err("%s uses {%s.%s}, but there are no species nodes" % (label, var, field))
+            for sid, sp in species_nodes(c.p).items():
+                words = [str(sp.get("title", "")), str(sp.get("monster_type", "")).upper()]
+                words += [str(c.p.nodes.get(mv, {}).get("title", "")) for mv in sp.get("moves") or []]
+                c.text_in_font(" ".join(words), font, "%s (species '%s')" % (label, sid))
+        if pick is not None:
+            for word in C.pick_choices(pick):           # a word may hold placeholders itself
+                check_placeholders(c, word, font, label)
+    leftover = C.PLACEHOLDER_RE.sub("", text)
+    if "{" in leftover or "}" in leftover:
+        c.err("%s has a '{' or '}' that is not a placeholder ({var}, {var:02}, {var:time}, {var.name}, "
+              "{var|a|b}, {list[var]}; a pick's words nest at most %d levels deep)" % (label, C.PLACEHOLDER_DEPTH))
+    c.text_in_font(leftover.replace("{", "").replace("}", ""), font, label)
+
+
+def hud_box(c, font):
+    """The HUD's optional box (a panel behind part of it) in tiles (x, y, w, h), or None."""
+    b = c.n.get("box")
+    if b is None:
+        return None
+    if not isinstance(b, dict):
+        c.err("'box' must be an object {x, y, w, h, paper, border}")
+        return None
+    for k in b:
+        if k not in ("x", "y", "w", "h", "paper", "border"):
+            c.err("'box' has unknown field '%s'" % k)
+    good = True
+    for k, lo, hi in (("x", 0, C.SCREEN_W - 8), ("y", 0, C.SCREEN_H - 8), ("w", 8, C.SCREEN_W), ("h", 8, C.SCREEN_H)):
+        v = c.get(b, k, "int", "box." + k, lo=lo, hi=hi)
+        if v is None:
+            good = False
+        elif v % 8:
+            c.err("'box.%s' must be a multiple of 8 (the HUD sits on the 8x8 tile grid)" % k)
+            good = False
+    if good and (b["x"] + b["w"] > C.SCREEN_W or b["y"] + b["h"] > C.SCREEN_H):
+        c.err("'box' goes off the 240x160 screen")
+        good = False
+    paper = c.get(b, "paper", "int", "box.paper", required=False, default=1, lo=0, hi=15)
+    c.get(b, "border", "int", "box.border", required=False, lo=0, hi=15)
+    # The box paints its text with the same box-font slot menus and dialogs use (ui.c): while one
+    # with another paper is open, the panel takes that color.
+    for nid, other in c.p.nodes.items():
+        if c.p.type_of(nid) in ("menu", "dialog") and other.get("font") == font and isinstance(other.get("box"), dict):
+            if other["box"].get("paper", 1) != paper:
+                c.warn("'box.paper' is %s but %s '%s' (same font) uses paper %s: while it is open this HUD's "
+                       "box shows that color" % (paper, c.p.type_of(nid), nid, other["box"].get("paper", 1)))
+    return C.box_tiles(b) if good else None
+
+
+def V_hud(c):
+    n = c.n
+    font = c.ref(n.get("font"), ["font"], "font")
+    box = hud_box(c, font)
+    font_pal = c.p.nodes.get(font, {}).get("palette") if font else None
+    els = c.get(n, "elements", "list", default=[])
+    for i, e in enumerate(els):
+        label = "elements[%d]" % i
+        if not isinstance(e, dict):
+            c.err("%s must be an object" % label)
+            continue
+        kind = e.get("kind")
+        allowed = {"text": ("text", "align", "blink", "font", "palette"), "icon": ("icon",),
+                   "icon_repeat": ("icon", "empty_icon", "var", "max_var", "max", "spacing"),
+                   "bar": ("var", "max", "max_var", "length", "color", "back", "mid_color", "low_color"),
+                   "gauge": ("var", "icons")}.get(kind)
+        if allowed is None:
+            c.err("%s.kind must be text, icon, icon_repeat, bar or gauge" % label)
+            continue
+        for k in e:
+            if k not in ("kind", "x", "y") + allowed:
+                c.err("%s (%s) has unknown field '%s'" % (label, kind, k))
+        x = c.get(e, "x", "int", label + ".x", lo=0, hi=C.SCREEN_W - 8)
+        y = c.get(e, "y", "int", label + ".y", lo=0, hi=C.SCREEN_H - 8)
+        for v, k in ((x, "x"), (y, "y")):
+            if v is not None and v % 8:
+                c.err("%s.%s must be a multiple of 8 (the HUD sits on the 8x8 tile grid)" % (label, k))
+        width_tiles, height_tiles, left_tiles, icon_ids = 0, 1, None, []
+        if kind == "text":
+            t = c.get(e, "text", "str", label + ".text", default="")
+            sfont = None
+            if "font" in e:                             # drawn as sprites (outlined words), not on BG0
+                sfont = c.ref(e["font"], ["font"], label + ".font")     # (how many such fonts: check_sprite_fonts)
+                if "palette" in e:
+                    c.ref(e["palette"], ["palette"], label + ".palette")
+            elif "palette" in e:
+                c.err("%s.palette only colors a text drawn in its own sprite font (add 'font')" % label)
+            check_placeholders(c, t, sfont or font, label + ".text")
+            width_tiles = hud_text_width(t)
+            if sfont and box and x is not None and y is not None:     # the box (BG0) would cover it
+                bx, by, bw, bh = box
+                lx = x // 8 - (width_tiles + 1) // 2 if e.get("align") == "center" else x // 8
+                if lx < bx + bw + 1 and lx + width_tiles > bx - 1 and by - 1 <= y // 8 <= by + bh:
+                    c.err("%s is drawn in a sprite font, so it must sit off the HUD box and its frame "
+                          "(the box is drawn over sprites)" % label)
+            if e.get("align", "left") not in ("left", "center"):
+                c.err("%s.align must be \"left\" or \"center\"" % label)
+            c.get(e, "blink", "int", label + ".blink", required=False, lo=1, hi=255)
+            if e.get("align") == "center" and x is not None:
+                if x // 8 - (width_tiles + 1) // 2 - 1 < 0 or x // 8 + (width_tiles + 1) // 2 + 1 > 30:
+                    c.err("%s (centered on x %d) does not fit on the screen" % (label, x))
+                left_tiles = x // 8 - min(30, width_tiles) // 2 - 1     # the cells ui.c clears
+                width_tiles = 0
+        elif kind in ("icon", "icon_repeat"):
+            ic = c.ref(e.get("icon"), ["icon"], label + ".icon")
+            size = len(c.p.nodes.get(ic, {}).get("pixels", [])) // 8 if ic else 1
+            width_tiles = height_tiles = size
+            icon_ids = [ic, e.get("empty_icon")]
+            if kind == "icon_repeat":
+                if "empty_icon" in e:
+                    c.ref(e["empty_icon"], ["icon"], label + ".empty_icon")
+                c.param_value("var", {"required": True}, e.get("var"), label + ".var")
+                if "max_var" in e:
+                    c.param_value("var", {"required": True}, e["max_var"], label + ".max_var")
+                    if "empty_icon" not in e:
+                        c.warn("%s.max_var only shows something with an empty_icon" % label)
+                mx = c.get(e, "max", "int", label + ".max", lo=1, hi=30) or 1
+                sp = c.get(e, "spacing", "int", label + ".spacing", required=False, default=size * 8, lo=8, hi=64)
+                if sp % 8:
+                    c.err("%s.spacing must be a multiple of 8" % label)
+                width_tiles = (mx - 1) * (sp // 8) + size
+        elif kind == "bar":
+            c.param_value("var", {"required": True}, e.get("var"), label + ".var")
+            if "max_var" in e:
+                c.param_value("var", {"required": True}, e["max_var"], label + ".max_var")
+                c.get(e, "max", "int", label + ".max", required=False, lo=1)
+            else:
+                c.get(e, "max", "int", label + ".max", lo=1)
+            width_tiles = c.get(e, "length", "int", label + ".length", lo=1, hi=30) or 1
+            c.get(e, "color", "int", label + ".color", lo=1, hi=15)
+            c.get(e, "back", "int", label + ".back", required=False, lo=0, hi=15)
+            c.get(e, "mid_color", "int", label + ".mid_color", required=False, lo=1, hi=15)
+            c.get(e, "low_color", "int", label + ".low_color", required=False, lo=1, hi=15)
+        elif kind == "gauge":
+            c.param_value("var", {"required": True}, e.get("var"), label + ".var")
+            icons = c.get(e, "icons", "list", label + ".icons", default=[])
+            if not 2 <= len(icons) <= 16:
+                c.err("%s.icons must list 2 to 16 icons (one per value of the variable)" % label)
+            sizes = set()
+            for k, ic in enumerate(icons):
+                if c.ref(ic, ["icon"], "%s.icons[%d]" % (label, k)):
+                    sizes.add(len(c.p.nodes.get(ic, {}).get("pixels", [])))
+            if len(sizes) > 1:
+                c.err("%s.icons must all be the same size" % label)
+            width_tiles = height_tiles = (max(sizes) // 8) if sizes else 1
+            icon_ids = icons
+        if x is not None and x // 8 + width_tiles > 30:
+            c.err("%s does not fit on the screen (30 tiles wide)" % label)
+        if box and x is not None and y is not None:
+            hud_element_in_box(c, box, label, x // 8 if left_tiles is None else left_tiles, y // 8,
+                               width_tiles if left_tiles is None else min(30, hud_text_width(e.get("text", ""))) + 2,
+                               height_tiles, icon_ids, font_pal)
+
+
+def hud_element_in_box(c, box, label, x, y, w, h, icon_ids, font_pal):
+    """An element (cells x, y, w, h) sits all inside the HUD box or all outside it and off its frame."""
+    bx, by, bw, bh = box
+    w = max(w, 1)
+
+    def overlap(ax, ay, aw, ah):
+        return x < ax + aw and ax < x + w and y < ay + ah and ay < y + h
+    inside = bx <= x and x + w <= bx + bw and by <= y and y + h <= by + bh
+    if not inside and overlap(bx, by, bw, bh):
+        c.err("%s is partly inside the box: put it all inside (on the paper) or all outside" % label)
+    elif not inside and overlap(bx - 1, by - 1, bw + 2, bh + 2):
+        c.warn("%s covers the box's frame (the cells just around the box)" % label)
+    elif inside:
+        for ic in icon_ids:
+            pal = c.p.nodes.get(ic, {}).get("palette") if ic else None
+            if pal and pal != font_pal:
+                c.warn("%s: icon '%s' is not in the font's palette, so its see-through pixels show the map, "
+                       "not the box" % (label, ic))
+
+
+def V_menu(c):
+    n = c.n
+    font = c.ref(n.get("font"), ["font"], "font")
+    c.ref(n.get("cursor"), ["icon"], "cursor")
+    title = c.get(n, "title", "str", required=False, default="")
+    check_placeholders(c, title, font, "title")
+    ups = n.get("upgrades")
+    if ups is not None:
+        for k in ("color", "icons"):
+            if k in n:
+                c.err("an upgrade menu cannot have '%s' (only a menu with options)" % k)
+        V_upgrade_menu(c, font)
+        return
+    opts = c.get(n, "options", "list", default=[])
+    if not 1 <= len(opts) <= 10:
+        c.err("'options' must have 1 to 10 options (or use 'upgrades')")
+    lay = c.get(n, "layout", "dict", default={})
+    for k in lay:
+        if k not in ("x", "y", "spacing", "title_y", "direction"):
+            c.err("'layout' has unknown field '%s'" % k)
+    for k in ("x", "y", "spacing", "title_y"):
+        v = c.get(lay, k, "int", "layout." + k, required=k in ("x", "y"), lo=0, hi=C.SCREEN_H if k != "x" else C.SCREEN_W)
+        if v is not None and v % 8:
+            c.err("'layout.%s' must be a multiple of 8" % k)
+    if lay.get("direction", "column") not in ("column", "row"):
+        c.err("'layout.direction' must be \"column\" (Up/Down) or \"row\" (side by side, Left/Right)")
+    elif lay.get("direction") == "row" and isinstance(lay.get("spacing", 16), int):
+        cur = c.p.nodes.get(n.get("cursor"), {}).get("pixels") or ["."]
+        cw = max(1, len(cur[0]) // 8)
+        if lay.get("spacing", 16) // 8 < cw + 1:
+            c.err("'layout.spacing' (from one option's end to the next one's start, in a row) must be at "
+                  "least %d px: room for the cursor (%d px) and an 8 px gap" % ((cw + 1) * 8, cw * 8))
+    if "box" in n:
+        c.box(n["box"], "box")
+    if "color" in n:
+        c.color(n["color"], "color")
+    box = n.get("box") if isinstance(n.get("box"), dict) and all(isinstance(n["box"].get(k), int) for k in "xywh") else None
+    for i, ic in enumerate(c.get(n, "icons", "list", required=False, default=[])):
+        label = "icons[%d]" % i
+        if not isinstance(ic, dict):
+            c.err("%s must be {x, y, icon}" % label)
+            continue
+        for k in ic:
+            if k not in ("x", "y", "icon"):
+                c.err("%s has unknown field '%s'" % (label, k))
+        c.ref(ic.get("icon"), ["icon"], label + ".icon")
+        node = c.p.nodes.get(ic.get("icon")) or {}
+        px = node.get("pixels") if isinstance(node.get("pixels"), list) and node.get("pixels") else ["."]
+        iw, ih = max(1, len(str(px[0])) // 8), max(1, len(px) // 8)
+        ix = c.get(ic, "x", "int", label + ".x", lo=0, hi=C.SCREEN_W - 8)
+        iy = c.get(ic, "y", "int", label + ".y", lo=0, hi=C.SCREEN_H - 8)
+        if not (isinstance(ix, int) and isinstance(iy, int)):
+            continue
+        if ix % 8 or iy % 8:
+            c.err("%s x and y must be multiples of 8" % label)
+        tx, ty = ix // 8, iy // 8
+        if box:
+            bx, by, bw, bh = C.box_tiles(box)
+            if tx < bx + 1 or tx + iw > bx + bw - 1 or ty < by + 1 or ty + ih - 1 > by + bh - 2:
+                c.err("%s does not fit inside the box" % label)
+            elif node and font and node.get("palette") != (c.p.nodes.get(font) or {}).get("palette"):
+                c.warn("%s ('%s') is not in the font's palette: its see-through pixels show the map, not the box"
+                       % (label, ic.get("icon")))
+        elif tx + iw > 30 or ty + ih > 20:
+            c.err("%s does not fit on the screen" % label)
+    for i, t in enumerate(c.get(n, "texts", "list", required=False, default=[])):
+        label = "texts[%d]" % i
+        if not isinstance(t, dict):
+            c.err("%s must be {x, y, text}" % label)
+            continue
+        for k in t:
+            if k not in ("x", "y", "text", "color", "color_by"):
+                c.err("%s has unknown field '%s'" % (label, k))
+        if "color" in t and "color_by" in t:
+            c.err("%s has both 'color' and 'color_by': use one" % label)
+        elif "color" in t:
+            c.color(t["color"], label + ".color")
+        elif "color_by" in t:
+            by = t["color_by"]
+            if not isinstance(by, dict) or set(by) - {"var", "colors"}:
+                c.err("%s.color_by must be {var, colors}" % label)
+            else:
+                c.param_value("var", {"required": True}, by.get("var"), label + ".color_by.var")
+                cols = by.get("colors")
+                if not isinstance(cols, list) or not 2 <= len(cols) <= 16:
+                    c.err("%s.color_by.colors must list 2 to 16 colors (one per value of the variable)" % label)
+                else:
+                    for k, col in enumerate(cols):
+                        c.color(col, "%s.color_by.colors[%d]" % (label, k))
+        tx = c.get(t, "x", "int", label + ".x", lo=0, hi=C.SCREEN_W - 8)
+        ty = c.get(t, "y", "int", label + ".y", lo=0, hi=C.SCREEN_H - 8)
+        text = c.get(t, "text", "str", label + ".text", default="")
+        check_placeholders(c, text, font, label + ".text")
+        if isinstance(tx, int) and isinstance(ty, int):
+            if tx % 8 or ty % 8:
+                c.err("%s x and y must be multiples of 8" % label)
+            right = tx // 8 + C.placeholder_width(text)
+            box = n.get("box") if isinstance(n.get("box"), dict) else None
+            if box and all(isinstance(box.get(k), int) for k in "xywh"):
+                bx, by, bw, bh = C.box_tiles(box)
+                if tx // 8 < bx + 1 or right > bx + bw - 1 or ty // 8 < by + 1 or ty // 8 > by + bh - 2:
+                    c.err("%s does not fit inside the box" % label)
+            elif right > 30:
+                c.err("%s does not fit on the screen" % label)
+    lay_ok = isinstance(lay.get("x"), int) and isinstance(lay.get("y"), int)
+    pos = C.menu_layout(n)["options"] if lay_ok else []
+    for i, o in enumerate(opts):
+        label = "options[%d]" % i
+        if not isinstance(o, dict):
+            c.err("%s must be an object" % label)
+            continue
+        for k in o:
+            if k not in ("label", "actions"):
+                c.err("%s has unknown field '%s'" % (label, k))
+        text = c.get(o, "label", "str", label + ".label", default="")
+        check_placeholders(c, text, font, label + ".label")
+        c.actions(o.get("actions", []), label + ".actions")
+        if not ({"goto_scene", "close_menu", "open_menu", "show_dialog"} & set(re.findall(r"'do': '(\w+)'", str(o.get("actions", []))))):
+            c.warn("%s never closes the menu or changes scene: after picking it the game stays paused" % label)
+        if i < len(pos):
+            x, y = pos[i]
+            if x + C.placeholder_width(text) > 30 or y > 19:
+                c.err("%s does not fit on the screen" % label)
+            if x < 1:
+                c.err("'layout.x' must leave room for the cursor on the left")
+    menu_common(c)
+
+
+def menu_common(c):
+    n = c.n
+    if "on_cancel" in n:
+        c.actions(n["on_cancel"], "on_cancel")
+    snd = c.get(n, "sounds", "dict", required=False, default={})
+    for k, v in snd.items():
+        if k not in ("move", "select"):
+            c.err("'sounds' has unknown event '%s' (use move, select)" % k)
+        c.ref(v, ["sfx"], "sounds." + k)
+
+
+def V_upgrade_menu(c, font):
+    """A menu whose options are random upgrade cards (picked by the engine when it opens)."""
+    n = c.n
+    if "options" in n:
+        c.err("an upgrade menu ('upgrades') cannot also have 'options'")
+    count = c.get(n, "upgrades", "int", lo=1, hi=C.MAX_UPGRADE_CHOICES) or 1
+    lay = c.get(n, "layout", "dict", default={})
+    for k in lay:
+        if k not in ("x", "y", "spacing", "title_y"):
+            c.err("'layout' has unknown field '%s'" % k)
+    for k in ("x", "y", "spacing", "title_y"):
+        v = c.get(lay, k, "int", "layout." + k, required=k in ("x", "y"), lo=0, hi=C.SCREEN_W)
+        if v is not None and v % 8:
+            c.err("'layout.%s' must be a multiple of 8" % k)
+    if "box" not in n:
+        c.err("an upgrade menu needs a 'box' (cards are drawn on it)")
+    elif c.box(n["box"], "box") and isinstance(lay.get("x"), int) and isinstance(lay.get("y"), int):
+        bx, by, bw, bh = C.box_tiles(n["box"])
+        cw = len(c.p.nodes.get(n.get("cursor"), {}).get("pixels", [])) // 8 or 1
+        x, y = lay["x"] // 8, lay["y"] // 8
+        spacing = lay.get("spacing", 16) // 8
+        rows = 1 + C.UPGRADE_TEXT_LINES
+        if spacing < rows:
+            c.err("'layout.spacing' must be at least %d px: each card uses %d rows" % (rows * 8, rows))
+        if x - C.UPGRADE_ICON_DX - cw < bx + 1:
+            c.err("'layout.x' must leave %d columns inside the box for the cursor and the card icon" % (C.UPGRADE_ICON_DX + cw))
+        if x + C.UPGRADE_TEXT_W > bx + bw - 1:
+            c.err("cards need %d columns from layout.x, but the box ends sooner (make it wider or move x left)" % C.UPGRADE_TEXT_W)
+        if y < by + 1 or y + spacing * (count - 1) + rows > by + bh - 1:
+            c.err("%d cards do not fit inside the box (each uses %d rows)" % (count, rows))
+    ups = upgrade_nodes(c.p)
+    if not any(u.get("category") == "bonus" for u in ups.values()):
+        c.warn("no 'bonus' upgrade exists: once everything is maxed out the level-up menu has nothing to offer")
+    for uid, u in ups.items():
+        c.text_in_font(str(u.get("title", "")) + " NEW! LV123456789 EVOLVE!", font, "upgrade '%s' title" % uid)
+        for d in u.get("descriptions", []) if isinstance(u.get("descriptions"), list) else []:
+            c.text_in_font(str(d), font, "upgrade '%s' descriptions" % uid)
+    menu_common(c)
+
+
+def V_upgrade(c):
+    n = c.n
+    cat = n.get("category")
+    if cat not in C.UPGRADE_CATEGORIES:
+        c.err("'category' must be one of %s" % ", ".join(C.UPGRADE_CATEGORIES))
+        return
+    title = c.get(n, "title", "str", default="")
+    if len(title) > C.UPGRADE_TITLE_W:
+        c.err("'title' is %d chars; the card fits %d" % (len(title), C.UPGRADE_TITLE_W))
+    icon = c.ref(n.get("icon"), ["icon"], "icon")
+    if icon and len(c.p.nodes.get(icon, {}).get("pixels", [])) != 16:
+        c.err("'icon' must be a 16x16 icon")
+    if cat == "bonus":
+        if "max_level" in n or "requires" in n or "replaces" in n:
+            c.err("a bonus upgrade can be picked any number of times: no max_level, requires or replaces")
+        if n.get("var"):
+            c.param_value("var", {}, n["var"], "var")
+        levels = 1
+    else:
+        c.param_value("var", {"required": True}, n.get("var"), "var")
+        levels = c.get(n, "max_level", "int", lo=1, hi=9) or 1
+        if cat == "evolution" and levels != 1:
+            c.err("an evolution has max_level 1")
+    descs = c.get(n, "descriptions", "list", default=[])
+    want = levels if cat in ("weapon", "item") else 1
+    if len(descs) != want:
+        c.err("'descriptions' needs %d text(s): one per level the card can offer%s" % (
+            want, "" if want == 1 else " (the first is shown when it is new)"))
+    for i, d in enumerate(descs):
+        if not isinstance(d, str):
+            c.err("descriptions[%d] must be text" % i)
+            continue
+        wrapped, problem = C.wrap_text(d, C.UPGRADE_TEXT_W)
+        if problem:
+            c.err("descriptions[%d]: %s" % (i, problem))
+        elif len(wrapped) > C.UPGRADE_TEXT_LINES:
+            c.err("descriptions[%d] needs %d lines; a card fits %d lines of %d chars" % (
+                i, len(wrapped), C.UPGRADE_TEXT_LINES, C.UPGRADE_TEXT_W))
+    reqs = c.get(n, "requires", "list", required=False, default=[])
+    for i, r in enumerate(reqs):
+        label = "requires[%d]" % i
+        if not isinstance(r, dict):
+            c.err("%s must be {upgrade, level}" % label)
+            continue
+        for k in r:
+            if k not in ("upgrade", "level"):
+                c.err("%s has unknown field '%s'" % (label, k))
+        c.ref(r.get("upgrade"), ["upgrade"], label + ".upgrade")
+        lv = r.get("level")
+        if lv != "max" and not (is_int(lv) and 1 <= lv <= 9):
+            c.err("%s.level must be 1-9 or \"max\"" % label)
+    if cat == "evolution":
+        if not reqs:
+            c.err("an evolution needs 'requires' (the max-level weapon and the item that evolve it)")
+        rep = c.ref(n.get("replaces"), ["upgrade"], "replaces")
+        if rep and c.p.nodes.get(rep, {}).get("category") != "weapon":
+            c.err("'replaces' must name a weapon upgrade")
+    elif "replaces" in n:
+        c.err("only an evolution can have 'replaces'")
+    if "on_pick" in n:
+        c.actions(n["on_pick"], "on_pick")
+
+
+def V_dialog(c):
+    n = c.n
+    font = c.ref(n.get("font"), ["font"], "font")
+    box_ok = c.box(n.get("box"), "box")
+    c.get(n, "ticks_per_char", "int", required=False, lo=0, hi=10)
+    lines = c.get(n, "lines", "list", default=[])
+    if not lines:
+        c.err("'lines' needs at least one line")
+    for i, ln in enumerate(lines):
+        label = "lines[%d]" % i
+        if not isinstance(ln, dict):
+            c.err("%s must be an object" % label)
+            continue
+        for k in ln:
+            if k not in ("speaker", "portrait", "text"):
+                c.err("%s has unknown field '%s'" % (label, k))
+        text = c.get(ln, "text", "str", label + ".text", default="")
+        sp = c.get(ln, "speaker", "str", label + ".speaker", required=False, default="")
+        c.text_in_font(text + sp, font, label)
+        if ln.get("portrait"):
+            pid = c.ref(ln["portrait"], ["icon"], label + ".portrait")
+            if pid and len(c.p.nodes.get(pid, {}).get("pixels", [])) != 16:
+                c.err("%s.portrait must be a 16x16 icon" % label)
+        if box_ok:
+            lay = C.dialog_layout(n["box"], ln)
+            if lay["text_w"] < 4 or lay["text_h"] < 1:
+                c.err("%s: the box is too small for text" % label)
+                continue
+            if len(sp) > lay["inner_w"]:
+                c.err("%s.speaker is too long for the box" % label)
+            wrapped, problem = C.wrap_text(text, lay["text_w"])
+            if problem:
+                c.err("%s: %s" % (label, problem))
+            elif len(wrapped) > lay["text_h"]:
+                c.err("%s needs %d lines but the box fits %d; split it into more lines or enlarge the box"
+                      % (label, len(wrapped), lay["text_h"]))
+    choices = c.get(n, "choices", "list", required=False, default=[])
+    if box_ok and choices:
+        lay = C.dialog_layout(n["box"], {})
+        if len(choices) > lay["inner_h"]:
+            c.err("'choices' has %d options but the box fits %d" % (len(choices), lay["inner_h"]))
+    for i, ch in enumerate(choices):
+        label = "choices[%d]" % i
+        if not isinstance(ch, dict):
+            c.err("%s must be an object" % label)
+            continue
+        text = c.get(ch, "label", "str", label + ".label", default="")
+        c.text_in_font(text, font, label + ".label")
+        if box_ok and len(text) > C.dialog_layout(n["box"], {})["inner_w"] - 2:
+            c.err("%s.label is too long for the box" % label)
+        c.actions(ch.get("actions", []), label + ".actions")
+    if "on_end" in n:
+        c.actions(n["on_end"], "on_end")
+
+
+# --------------------------------------------------------------------------------------
+# Monster battles: species and move nodes, game.battle
+# --------------------------------------------------------------------------------------
+def species_nodes(p):
+    """Every species node, in nodes.json order (its number for species_var / {var.name})."""
+    return {e["id"]: p.nodes[e["id"]] for e in p.index
+            if e.get("type") == "species" and e.get("id") in p.nodes}
+
+
+def battle_types(p):
+    b = p.game.get("battle")
+    return b.get("types", []) if isinstance(b, dict) and isinstance(b.get("types"), list) else []
+
+
+def monster_entry(node):
+    """The params of an actor's 'monster' behavior, or None."""
+    for e in node.get("logic", []) or []:
+        if isinstance(e, dict) and e.get("behavior") == "monster":
+            return e.get("params") or {}
+    return None
+
+
+def V_species(c):
+    n = c.n
+    title = c.get(n, "title", "str", default="")
+    if not 1 <= len(title) <= C.SPECIES_TITLE_W:
+        c.err("'title' must be 1 to %d characters (the name shown on screen)" % C.SPECIES_TITLE_W)
+    if n.get("monster_type") not in battle_types(c.p):
+        c.err("'monster_type' must be one of game.battle.types (%s)" % ", ".join(battle_types(c.p)))
+    c.get(n, "speed", "int", required=False, lo=C.SPECIES_SPEED[0], hi=C.SPECIES_SPEED[1])
+    c.get(n, "hp_bonus", "int", required=False, lo=0, hi=100)
+    c.get(n, "power", "int", required=False, lo=50, hi=150)
+    c.get(n, "regen", "int", required=False, lo=0, hi=10)
+    c.get(n, "evasion", "int", required=False, lo=0, hi=50)
+    c.get(n, "double_hit", "int", required=False, lo=0, hi=100)
+    body = c.ref(n.get("body"), ["body"], "body")
+    if body:
+        if c.p.nodes[body].get("physics", {}).get("gravity"):
+            c.warn("'body' has gravity; monsters walk top-down")
+    pal = c.ref(n.get("alpha_palette"), ["palette"], "alpha_palette")
+    if pal and body:
+        sprites = set()
+        for a in (c.p.nodes[body].get("animations") or {}).values():
+            sprites.add(c.p.nodes.get(a, {}).get("sprite"))
+        for s in sprites:
+            sp_pal = c.p.nodes.get(s, {}).get("palette")
+            if sp_pal and len(c.p.nodes.get(sp_pal, {}).get("colors", [])) > len(c.p.nodes[pal].get("colors", [])):
+                c.err("'alpha_palette' has fewer colors than the sprite's palette '%s'" % sp_pal)
+    c.ref(n.get("portrait"), ["sprite"], "portrait")
+    c.ref(n.get("cry"), ["sfx"], "cry")
+    moves = c.get(n, "moves", "list", default=[])
+    if len(moves) != 3:
+        c.err("'moves' must list exactly 3 moves (A, B, R)")
+    for i, m in enumerate(moves):
+        c.ref(m, ["move"], "moves[%d]" % i)
+    # Balance: a species whose move 1 reaches farther must not walk faster (than one that isn't
+    # slow on purpose: a species that heals, regen, pays for it with its speed).
+    mine = species_pace(c.p, n)
+    if mine and not n.get("regen"):
+        for sid, other in species_nodes(c.p).items():
+            if other.get("regen"):
+                continue
+            theirs = species_pace(c.p, other)
+            if theirs and mine[0] > theirs[0] and mine[1] > theirs[1]:
+                c.warn("its move 1 reaches %d tiles, farther than '%s' (%d), but it walks faster (speed %d > %d)"
+                       % (mine[0], sid, theirs[0], mine[1], theirs[1]))
+
+
+def species_pace(p, n):
+    """(tiles its move 1 reaches, its speed %), or None when move 1 or speed are not valid."""
+    moves = n.get("moves")
+    move = p.nodes.get(moves[0]) if isinstance(moves, list) and moves and isinstance(moves[0], str) else None
+    speed = n.get("speed", 100)
+    if not isinstance(move, dict) or not is_int(speed):
+        return None
+    reach = C.move_reach(move)
+    return (reach, speed) if is_int(reach) else None      # a broken move: its own errors say why
+
+
+def V_move(c):
+    n = c.n
+    title = c.get(n, "title", "str", default="")
+    if not 1 <= len(title) <= C.MOVE_TITLE_W:
+        c.err("'title' must be 1 to %d characters" % C.MOVE_TITLE_W)
+    if n.get("monster_type") not in battle_types(c.p):
+        c.err("'monster_type' must be one of game.battle.types (%s)" % ", ".join(battle_types(c.p)))
+    shape = n.get("shape")
+    if shape not in C.MOVE_SHAPES:
+        c.err("'shape' must be one of %s" % ", ".join(C.MOVE_SHAPES))
+    c.get(n, "range", "int", required=shape not in ("screen", "self"), lo=0, hi=15)
+    power = c.get(n, "power", "int", lo=0, hi=255, default=0)
+    acc = c.get(n, "accuracy", "int", required=bool(power) and shape != "zone", lo=1, hi=100)
+    c.get(n, "charge", "int", lo=1, hi=65535)
+    st = c.get(n, "status", "dict", required=False)
+    if st is not None:
+        for k in st:
+            if k not in ("kind", "chance", "ticks"):
+                c.err("'status' has unknown field '%s'" % k)
+        if st.get("kind") not in C.STATUSES[1:]:
+            c.err("'status.kind' must be one of %s" % ", ".join(C.STATUSES[1:]))
+        c.get(st, "chance", "int", "status.chance", lo=1, hi=100)
+        t = c.get(st, "ticks", "list", "status.ticks")
+        if t is not None and (len(t) != 2 or not all(is_int(v) and 1 <= v <= 65535 for v in t) or t[0] > t[1]):
+            c.err("'status.ticks' must be [min, max] ticks")
+    if shape == "dash":
+        c.get(n, "dash", "int", lo=1, hi=8)
+    elif "dash" in n:
+        c.err("'dash' is only for the dash shape")
+    z = n.get("zone")
+    if shape == "zone":
+        if not isinstance(z, dict):
+            c.err("a zone move needs 'zone' {w, h, place, cell, count, delay, ticks, every}")
+        else:
+            for k in z:
+                if k not in ("w", "h", "place", "cell", "count", "delay", "ticks", "every"):
+                    c.err("'zone' has unknown field '%s'" % k)
+            zw = c.get(z, "w", "int", "zone.w", lo=1, hi=15)
+            zh = c.get(z, "h", "int", "zone.h", lo=1, hi=15)
+            cell = c.get(z, "cell", "int", "zone.cell", required=False, lo=1, hi=8)
+            if z.get("place") not in C.ZONE_PLACES:
+                c.err("'zone.place' must be one of %s" % ", ".join(C.ZONE_PLACES))
+            if z.get("place") == "around" and is_int(zw) and is_int(zh) and not (zw % 2 and zh % 2):
+                c.err("a zone around the user needs an odd 'zone.w' and 'zone.h', so the user stands on its middle tile")
+            c.get(z, "count", "int", "zone.count", required=False, lo=1, hi=6)
+            c.get(z, "delay", "int", "zone.delay", required=False, lo=0, hi=600)
+            c.get(z, "every", "int", "zone.every", required=False, lo=0, hi=255)
+            t = c.get(z, "ticks", "list", "zone.ticks")
+            if t is not None and (len(t) != 2 or not all(is_int(v) and 1 <= v <= 65535 for v in t) or t[0] > t[1]):
+                c.err("'zone.ticks' must be [min, max] ticks")
+    elif z is not None:
+        c.err("'zone' is only for the zone shape")
+    bf = n.get("buff")
+    if shape == "self":
+        if not isinstance(bf, dict) or bf.get("kind") not in C.BUFFS[1:]:
+            c.err("a self move needs 'buff' {kind: %s, ticks}" % " or ".join(C.BUFFS[1:]))
+        else:
+            for k in bf:
+                if k not in ("kind", "ticks", "amount", "palette"):
+                    c.err("'buff' has unknown field '%s'" % k)
+            c.get(bf, "ticks", "int", "buff.ticks", lo=1, hi=3600)
+            if bf.get("kind") == "defense":
+                c.get(bf, "amount", "int", "buff.amount", lo=1, hi=255)
+                c.ref(bf.get("palette"), ["palette"], "buff.palette", allow_empty=True)
+            else:
+                for k in ("amount", "palette"):
+                    if k in bf:
+                        c.err("'buff.%s' is only for the defense buff" % k)
+    elif bf is not None:
+        c.err("'buff' is only for the self shape")
+    push = c.get(n, "push", "dict", required=False)
+    if push is not None:
+        if shape == "self":
+            c.err("'push' moves the monsters a move reaches, and a self move reaches no one")
+        for k in push:
+            if k not in ("px", "ticks"):
+                c.err("'push' has unknown field '%s'" % k)
+        c.get(push, "px", "int", "push.px", lo=1, hi=64)
+        c.get(push, "ticks", "int", "push.ticks", lo=1, hi=60)
+    if not power and st is None and push is None and shape != "self":
+        c.warn("this move has no power, no status and no push: it does nothing but its effect")
+    if acc is not None and not power:
+        c.warn("'accuracy' does nothing on a move without power")
+    eff = c.ref(n.get("effect"), ["particle"], "effect", allow_empty=True)
+    at = n.get("effect_at", "target")
+    if at not in C.EFFECT_AT:
+        c.err("'effect_at' must be one of %s" % ", ".join(C.EFFECT_AT))
+    elif shape in C.MOVE_EFFECT_AT and at not in C.MOVE_EFFECT_AT[shape]:
+        c.err("'effect_at' of a %s move must be %s" % (shape, " or ".join(C.MOVE_EFFECT_AT[shape])))
+    # A move hurts exactly what its effect draws (except screen: the whole view; self: no one).
+    if shape in ("single", "dash", "beam", "circle", "zone"):
+        if not n.get("effect"):
+            c.err("a %s move hurts what its effect draws, so it needs an 'effect'" % shape)
+        elif eff:
+            box = C.effect_box(c.p, n)
+            if box is None and shape == "zone" and at == "center":
+                c.err("its effect is gone (or shows nothing) while the zone can hurt (particle steps %d-%d): "
+                      "make the particle live longer or the zone's delay shorter" % C.zone_hurt_steps(n))
+            elif box is None:
+                c.err("its effect draws nothing, so the move can't hurt anyone")
+            elif any(not -128 <= v <= 127 for v in box):
+                c.err("its effect's picture reaches more than 127 px from the particle")
+            life = c.p.nodes.get(n["effect"], {}).get("lifetime", 0)
+            z = n.get("zone") if isinstance(n.get("zone"), dict) else {}
+            if shape == "zone" and at == "center" and box is not None and is_int(life) \
+                    and life - 1 < C.zone_hurt_steps(n)[1]:
+                c.err("its effect (lifetime %d) ends before the zone stops hurting (tick %d): "
+                      "nothing would be drawn where it still hurts" % (life, C.zone_hurt_steps(n)[1]))
+            # The zone lights its effect on each tile (or each cell x cell block; when its size isn't
+            # a multiple of the cell, the blocks are centered on it and the outer ones overhang it):
+            # few enough pieces to leave room for the other effects, and each picture reaches within
+            # the hit margin of its block's edges, so no gap between pieces hurts where nothing is drawn.
+            if shape == "zone" and at == "tiles" and is_int(z.get("w")) and is_int(z.get("h")):
+                cell = z.get("cell", 1) if is_int(z.get("cell", 1)) and z.get("cell", 1) >= 1 else 1
+                ed = c.p.nodes.get(n["effect"], {})
+                count = ed.get("count", 1) if ed.get("mode") == "burst" and is_int(ed.get("count", 1)) else 1
+                pieces = -(-z["w"] // cell) * -(-z["h"] // cell) * count
+                if pieces > C.ZONE_MAX_PIECES:
+                    c.err("its zone lights %d effect pieces at once (at most %d): give it a bigger 'zone.cell' "
+                          "(each piece then covers cell x cell tiles) or a smaller zone" % (pieces, C.ZONE_MAX_PIECES))
+                half, mg = cell * 4, C.read_engine_limits().get("MOVE_HIT_MARGIN", 0)
+                if cell > 1 and box is not None and (box[0] > mg - half or box[1] > mg - half
+                                                     or box[2] < half - 1 - mg or box[3] < half - 1 - mg):
+                    c.err("its effect's picture (%d..%d x %d..%d px around its middle) must cover its whole %dx%d-tile "
+                          "block but the hit margin (%d..%d px), so the zone hurts nowhere it draws nothing"
+                          % (box[0], box[2], box[1], box[3], cell, cell, mg - half, half - 1 - mg))
+            elif shape == "zone" and "cell" in z:
+                c.err("'zone.cell' is only for zones whose effect plays on their tiles (effect_at: tiles)")
+            # A particle is drawn lifetime - 1 frames; the zone lights it again every `every` frames.
+            if shape == "zone" and at == "tiles" and is_int(life) and is_int(z.get("every", 0)) \
+                    and 0 < z.get("every", 0) and life - 1 < z["every"]:
+                c.err("its effect (lifetime %d, so drawn %d frames) goes out before it flickers again "
+                      "(every %d ticks): give the particle a lifetime of at least %d"
+                      % (life, life - 1, z["every"], z["every"] + 1))
+    # Its effect plays in 3 steps (moves.c strike_show): out of the user, on its way, at the
+    # destination. What flies in steps 1-2 is `travel`, needed when the effect plays away from the user.
+    steps = C.move_steps(c.p, n) if eff else None
+    away = steps is not None and at != "user"
+    travel = c.ref(n.get("travel"), ["animation"], "travel", allow_empty=not away)
+    if n.get("travel") and not away:
+        c.err("'travel' is only for moves whose effect plays away from the user (not whole-screen moves, "
+              "screen, around or center zones, or effects at the user)")
+    elif travel:
+        spr = c.p.nodes.get(c.p.nodes.get(travel, {}).get("sprite") or "", {})
+        if is_int(spr.get("width")) and is_int(spr.get("height")) and (spr["width"] > 16 or spr["height"] > 16):
+            c.err("its travel picture is %dx%d: keep it at most 16x16 so it never hides the monsters it passes"
+                  % (spr["width"], spr["height"]))
+    if steps is not None and steps[1] < 1:
+        c.warn("its effect is too short (lifetime %d) to show it flying from the user: give it at least 4 ticks"
+               % c.p.nodes[n["effect"]]["lifetime"])
+    lost = C.frames_lost_in_step3(c.p, n) if eff else []
+    if lost:
+        c.err("step 3 plays its effect in %d%% of its time, too fast to show frame(s) %s of its animation "
+              "(it would hurt where nothing is drawn): give those frames more ticks"
+              % (100 - sum(C.MOVE_STEPS), ", ".join(str(i) for i in lost)))
+    c.ref(n.get("sfx"), ["sfx"], "sfx", allow_empty=True)
+    if "on_use" in n:
+        c.actions(n["on_use"], "on_use")
+
+
+def check_battle(p, r, b):
+    where = "nodes/nodes.json"
+    if not isinstance(b, dict):
+        r.err(where, "game.battle must be an object")
+        return
+    for k in b:
+        if k not in ("types", "chart", "font", "texts", "flash_palette", "par_palette", "par_effect", "sounds",
+                     "player_hit_sounds"):
+            r.err(where, "game.battle has unknown field '%s'" % k)
+    types = b.get("types")
+    if not isinstance(types, list) or not 1 <= len(types) <= 32 or not all(isinstance(t, str) and C.ID_RE.match(t) for t in types):
+        r.err(where, "game.battle.types must list 1 to 32 snake_case type names")
+        types = []
+    if len(set(types)) != len(types):
+        r.err(where, "game.battle.types lists a type twice")
+    chart = b.get("chart", {})
+    if not isinstance(chart, dict):
+        r.err(where, "game.battle.chart must map attacking type -> {defending type: multiplier}")
+        chart = {}
+    for att, row in chart.items():
+        if att not in types:
+            r.err(where, "game.battle.chart: '%s' is not one of the types" % att)
+            continue
+        if not isinstance(row, dict):
+            r.err(where, "game.battle.chart.%s must map defending types to multipliers" % att)
+            continue
+        for dfn, mult in row.items():
+            if dfn not in types:
+                r.err(where, "game.battle.chart.%s: '%s' is not one of the types" % (att, dfn))
+            elif not is_num(mult) or not 0 <= mult <= 2.55:
+                r.err(where, "game.battle.chart.%s.%s must be a multiplier from 0 to 2.55" % (att, dfn))
+            elif mult == 0:
+                r.warn(where, "game.battle.chart.%s.%s is 0: that type can never be hurt by it" % (att, dfn))
+
+    def ref(v, t, label):
+        if not isinstance(v, str) or p.type_of(v) != t:
+            r.err(where, "game.battle.%s must name a %s node" % (label, t))
+            return None
+        return v
+
+    font = ref(b.get("font"), "font", "font")
+    for k in ("flash_palette", "par_palette"):
+        ref(b.get(k), "palette", k)
+    if "par_effect" in b:
+        ref(b.get("par_effect"), "animation", "par_effect")
+    texts = b.get("texts")
+    if not isinstance(texts, dict):
+        r.err(where, "game.battle.texts must be {%s: {text, palette}}" % ", ".join(C.BATTLE_TEXTS))
+        texts = {}
+    for k in C.BATTLE_TEXTS:
+        t = texts.get(k)
+        if not isinstance(t, dict):
+            r.err(where, "game.battle.texts.%s is missing ({text, palette})" % k)
+            continue
+        if k != "damage":
+            w = t.get("text")
+            if not isinstance(w, str) or not 1 <= len(w) <= 15:
+                r.err(where, "game.battle.texts.%s.text must be 1 to 15 characters" % k)
+            elif font:
+                glyphs = p.nodes.get(font, {}).get("glyphs", {})
+                for ch in w:
+                    if ch != " " and ch not in glyphs and ch.upper() not in glyphs:
+                        r.err(where, "game.battle.texts.%s uses '%s' but font '%s' has no glyph for it" % (k, ch, font))
+        ref(t.get("palette"), "palette", "texts.%s.palette" % k)
+    for k in texts:
+        if k not in C.BATTLE_TEXTS:
+            r.err(where, "game.battle.texts has unknown word '%s' (use %s)" % (k, ", ".join(C.BATTLE_TEXTS)))
+    if font:
+        glyphs = p.nodes.get(font, {}).get("glyphs", {})
+        if not all(str(d) in glyphs for d in range(10)):
+            r.err(where, "game.battle.font '%s' needs the digits 0-9 (damage numbers)" % font)
+    snd = b.get("sounds", {})
+    if not isinstance(snd, dict):
+        r.err(where, "game.battle.sounds must be {%s: sfx}" % ", ".join(C.BATTLE_SOUNDS))
+        snd = {}
+    for k, v in snd.items():
+        if k not in C.BATTLE_SOUNDS:
+            r.err(where, "game.battle.sounds has unknown event '%s' (use %s)" % (k, ", ".join(C.BATTLE_SOUNDS)))
+        else:
+            ref(v, "sfx", "sounds.%s" % k)
+    hits = b.get("player_hit_sounds", {})
+    if not isinstance(hits, dict):
+        r.err(where, "game.battle.player_hit_sounds must be {type: sfx}")
+        hits = {}
+    for k, v in hits.items():
+        if k not in types:
+            r.err(where, "game.battle.player_hit_sounds: '%s' is not one of the types" % k)
+        else:
+            ref(v, "sfx", "player_hit_sounds.%s" % k)
+    if not species_nodes(p):
+        r.warn(where, "game.battle is set but there are no species nodes")
+
+
+CHECKS = {"scene": V_scene, "palette": V_palette, "sprite": V_sprite, "tileset": V_tileset,
+          "tilemap": V_tilemap, "font": V_font, "icon": V_icon, "sfx": V_sfx, "music": V_music,
+          "animation": V_animation, "particle": V_particle, "body": V_body, "hud": V_hud,
+          "menu": V_menu, "dialog": V_dialog, "upgrade": V_upgrade, "species": V_species, "move": V_move}
+for _t in C.ACTOR_TYPES:
+    CHECKS[_t] = V_actor
+
+
+# --------------------------------------------------------------------------------------
+# Whole-project checks
+# --------------------------------------------------------------------------------------
+def check_game(p, r):
+    where = "nodes/nodes.json"
+    doc = p.index_doc
+    if doc.get("format") != 1:
+        r.err(where, "'format' must be 1")
+    g = doc.get("game")
+    if not isinstance(g, dict):
+        r.err(where, "'game' settings are missing")
+        return
+    allowed = {"title", "game_code", "rom_name", "start_scene", "save", "variables", "gravity", "max_fall_speed",
+               "battle"}
+    for k in g:
+        if k not in allowed:
+            r.err(where, "game has unknown field '%s'" % k)
+    t = g.get("title")
+    if not isinstance(t, str) or not 1 <= len(t) <= 12 or not all(32 <= ord(ch) < 127 for ch in t):
+        r.err(where, "game.title must be 1 to 12 plain characters")
+    gc = g.get("game_code")
+    if not isinstance(gc, str) or not re.match(r"^[A-Z0-9]{4}$", gc):
+        r.err(where, "game.game_code must be exactly 4 capital letters or digits")
+    rn = g.get("rom_name")
+    if not isinstance(rn, str) or not C.ID_RE.match(rn):
+        r.err(where, "game.rom_name must be snake_case")
+    if not isinstance(g.get("save", False), bool):
+        r.err(where, "game.save must be true or false")
+    for k, lo, hi in (("gravity", 0.01, 2), ("max_fall_speed", 0.5, 8)):
+        if k in g and (not is_num(g[k]) or not lo <= g[k] <= hi):
+            r.err(where, "game.%s must be a number between %s and %s" % (k, lo, hi))
+    ss = g.get("start_scene")
+    if ss not in p.by_id or p.kind_of(ss) != "scene":
+        r.err(where, "game.start_scene must name a scene")
+    if "battle" in g:
+        check_battle(p, r, g["battle"])
+    seen = set()
+    vars_ = g.get("variables", [])
+    if not isinstance(vars_, list):
+        r.err(where, "game.variables must be a list")
+        return
+    for i, v in enumerate(vars_):
+        label = "game.variables[%d]" % i
+        if not isinstance(v, dict):
+            r.err(where, "%s must be an object" % label)
+            continue
+        name = v.get("name")
+        if not isinstance(name, str) or not C.ID_RE.match(name):
+            r.err(where, "%s.name must be snake_case" % label)
+        elif name in seen:
+            r.err(where, "variable '%s' is defined twice" % name)
+        seen.add(name)
+        if v.get("type") not in ("int", "flag"):
+            r.err(where, "%s.type must be \"int\" or \"flag\"" % label)
+        init = v.get("initial")
+        if v.get("type") == "flag" and not isinstance(init, bool):
+            r.err(where, "%s.initial must be true or false" % label)
+        if v.get("type") == "int" and not is_int(init):
+            r.err(where, "%s.initial must be a whole number" % label)
+        if not isinstance(v.get("notes"), str) or not v.get("notes").strip():
+            r.err(where, "%s needs 'notes' explaining it" % label)
+        if not isinstance(v.get("persistent", False), bool):
+            r.err(where, "%s.persistent must be true or false" % label)
+        if "count" in v and (not is_int(v["count"]) or not 2 <= v["count"] <= 64):
+            r.err(where, "%s.count must be a whole number from 2 to 64 (a list of values)" % label)
+        for k in v:
+            if k not in ("name", "type", "initial", "notes", "persistent", "count"):
+                r.err(where, "%s has unknown field '%s'" % (label, k))
+    if sum(n for _, _, n in p.var_slots()) > 250:
+        r.err(where, "game.variables hold more than 250 values (each list counts its 'count')")
+    keys = {}
+    for v in vars_:
+        name = v.get("name") if isinstance(v, dict) else None
+        if isinstance(name, str):
+            for k in C.var_slot_keys(name, p.var_count(name)):
+                if k in keys:
+                    r.err(where, "variables '%s' and '%s' get the same save key: rename one" % (keys[k], name))
+                keys[k] = name
+
+
+def check_index(p, r):
+    where = "nodes/nodes.json"
+    seen = set()
+    listed_paths = set()
+    for i, e in enumerate(p.index):
+        nid = e.get("id")
+        label = "nodes[%d]" % i
+        if not isinstance(nid, str) or not C.ID_RE.match(nid):
+            r.err(where, "%s.id must be snake_case" % label)
+            continue
+        if nid in seen:
+            r.err(where, "node '%s' is listed twice" % nid)
+        seen.add(nid)
+        kind, t = e.get("kind"), e.get("type")
+        if kind == "scene":
+            if t not in C.SCENE_TYPES:
+                r.err(where, "'%s': scene type must be one of %s" % (nid, ", ".join(C.SCENE_TYPES)))
+                continue
+        elif kind == "object":
+            if t not in C.OBJECT_TYPES:
+                r.err(where, "'%s': object type must be one of %s" % (nid, ", ".join(C.OBJECT_TYPES)))
+                continue
+        else:
+            r.err(where, "'%s': kind must be \"scene\" or \"object\"" % nid)
+            continue
+        if not nid.startswith(C.prefix_for(kind, t)):
+            r.err(where, "'%s' is a %s, so its id must start with '%s'" % (nid, t, C.prefix_for(kind, t)))
+        exp = C.expected_path(kind, t, nid)
+        if e.get("path") != exp:
+            r.err(where, "'%s' path must be \"%s\"" % (nid, exp))
+        listed_paths.add(e.get("path"))
+        for k in e:
+            if k not in ("id", "kind", "type", "path", "parent"):
+                r.err(where, "'%s' entry has unknown field '%s'" % (nid, k))
+        parent = e.get("parent")
+        if kind == "scene" and parent is not None:
+            r.err(where, "scene '%s' must be a root node (parent null)" % nid)
+        if parent is not None and parent not in p.by_id:
+            r.err(where, "'%s' has parent '%s', which does not exist" % (nid, parent))
+    for rel in p.disk_files:
+        if rel not in listed_paths:
+            r.err("nodes/" + rel, "file is not listed in nodes.json (orphan file)")
+
+
+def check_node_file(p, r, nid):
+    e = p.by_id[nid]
+    n = p.nodes.get(nid)
+    if n is None:
+        return
+    where = "nodes/" + e.get("path", "?")
+    c = Ctx(p, r, nid, n, where)
+    if n.get("id") != nid:
+        c.err("'id' is '%s' but the file/index says '%s'" % (n.get("id"), nid))
+    if n.get("kind") != e.get("kind") or n.get("type") != e.get("type"):
+        c.err("kind/type (%s/%s) do not match nodes.json (%s/%s)" % (
+            n.get("kind"), n.get("type"), e.get("kind"), e.get("type")))
+        return
+    for k in ("name", "notes"):
+        if not isinstance(n.get(k), str) or not n[k].strip():
+            c.err("'%s' is required and must explain the node in plain words" % k)
+    if "tags" in n and (not isinstance(n["tags"], list) or not all(isinstance(t, str) for t in n["tags"])):
+        c.err("'tags' must be a list of text labels")
+    key = "scene" if e["kind"] == "scene" else e["type"]
+    if key not in CHECKS:
+        return
+    for k in n:
+        if k not in COMMON_FIELDS and k not in TYPE_FIELDS[key]:
+            c.err("unknown field '%s' for a %s" % (k, key))
+    if "code" in n:
+        if key != "scene" and key not in C.ACTOR_TYPES:
+            c.err("'code' is only allowed on scenes and actors")
+        elif n["code"] != "src/game/%s.c" % nid:
+            c.err("'code' must be \"src/game/%s.c\"" % nid)
+        elif not os.path.isfile(os.path.join(C.ROOT, n["code"])):
+            c.err("'code' file %s does not exist" % n["code"])
+    CHECKS[key](c)
+
+
+def check_tree(p, r):
+    for nid, e in p.by_id.items():
+        n = p.nodes.get(nid)
+        if n is None:
+            continue
+        where = "nodes/" + e.get("path", "?")
+        kids = n.get("children", [])
+        if not isinstance(kids, list):
+            r.err(where, "'children' must be a list of ids")
+            continue
+        if kids and e.get("kind") == "scene":
+            r.err(where, "scenes cannot have children; they place objects with 'instances'")
+            continue
+        allowed = C.OBJECT_TYPES.get(e.get("type"), ("", []))[1]
+        for k in kids:
+            if k not in p.by_id:
+                r.err(where, "child '%s' does not exist" % k)
+                continue
+            ke = p.by_id[k]
+            if ke.get("kind") == "scene":
+                r.err(where, "child '%s' is a scene; scenes are always root nodes" % k)
+            elif ke.get("type") not in allowed:
+                r.err(where, "a %s cannot own a %s ('%s'). It may own: %s" % (
+                    e.get("type"), ke.get("type"), k, ", ".join(allowed) or "nothing"))
+            if ke.get("parent") != nid:
+                r.err(where, "lists child '%s', but nodes.json says its parent is %s" % (k, ke.get("parent")))
+        if len(set(kids)) != len(kids):
+            r.err(where, "'children' lists a node twice")
+    for nid, e in p.by_id.items():
+        parent = e.get("parent")
+        if parent in p.nodes and nid not in (p.nodes[parent].get("children") or []):
+            r.err("nodes/nodes.json", "'%s' has parent '%s', but that node does not list it in 'children'" % (nid, parent))
+        seen, cur = set(), nid
+        while cur is not None and cur in p.by_id:
+            if cur in seen:
+                r.err("nodes/nodes.json", "parent chain of '%s' loops back on itself" % nid)
+                break
+            seen.add(cur)
+            cur = p.by_id[cur].get("parent")
+
+
+def check_catalog(p, r):
+    for b in p.behaviors:
+        if not C.behavior_source(b):
+            r.err("catalog/behaviors.json", "behavior '%s' has no source file src/behaviors/%s.c" % (b, b))
+        for pname, pdef in p.behaviors[b].get("params", {}).items():
+            if "type" not in pdef or not pdef.get("description"):
+                r.err("catalog/behaviors.json", "%s.%s needs a type and a description" % (b, pname))
+            if not pdef.get("required") and "default" not in pdef:
+                r.err("catalog/behaviors.json", "%s.%s needs a default (or required: true)" % (b, pname))
+    for a, spec in p.actions.items():
+        if not spec.get("description") or not spec.get("sentence"):
+            r.err("catalog/actions.json", "action '%s' needs a description and a sentence" % a)
+
+
+def check_sprite_fonts(p, r):
+    """Letters drawn as sprites (the battle's floating words, HUD texts with their own font, head labels)
+    come from at most MAX_SPRITE_FONTS fonts in the whole game, so every scene has room for them all."""
+    used = {}
+    font = (p.game.get("battle") or {}).get("font") if isinstance(p.game.get("battle"), dict) else None
+    if isinstance(font, str):
+        used[font] = "game.battle.font"
+    for nid, n in p.nodes.items():
+        t = p.type_of(nid)
+        if t == "hud":
+            for e in n.get("elements") or []:
+                if isinstance(e, dict) and e.get("kind") == "text" and isinstance(e.get("font"), str):
+                    used.setdefault(e["font"], nid)
+        elif t in C.ACTOR_TYPES:
+            for e in n.get("logic") or []:
+                if isinstance(e, dict) and e.get("behavior") == "head_label":
+                    f = (e.get("params") or {}).get("font")
+                    if isinstance(f, str):
+                        used.setdefault(f, nid)
+    limit = C.read_engine_limits().get("MAX_SPRITE_FONTS", 1)
+    if len(used) > limit:
+        r.err("nodes/nodes.json", "%d fonts are drawn as sprites (%s), but the engine holds the letters of at most %d "
+              "(MAX_SPRITE_FONTS in config.h)" % (len(used), ", ".join("%s by %s" % kv for kv in used.items()), limit))
+
+
+def check_usage(p, r):
+    """Warn about nodes nothing uses (they still cost nothing in the ROM if unused)."""
+    text = {nid: str(n) for nid, n in p.nodes.items()}
+    used = set()
+    for nid, t in text.items():
+        for other in re.findall(r"'([a-z][a-z0-9_]*)'", t):
+            if other != nid:
+                used.add(other)
+    used.update(re.findall(r"'([a-z][a-z0-9_]*)'", str(p.game.get("battle", {}))))   # battle font, colors, sounds
+    start = p.game.get("start_scene")
+    if any(p.type_of(m) == "menu" and n.get("upgrades") for m, n in p.nodes.items()):
+        used.update(upgrade_nodes(p))       # every upgrade can be offered by the upgrade menus
+    for nid, e in p.by_id.items():
+        if nid not in used and nid != start and e.get("parent") is None:
+            r.warn("nodes/" + e.get("path", "?"), "nothing uses this node yet")
+
+
+def validate(project=None):
+    """Run every check. Returns a Report with errors and warnings."""
+    p = project or C.load_project()
+    r = Report()
+    for where, msg in p.load_errors:
+        r.err(where, msg)
+    if not p.index_doc:
+        return r
+    check_index(p, r)
+    check_game(p, r)
+    for nid in list(p.by_id):
+        e = p.by_id[nid]
+        if e.get("kind") in ("scene", "object") and (e.get("type") in C.OBJECT_TYPES or e.get("type") in C.SCENE_TYPES):
+            check_node_file(p, r, nid)
+    check_tree(p, r)
+    check_catalog(p, r)
+    check_sprite_fonts(p, r)
+    check_usage(p, r)
+    return r
+
+
+def main():
+    C.setup_console()
+    r = validate()
+    for w in r.warnings:
+        print("  warning  " + w)
+    for e in r.errors:
+        print("  ERROR    " + e)
+    if r.ok:
+        print("✔ Validation passed (%d warnings)." % len(r.warnings))
+        return 0
+    print("✖ Validation failed: %d error(s)." % len(r.errors))
+    return 1
+
+
+if __name__ == "__main__":
+    sys.exit(main())

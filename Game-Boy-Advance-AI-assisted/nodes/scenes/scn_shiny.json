@@ -1,0 +1,46 @@
+{
+  "id": "scn_shiny",
+  "kind": "scene",
+  "type": "cutscene",
+  "name": "Shiny monster",
+  "notes": "Opens after the classic victory screen (and the items screen), only when that win made a monster shiny: the run's Alpha left a shiny seed and it was picked up (new_shiny is 0 or more). The new shiny monster's portrait bobs in the middle of a night sky, shimmering through the rainbow, with stars spraying out from behind it, under A SHINY MONSTER! and over its name and what being shiny gives it (+20% power on its moves, +40% starting HP). The victory screen already made it shiny and saved it; this screen only shows it, and a sparkling jingle plays. The victory song keeps playing. START goes back to the menu.",
+  "backdrop": "#101838",
+  "music": "mus_victory",
+  "camera": {
+    "x": 0,
+    "y": 0,
+    "bounds": "none"
+  },
+  "instances": [
+    {
+      "id": "stars",
+      "object": "ptc_shiny_stars",
+      "x": 120,
+      "y": 68
+    },
+    {
+      "id": "hud",
+      "object": "hud_shiny"
+    },
+    {
+      "id": "monster",
+      "object": "prop_shiny",
+      "x": 120,
+      "y": 68
+    }
+  ],
+  "on_start": [
+    {
+      "do": "fade_in",
+      "ticks": 20
+    },
+    {
+      "do": "wait",
+      "ticks": 24
+    },
+    {
+      "do": "play_sfx",
+      "sfx": "sfx_shiny"
+    }
+  ]
+}

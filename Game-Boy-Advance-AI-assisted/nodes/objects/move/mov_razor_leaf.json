@@ -1,0 +1,23 @@
+{
+  "id": "mov_razor_leaf",
+  "kind": "object",
+  "type": "move",
+  "name": "Razor Leaf",
+  "notes": "Sproutle's move 2 (B). Sharp leaves fly along a line 3 tiles long in front of the user and scatter; every monster a leaf touches is hurt. Charge: 10 s.",
+  "title": "RAZOR LEAF",
+  "monster_type": "grass",
+  "shape": "beam",
+  "range": 3,
+  "power": 18,
+  "accuracy": 90,
+  "charge": 600,
+  "effect": "ptc_fx_leaf",
+  "effect_at": "axis",
+  "travel": "anim_travel_razor_leaf",
+  "sfx": "sfx_mv_grass",
+  "children": [
+    "spr_fx_leaf",
+    "ptc_fx_leaf",
+    "anim_travel_razor_leaf"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "id": "prop_freed_splashell",
+  "kind": "object",
+  "type": "prop",
+  "name": "Splashell (trapped / freed)",
+  "notes": "Splashell on the menu map, in its own look (its species' body) but a prop, so moves can't hit it: trapped on its land's challenge screen (with appear_if unlocked == 2, so it vanishes the moment it is freed), or freed (spawned by the unlock, happy until you leave the screen).",
+  "body": "body_splashell",
+  "logic": [
+    {
+      "behavior": "appear_if",
+      "params": {
+        "var": "unlocked",
+        "op": ">=",
+        "value": 0
+      }
+    }
+  ]
+}

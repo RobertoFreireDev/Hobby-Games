@@ -1,0 +1,76 @@
+{
+  "id": "anim_gustling_idle_down_right",
+  "kind": "object",
+  "type": "animation",
+  "name": "Gustling idle down-right",
+  "notes": "Gustling hovering in place facing down-right (its front, turned to the right): it flaps its wings (raised 8 ticks, level 6, down 8, level 6) with its feet tucked away, and its body stays at the same height (no bobbing), and blinks now and then. Loops.",
+  "sprite": "spr_gustling",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "down_right_wings_up",
+      "ticks": 8
+    },
+    {
+      "frame": "down_right",
+      "ticks": 6
+    },
+    {
+      "frame": "down_right_wings_down",
+      "ticks": 8
+    },
+    {
+      "frame": "down_right",
+      "ticks": 6
+    },
+    {
+      "frame": "down_right_wings_up",
+      "ticks": 8
+    },
+    {
+      "frame": "down_right",
+      "ticks": 6
+    },
+    {
+      "frame": "down_right_wings_down",
+      "ticks": 8
+    },
+    {
+      "frame": "down_right",
+      "ticks": 6
+    },
+    {
+      "frame": "down_right_wings_up",
+      "ticks": 8
+    },
+    {
+      "frame": "down_right",
+      "ticks": 6
+    },
+    {
+      "frame": "down_right_wings_down",
+      "ticks": 8
+    },
+    {
+      "frame": "down_right",
+      "ticks": 6
+    },
+    {
+      "frame": "down_right_wings_up",
+      "ticks": 8
+    },
+    {
+      "frame": "down_right_blink",
+      "ticks": 6
+    },
+    {
+      "frame": "down_right_wings_down",
+      "ticks": 8
+    },
+    {
+      "frame": "down_right",
+      "ticks": 6
+    }
+  ],
+  "events": []
+}

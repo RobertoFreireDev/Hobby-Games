@@ -1,0 +1,18 @@
+{
+  "id": "icon_cursor",
+  "kind": "object",
+  "type": "icon",
+  "name": "Menu cursor",
+  "notes": "Gold arrow that points at the selected menu option: dark outline, white glint on the top edge, yellow body, orange shade underneath.",
+  "palette": "pal_ui",
+  "pixels": [
+    "11......",
+    "1211....",
+    "124411..",
+    "14444a1.",
+    "14aa11..",
+    "1a11....",
+    "11......",
+    "........"
+  ]
+}

@@ -1,0 +1,18 @@
+{
+  "id": "hud_intro",
+  "kind": "object",
+  "type": "hud",
+  "name": "Intro text",
+  "notes": "Only a blinking PRESS START at the bottom of the intro's campfire picture.",
+  "font": "font_default",
+  "elements": [
+    {
+      "kind": "text",
+      "x": 120,
+      "y": 152,
+      "text": "PRESS START",
+      "align": "center",
+      "blink": 30
+    }
+  ]
+}

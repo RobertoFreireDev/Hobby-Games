@@ -1,0 +1,22 @@
+{
+  "id": "ptc_gate_burn",
+  "kind": "object",
+  "type": "particle",
+  "name": "Bramble burning",
+  "notes": "Flames flaring out of a bramble wall as it burns.",
+  "animation": "anim_fx_flame",
+  "mode": "burst",
+  "count": 8,
+  "lifetime": 24,
+  "speed": [
+    0.4,
+    0.9
+  ],
+  "angle": [
+    0,
+    359
+  ],
+  "gravity": 0,
+  "on_top": true,
+  "even": true
+}

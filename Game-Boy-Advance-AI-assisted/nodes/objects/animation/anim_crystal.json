@@ -1,0 +1,16 @@
+{
+  "id": "anim_crystal",
+  "kind": "object",
+  "type": "animation",
+  "name": "Storm crystal",
+  "notes": "Storm crystal, standing still.",
+  "sprite": "spr_crystal",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "crystal",
+      "ticks": 60
+    }
+  ],
+  "events": []
+}

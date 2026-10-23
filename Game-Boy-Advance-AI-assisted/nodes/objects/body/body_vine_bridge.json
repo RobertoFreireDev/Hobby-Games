@@ -1,0 +1,29 @@
+{
+  "id": "body_vine_bridge",
+  "kind": "object",
+  "type": "body",
+  "name": "Vine bridge body",
+  "notes": "A bridge to walk over: its picture is centered on its spot; not solid.",
+  "origin": [
+    16,
+    16
+  ],
+  "hitbox": {
+    "x": -16,
+    "y": -8,
+    "w": 32,
+    "h": 16
+  },
+  "physics": {
+    "gravity": false,
+    "solid": false,
+    "collides_with": []
+  },
+  "animations": {
+    "idle": "anim_vine_bridge"
+  },
+  "default_animation": "idle",
+  "children": [
+    "anim_vine_bridge"
+  ]
+}

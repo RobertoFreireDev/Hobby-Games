@@ -1,0 +1,28 @@
+{
+  "id": "mov_growl",
+  "kind": "object",
+  "type": "move",
+  "name": "Growl",
+  "notes": "Furrbit's move 3 (R). A fearsome growl: notes burst out of the user, and every monster a note touches (they fly about 2 tiles past its body) is always paralyzed (100 %) for 1-3 s. No damage. Charge: 20 s.",
+  "title": "GROWL",
+  "monster_type": "normal",
+  "shape": "circle",
+  "range": 2,
+  "power": 0,
+  "charge": 1200,
+  "status": {
+    "kind": "par",
+    "chance": 100,
+    "ticks": [
+      60,
+      180
+    ]
+  },
+  "effect": "ptc_fx_note",
+  "effect_at": "user",
+  "sfx": "sfx_mv_status",
+  "children": [
+    "spr_fx_note",
+    "ptc_fx_note"
+  ]
+}

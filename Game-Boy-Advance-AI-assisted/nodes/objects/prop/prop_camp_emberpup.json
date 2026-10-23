@@ -1,0 +1,57 @@
+{
+  "id": "prop_camp_emberpup",
+  "kind": "object",
+  "type": "prop",
+  "name": "Emberpup at the campfire",
+  "notes": "Emberpup on the intro screen. It only shows once it is unlocked (unlocked >= 2) and sits on the half circle behind the fire: its seat depends on how many monsters are unlocked, all of them spread evenly from left to right in roster order, so with 2 unlocked it takes seat 2. It always looks at the fire (view per number unlocked: 2: down-left, 3: down, 4: down, 5: down-right, 6: down-right, 7: down-right, 8: down-right, 9: down-right). When it is shiny it shimmers through the rainbow, like everywhere else.",
+  "body": "body_camp_emberpup",
+  "logic": [
+    {
+      "behavior": "spot_by_count",
+      "params": {
+        "var": "unlocked",
+        "need": 2,
+        "spots": [
+          [
+            43,
+            -24
+          ],
+          [
+            3,
+            -30
+          ],
+          [
+            -17,
+            -29
+          ],
+          [
+            -29,
+            -27
+          ],
+          [
+            -38,
+            -24
+          ],
+          [
+            -44,
+            -22
+          ],
+          [
+            -49,
+            -21
+          ],
+          [
+            -53,
+            -19
+          ]
+        ],
+        "frames": 3,
+        "shiny_var": "shiny",
+        "shiny_slot": 1
+      }
+    }
+  ],
+  "children": [
+    "body_camp_emberpup"
+  ]
+}

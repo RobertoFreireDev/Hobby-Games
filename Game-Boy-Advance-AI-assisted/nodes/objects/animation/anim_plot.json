@@ -1,0 +1,16 @@
+{
+  "id": "anim_plot",
+  "kind": "object",
+  "type": "animation",
+  "name": "Garden plot picture",
+  "notes": "Shows the plot's first picture (empty: just the bed's mound of earth under it shows); the plot's frame_by_var shows the picture of its step instead (the same frame that many frames further on in spr_plot).",
+  "sprite": "spr_plot",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "soil",
+      "ticks": 60
+    }
+  ],
+  "events": []
+}

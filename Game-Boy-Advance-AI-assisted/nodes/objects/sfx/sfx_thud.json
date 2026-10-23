@@ -1,0 +1,26 @@
+{
+  "id": "sfx_thud",
+  "kind": "object",
+  "type": "sfx",
+  "name": "Thud",
+  "notes": "A dull thud: a move of the wrong type hit a gate.",
+  "channel": "noise",
+  "priority": 2,
+  "steps": [
+    {
+      "pitch": 9,
+      "ticks": 2,
+      "volume": 14
+    },
+    {
+      "pitch": 11,
+      "ticks": 4,
+      "volume": 11
+    },
+    {
+      "pitch": 12,
+      "ticks": 4,
+      "volume": 6
+    }
+  ]
+}

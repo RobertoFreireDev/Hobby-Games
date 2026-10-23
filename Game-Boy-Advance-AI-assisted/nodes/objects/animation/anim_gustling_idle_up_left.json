@@ -1,0 +1,28 @@
+{
+  "id": "anim_gustling_idle_up_left",
+  "kind": "object",
+  "type": "animation",
+  "name": "Gustling idle up-left",
+  "notes": "Gustling hovering in place facing up-left (its back, turned to the left): it flaps its wings (raised 8 ticks, level 6, down 8, level 6) with its feet tucked away, and its body stays at the same height (no bobbing). Loops.",
+  "sprite": "spr_gustling",
+  "loop": true,
+  "frames": [
+    {
+      "frame": "up_left_wings_up",
+      "ticks": 8
+    },
+    {
+      "frame": "up_left",
+      "ticks": 6
+    },
+    {
+      "frame": "up_left_wings_down",
+      "ticks": 8
+    },
+    {
+      "frame": "up_left",
+      "ticks": 6
+    }
+  ],
+  "events": []
+}

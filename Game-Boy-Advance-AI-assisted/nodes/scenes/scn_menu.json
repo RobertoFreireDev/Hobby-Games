@@ -1,0 +1,4093 @@
+{
+  "id": "scn_menu",
+  "kind": "scene",
+  "type": "title",
+  "name": "Menu",
+  "notes": "The menu is a map of 7 x 7 screens (1680 x 1120 px) the current monster walks (plr_menu): the camera shows one whole screen at a time and jumps to the next one, in one frame, when the monster's middle crosses an edge (camera mode 'screens'). Screens are named like a chessboard, columns A-G and rows 1-7. The middle one, D4, is the Green Meadow, as before: the mountain wall with the cave along the top (walking in opens the monster picker), the garden at the top left (4 plots: one growth step per finished run, 5 from seed to item), the CLASSIC, CLEAR SAVE and WAVES signs along the bottom (the WAVES sign stands greyed out until all 9 monsters are freed, then opens the waves mode), and the gold line at the bottom. The Meadow has three openings: west to the Boulder Canyon, east to the Ember Crater (past a wall of flames), south to the Verdant Jungle (past a bramble wall). Around it lie 8 lands of 6 screens each, one per run world: Boulder Canyon (A4-C5), Verdant Jungle (D5-E7), Ember Crater (E3-G4), Coral Lagoon (C1-D3), Storm Plateau (A1-B3), Miasma Swamp (E1-G2), Sky Isle (F5-G7) and Haunted Hollow (A6-C7). Each land's monster is trapped on its challenge screen, guarded by monsters or past an obstacle only the monster freed just before can get past, so only one new land is ever open: the Canyon's path is open (4 Pebbulks guard Emberpup), fire burns the Jungle's bramble (Splashell caught in vines), water puts out the Crater's flames (8 Emberpups guard Voltail), electricity shatters the crystal on the way to the Lagoon (5 Splashells on islands guard Sproutle), a grass move grows a vine bridge over the ravine into the Plateau (4 Voltails on mesas guard Venomole), poison melts the boulder on the way to the Swamp (4 armored Sproutles guard Gustling), only a flyer crosses the hole into the Sky Isle (Wispook on a pillar), and only a ghost passes the haunted hedge into the Hollow (3 Furrbits and 3 Venomoles in a hedge maze guard Pebbulk). Outside the Meadow the monster fights with its 3 moves on A, B and R (map HUD: charge circles, LV7, HP); it can faint and then wakes up in the Meadow. Each screen's things appear when it shows and go when it doesn't (a challenge left early starts over); wild monsters never leave their screen. When the scene opens it loads the saved progress (an old save gets the ways its unlocked monsters had already opened), grows the garden after a finished run, and shows the Meadow. on_screen, on every screen change: resets this screen's kills and hints, works out the land (its name shows for 3 s on walking into another land), switches between the Meadow's HUD (moves off, HP refilled) and the map HUD (moves on), and plays the run song on a challenge screen whose monster is still trapped (with the garden items its fight is tuned for, for 3 s), the menu song everywhere else.",
+  "backdrop": "#000000",
+  "music": "mus_menu",
+  "camera": {
+    "mode": "screens",
+    "follow": "player",
+    "bounds": "map",
+    "screen_var": "screen",
+    "screen_names": [
+      "A1 HIGH MESAS",
+      "B1 WIND STEPS",
+      "C1 THE REEF",
+      "D1 CORAL BEACH",
+      "E1 DEAD REEDS",
+      "F1 MIST HOLLOW",
+      "G1 SUNKEN BOG",
+      "A2 CRYSTAL RIDGE",
+      "B2 RAVINE GATE",
+      "C2 MANGROVES",
+      "D2 SANDBAR",
+      "E2 MELTED PASS",
+      "F2 SLUDGE POOLS",
+      "G2 TOADSTOOL BANK",
+      "A3 THUNDER FIELD",
+      "B3 FALLEN SPIRES",
+      "C3 TIDE POOLS",
+      "D3 CRYSTAL SHORE",
+      "E3 OBSIDIAN PATH",
+      "F3 LAVA FALLS",
+      "G3 CRATER FLOOR",
+      "A4 DRY RIVERBED",
+      "B4 THE GORGE",
+      "C4 CANYON MOUTH",
+      "D4 GREEN MEADOW",
+      "E4 FLAME GATE",
+      "F4 ASH SLOPE",
+      "G4 CRATER RIM",
+      "A5 PEBBULK QUARRY",
+      "B5 BOULDER FIELD",
+      "C5 LOOKOUT LEDGE",
+      "D5 BRAMBLE GATE",
+      "E5 FERN HOLLOW",
+      "F5 EAGLE ROCK",
+      "G5 SKY GAP",
+      "A6 BENT TREES",
+      "B6 GRAVE ROW",
+      "C6 HEDGE GATE",
+      "D6 GIANT ROOTS",
+      "E6 BRAMBLE THICKET",
+      "F6 WINDY BLUFF",
+      "G6 CLOUD STEPS",
+      "A7 HEDGE MAZE",
+      "B7 LANTERN PATH",
+      "C7 OLD RUINS",
+      "D7 WATERFALL POOL",
+      "E7 THE CLEARING",
+      "F7 THE PILLAR",
+      "G7 CLOUD EDGE"
+    ],
+    "on_screen": [
+      {
+        "do": "set_var",
+        "var": "kills",
+        "value": 0
+      },
+      {
+        "do": "set_var",
+        "var": "hint",
+        "value": 0
+      },
+      {
+        "do": "set_var",
+        "var": "spot",
+        "value": 0
+      },
+      {
+        "do": "set_var",
+        "var": "near",
+        "value": 0
+      },
+      {
+        "do": "set_var",
+        "var": "sw_1",
+        "value": 0
+      },
+      {
+        "do": "set_var",
+        "var": "sw_2",
+        "value": 0
+      },
+      {
+        "do": "set_var",
+        "var": "sw_3",
+        "value": 0
+      },
+      {
+        "do": "if_var",
+        "var": "unlocked",
+        "op": ">=",
+        "value": 6,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "sw_1",
+            "value": 1
+          },
+          {
+            "do": "set_var",
+            "var": "sw_2",
+            "value": 1
+          },
+          {
+            "do": "set_var",
+            "var": "sw_3",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "do": "set_var",
+        "var": "garden_owned",
+        "from": "hp_ups"
+      },
+      {
+        "do": "add_var",
+        "var": "garden_owned",
+        "from": "power_ups"
+      },
+      {
+        "do": "set_var",
+        "var": "prev_land",
+        "from": "land"
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 0,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 5
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 1,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 5
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 2,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 4
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 3,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 4
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 4,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 6
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 5,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 6
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 6,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 6
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 7,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 5
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 8,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 5
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 9,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 4
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 10,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 4
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 11,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 6
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 12,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 6
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 13,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 6
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 14,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 5
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 15,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 5
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 16,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 4
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 17,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 4
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 18,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 3
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 19,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 3
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 20,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 3
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 21,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 22,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 23,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 24,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 0
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 25,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 3
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 26,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 3
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 27,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 3
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 28,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 29,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 30,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 1
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 31,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 2
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 32,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 2
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 33,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 7
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 34,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 7
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 35,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 8
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 36,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 8
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 37,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 8
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 38,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 2
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 39,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 2
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 40,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 7
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 41,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 7
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 42,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 8
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 43,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 8
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 44,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 8
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 45,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 2
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 46,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 2
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 47,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 7
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 48,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "land",
+            "value": 7
+          }
+        ]
+      },
+      {
+        "do": "play_music",
+        "music": "mus_menu"
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 24,
+        "then": [
+          {
+            "do": "set_var",
+            "var": "map_moves",
+            "value": 0
+          },
+          {
+            "do": "set_var",
+            "var": "map_hp",
+            "from": "map_hp_max"
+          },
+          {
+            "do": "show_hud",
+            "hud": "hud_menu"
+          }
+        ],
+        "else": [
+          {
+            "do": "set_var",
+            "var": "map_moves",
+            "value": 1
+          },
+          {
+            "do": "show_hud",
+            "hud": "hud_map"
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 28,
+        "then": [
+          {
+            "do": "if_var",
+            "var": "unlocked",
+            "op": "==",
+            "value": 1,
+            "then": [
+              {
+                "do": "play_music",
+                "music": "mus_run"
+              },
+              {
+                "do": "set_var",
+                "var": "hint",
+                "value": 11
+              },
+              {
+                "do": "wait",
+                "ticks": 180
+              },
+              {
+                "do": "if_var",
+                "var": "hint",
+                "op": "==",
+                "value": 11,
+                "then": [
+                  {
+                    "do": "set_var",
+                    "var": "hint",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 46,
+        "then": [
+          {
+            "do": "if_var",
+            "var": "unlocked",
+            "op": "==",
+            "value": 2,
+            "then": [
+              {
+                "do": "play_music",
+                "music": "mus_run"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 20,
+        "then": [
+          {
+            "do": "if_var",
+            "var": "unlocked",
+            "op": "==",
+            "value": 3,
+            "then": [
+              {
+                "do": "play_music",
+                "music": "mus_run"
+              },
+              {
+                "do": "set_var",
+                "var": "hint",
+                "value": 13
+              },
+              {
+                "do": "wait",
+                "ticks": 180
+              },
+              {
+                "do": "if_var",
+                "var": "hint",
+                "op": "==",
+                "value": 13,
+                "then": [
+                  {
+                    "do": "set_var",
+                    "var": "hint",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 2,
+        "then": [
+          {
+            "do": "if_var",
+            "var": "unlocked",
+            "op": "==",
+            "value": 4,
+            "then": [
+              {
+                "do": "play_music",
+                "music": "mus_run"
+              },
+              {
+                "do": "set_var",
+                "var": "hint",
+                "value": 14
+              },
+              {
+                "do": "wait",
+                "ticks": 180
+              },
+              {
+                "do": "if_var",
+                "var": "hint",
+                "op": "==",
+                "value": 14,
+                "then": [
+                  {
+                    "do": "set_var",
+                    "var": "hint",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 0,
+        "then": [
+          {
+            "do": "if_var",
+            "var": "unlocked",
+            "op": "==",
+            "value": 5,
+            "then": [
+              {
+                "do": "play_music",
+                "music": "mus_run"
+              },
+              {
+                "do": "set_var",
+                "var": "hint",
+                "value": 15
+              },
+              {
+                "do": "wait",
+                "ticks": 180
+              },
+              {
+                "do": "if_var",
+                "var": "hint",
+                "op": "==",
+                "value": 15,
+                "then": [
+                  {
+                    "do": "set_var",
+                    "var": "hint",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 6,
+        "then": [
+          {
+            "do": "if_var",
+            "var": "unlocked",
+            "op": "==",
+            "value": 6,
+            "then": [
+              {
+                "do": "play_music",
+                "music": "mus_run"
+              },
+              {
+                "do": "set_var",
+                "var": "hint",
+                "value": 16
+              },
+              {
+                "do": "wait",
+                "ticks": 180
+              },
+              {
+                "do": "if_var",
+                "var": "hint",
+                "op": "==",
+                "value": 16,
+                "then": [
+                  {
+                    "do": "set_var",
+                    "var": "hint",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 47,
+        "then": [
+          {
+            "do": "if_var",
+            "var": "unlocked",
+            "op": "==",
+            "value": 7,
+            "then": [
+              {
+                "do": "play_music",
+                "music": "mus_run"
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "screen",
+        "op": "==",
+        "value": 42,
+        "then": [
+          {
+            "do": "if_var",
+            "var": "unlocked",
+            "op": "==",
+            "value": 8,
+            "then": [
+              {
+                "do": "play_music",
+                "music": "mus_run"
+              },
+              {
+                "do": "set_var",
+                "var": "hint",
+                "value": 18
+              },
+              {
+                "do": "wait",
+                "ticks": 180
+              },
+              {
+                "do": "if_var",
+                "var": "hint",
+                "op": "==",
+                "value": 18,
+                "then": [
+                  {
+                    "do": "set_var",
+                    "var": "hint",
+                    "value": 0
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "do": "if_var",
+        "var": "land",
+        "op": "!=",
+        "from": "prev_land",
+        "then": [
+          {
+            "do": "if_var",
+            "var": "land",
+            "op": "!=",
+            "value": 0,
+            "then": [
+              {
+                "do": "add_var",
+                "var": "land_sign",
+                "value": 1
+              },
+              {
+                "do": "wait",
+                "ticks": 180
+              },
+              {
+                "do": "add_var",
+                "var": "land_sign",
+                "value": -1
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "instances": [
+    {
+      "id": "ground",
+      "object": "map_world_ground"
+    },
+    {
+      "id": "solid",
+      "object": "map_world_solid"
+    },
+    {
+      "id": "hud",
+      "object": "hud_menu"
+    },
+    {
+      "id": "cave",
+      "object": "trg_cave",
+      "x": 824,
+      "y": 488
+    },
+    {
+      "id": "sign_classic",
+      "object": "prop_sign",
+      "x": 776,
+      "y": 608
+    },
+    {
+      "id": "near_classic",
+      "object": "trg_sign",
+      "x": 758,
+      "y": 583,
+      "overrides": {
+        "trigger_zone": {
+          "on_enter": [
+            {
+              "do": "set_var",
+              "var": "spot",
+              "value": 1
+            },
+            {
+              "do": "set_var",
+              "var": "entry",
+              "from": "chosen"
+            },
+            {
+              "do": "set_var",
+              "var": "near",
+              "value": 1
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "sign_clear",
+      "object": "prop_sign",
+      "x": 840,
+      "y": 608
+    },
+    {
+      "id": "near_clear",
+      "object": "trg_sign",
+      "x": 822,
+      "y": 583,
+      "overrides": {
+        "trigger_zone": {
+          "on_enter": [
+            {
+              "do": "set_var",
+              "var": "spot",
+              "value": 2
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "plot_1",
+      "object": "prop_plot",
+      "x": 740,
+      "y": 536,
+      "overrides": {
+        "frame_by_var": {
+          "var": "plot_1"
+        }
+      }
+    },
+    {
+      "id": "plot_2",
+      "object": "prop_plot",
+      "x": 762,
+      "y": 536,
+      "overrides": {
+        "frame_by_var": {
+          "var": "plot_2"
+        }
+      }
+    },
+    {
+      "id": "plot_3",
+      "object": "prop_plot",
+      "x": 784,
+      "y": 536,
+      "overrides": {
+        "frame_by_var": {
+          "var": "plot_3"
+        }
+      }
+    },
+    {
+      "id": "plot_4",
+      "object": "prop_plot",
+      "x": 806,
+      "y": 536,
+      "overrides": {
+        "frame_by_var": {
+          "var": "plot_4"
+        }
+      }
+    },
+    {
+      "id": "pick_1",
+      "object": "trg_plot",
+      "x": 734,
+      "y": 528,
+      "overrides": {
+        "trigger_zone": {
+          "on_enter": [
+            {
+              "do": "set_var",
+              "var": "item_got",
+              "value": 0
+            },
+            {
+              "do": "if_var",
+              "var": "plot_1",
+              "op": "==",
+              "value": 6,
+              "then": [
+                {
+                  "do": "add_var",
+                  "var": "hp_ups",
+                  "value": 1
+                },
+                {
+                  "do": "set_var",
+                  "var": "item_got",
+                  "from": "hp_ups"
+                }
+              ]
+            },
+            {
+              "do": "if_var",
+              "var": "plot_1",
+              "op": "==",
+              "value": 7,
+              "then": [
+                {
+                  "do": "add_var",
+                  "var": "power_ups",
+                  "value": 1
+                },
+                {
+                  "do": "set_var",
+                  "var": "item_got",
+                  "from": "power_ups"
+                },
+                {
+                  "do": "add_var",
+                  "var": "item_got",
+                  "value": 5
+                }
+              ]
+            },
+            {
+              "do": "if_var",
+              "var": "item_got",
+              "op": ">=",
+              "value": 1,
+              "then": [
+                {
+                  "do": "set_var",
+                  "var": "plot_1",
+                  "value": 0
+                },
+                {
+                  "do": "play_sfx",
+                  "sfx": "sfx_item"
+                },
+                {
+                  "do": "save_game"
+                },
+                {
+                  "do": "set_var",
+                  "var": "msg_q",
+                  "index": "msg_n",
+                  "from": "item_got"
+                },
+                {
+                  "do": "add_var",
+                  "var": "msg_n",
+                  "value": 1
+                },
+                {
+                  "do": "if_var",
+                  "var": "msg_n",
+                  "op": "==",
+                  "value": 1,
+                  "then": [
+                    {
+                      "do": "wait",
+                      "ticks": 180
+                    },
+                    {
+                      "do": "add_var",
+                      "var": "msg_i",
+                      "value": 1
+                    },
+                    {
+                      "do": "if_var",
+                      "var": "msg_i",
+                      "op": "<",
+                      "from": "msg_n",
+                      "then": [
+                        {
+                          "do": "wait",
+                          "ticks": 180
+                        },
+                        {
+                          "do": "add_var",
+                          "var": "msg_i",
+                          "value": 1
+                        },
+                        {
+                          "do": "if_var",
+                          "var": "msg_i",
+                          "op": "<",
+                          "from": "msg_n",
+                          "then": [
+                            {
+                              "do": "wait",
+                              "ticks": 180
+                            },
+                            {
+                              "do": "add_var",
+                              "var": "msg_i",
+                              "value": 1
+                            },
+                            {
+                              "do": "if_var",
+                              "var": "msg_i",
+                              "op": "<",
+                              "from": "msg_n",
+                              "then": [
+                                {
+                                  "do": "wait",
+                                  "ticks": 180
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "do": "set_var",
+                      "var": "msg_q",
+                      "value": 0
+                    },
+                    {
+                      "do": "set_var",
+                      "var": "msg_n",
+                      "value": 0
+                    },
+                    {
+                      "do": "set_var",
+                      "var": "msg_i",
+                      "value": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "pick_2",
+      "object": "trg_plot",
+      "x": 756,
+      "y": 528,
+      "overrides": {
+        "trigger_zone": {
+          "on_enter": [
+            {
+              "do": "set_var",
+              "var": "item_got",
+              "value": 0
+            },
+            {
+              "do": "if_var",
+              "var": "plot_2",
+              "op": "==",
+              "value": 6,
+              "then": [
+                {
+                  "do": "add_var",
+                  "var": "hp_ups",
+                  "value": 1
+                },
+                {
+                  "do": "set_var",
+                  "var": "item_got",
+                  "from": "hp_ups"
+                }
+              ]
+            },
+            {
+              "do": "if_var",
+              "var": "plot_2",
+              "op": "==",
+              "value": 7,
+              "then": [
+                {
+                  "do": "add_var",
+                  "var": "power_ups",
+                  "value": 1
+                },
+                {
+                  "do": "set_var",
+                  "var": "item_got",
+                  "from": "power_ups"
+                },
+                {
+                  "do": "add_var",
+                  "var": "item_got",
+                  "value": 5
+                }
+              ]
+            },
+            {
+              "do": "if_var",
+              "var": "item_got",
+              "op": ">=",
+              "value": 1,
+              "then": [
+                {
+                  "do": "set_var",
+                  "var": "plot_2",
+                  "value": 0
+                },
+                {
+                  "do": "play_sfx",
+                  "sfx": "sfx_item"
+                },
+                {
+                  "do": "save_game"
+                },
+                {
+                  "do": "set_var",
+                  "var": "msg_q",
+                  "index": "msg_n",
+                  "from": "item_got"
+                },
+                {
+                  "do": "add_var",
+                  "var": "msg_n",
+                  "value": 1
+                },
+                {
+                  "do": "if_var",
+                  "var": "msg_n",
+                  "op": "==",
+                  "value": 1,
+                  "then": [
+                    {
+                      "do": "wait",
+                      "ticks": 180
+                    },
+                    {
+                      "do": "add_var",
+                      "var": "msg_i",
+                      "value": 1
+                    },
+                    {
+                      "do": "if_var",
+                      "var": "msg_i",
+                      "op": "<",
+                      "from": "msg_n",
+                      "then": [
+                        {
+                          "do": "wait",
+                          "ticks": 180
+                        },
+                        {
+                          "do": "add_var",
+                          "var": "msg_i",
+                          "value": 1
+                        },
+                        {
+                          "do": "if_var",
+                          "var": "msg_i",
+                          "op": "<",
+                          "from": "msg_n",
+                          "then": [
+                            {
+                              "do": "wait",
+                              "ticks": 180
+                            },
+                            {
+                              "do": "add_var",
+                              "var": "msg_i",
+                              "value": 1
+                            },
+                            {
+                              "do": "if_var",
+                              "var": "msg_i",
+                              "op": "<",
+                              "from": "msg_n",
+                              "then": [
+                                {
+                                  "do": "wait",
+                                  "ticks": 180
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "do": "set_var",
+                      "var": "msg_q",
+                      "value": 0
+                    },
+                    {
+                      "do": "set_var",
+                      "var": "msg_n",
+                      "value": 0
+                    },
+                    {
+                      "do": "set_var",
+                      "var": "msg_i",
+                      "value": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "pick_3",
+      "object": "trg_plot",
+      "x": 778,
+      "y": 528,
+      "overrides": {
+        "trigger_zone": {
+          "on_enter": [
+            {
+              "do": "set_var",
+              "var": "item_got",
+              "value": 0
+            },
+            {
+              "do": "if_var",
+              "var": "plot_3",
+              "op": "==",
+              "value": 6,
+              "then": [
+                {
+                  "do": "add_var",
+                  "var": "hp_ups",
+                  "value": 1
+                },
+                {
+                  "do": "set_var",
+                  "var": "item_got",
+                  "from": "hp_ups"
+                }
+              ]
+            },
+            {
+              "do": "if_var",
+              "var": "plot_3",
+              "op": "==",
+              "value": 7,
+              "then": [
+                {
+                  "do": "add_var",
+                  "var": "power_ups",
+                  "value": 1
+                },
+                {
+                  "do": "set_var",
+                  "var": "item_got",
+                  "from": "power_ups"
+                },
+                {
+                  "do": "add_var",
+                  "var": "item_got",
+                  "value": 5
+                }
+              ]
+            },
+            {
+              "do": "if_var",
+              "var": "item_got",
+              "op": ">=",
+              "value": 1,
+              "then": [
+                {
+                  "do": "set_var",
+                  "var": "plot_3",
+                  "value": 0
+                },
+                {
+                  "do": "play_sfx",
+                  "sfx": "sfx_item"
+                },
+                {
+                  "do": "save_game"
+                },
+                {
+                  "do": "set_var",
+                  "var": "msg_q",
+                  "index": "msg_n",
+                  "from": "item_got"
+                },
+                {
+                  "do": "add_var",
+                  "var": "msg_n",
+                  "value": 1
+                },
+                {
+                  "do": "if_var",
+                  "var": "msg_n",
+                  "op": "==",
+                  "value": 1,
+                  "then": [
+                    {
+                      "do": "wait",
+                      "ticks": 180
+                    },
+                    {
+                      "do": "add_var",
+                      "var": "msg_i",
+                      "value": 1
+                    },
+                    {
+                      "do": "if_var",
+                      "var": "msg_i",
+                      "op": "<",
+                      "from": "msg_n",
+                      "then": [
+                        {
+                          "do": "wait",
+                          "ticks": 180
+                        },
+                        {
+                          "do": "add_var",
+                          "var": "msg_i",
+                          "value": 1
+                        },
+                        {
+                          "do": "if_var",
+                          "var": "msg_i",
+                          "op": "<",
+                          "from": "msg_n",
+                          "then": [
+                            {
+                              "do": "wait",
+                              "ticks": 180
+                            },
+                            {
+                              "do": "add_var",
+                              "var": "msg_i",
+                              "value": 1
+                            },
+                            {
+                              "do": "if_var",
+                              "var": "msg_i",
+                              "op": "<",
+                              "from": "msg_n",
+                              "then": [
+                                {
+                                  "do": "wait",
+                                  "ticks": 180
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "do": "set_var",
+                      "var": "msg_q",
+                      "value": 0
+                    },
+                    {
+                      "do": "set_var",
+                      "var": "msg_n",
+                      "value": 0
+                    },
+                    {
+                      "do": "set_var",
+                      "var": "msg_i",
+                      "value": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "pick_4",
+      "object": "trg_plot",
+      "x": 800,
+      "y": 528,
+      "overrides": {
+        "trigger_zone": {
+          "on_enter": [
+            {
+              "do": "set_var",
+              "var": "item_got",
+              "value": 0
+            },
+            {
+              "do": "if_var",
+              "var": "plot_4",
+              "op": "==",
+              "value": 6,
+              "then": [
+                {
+                  "do": "add_var",
+                  "var": "hp_ups",
+                  "value": 1
+                },
+                {
+                  "do": "set_var",
+                  "var": "item_got",
+                  "from": "hp_ups"
+                }
+              ]
+            },
+            {
+              "do": "if_var",
+              "var": "plot_4",
+              "op": "==",
+              "value": 7,
+              "then": [
+                {
+                  "do": "add_var",
+                  "var": "power_ups",
+                  "value": 1
+                },
+                {
+                  "do": "set_var",
+                  "var": "item_got",
+                  "from": "power_ups"
+                },
+                {
+                  "do": "add_var",
+                  "var": "item_got",
+                  "value": 5
+                }
+              ]
+            },
+            {
+              "do": "if_var",
+              "var": "item_got",
+              "op": ">=",
+              "value": 1,
+              "then": [
+                {
+                  "do": "set_var",
+                  "var": "plot_4",
+                  "value": 0
+                },
+                {
+                  "do": "play_sfx",
+                  "sfx": "sfx_item"
+                },
+                {
+                  "do": "save_game"
+                },
+                {
+                  "do": "set_var",
+                  "var": "msg_q",
+                  "index": "msg_n",
+                  "from": "item_got"
+                },
+                {
+                  "do": "add_var",
+                  "var": "msg_n",
+                  "value": 1
+                },
+                {
+                  "do": "if_var",
+                  "var": "msg_n",
+                  "op": "==",
+                  "value": 1,
+                  "then": [
+                    {
+                      "do": "wait",
+                      "ticks": 180
+                    },
+                    {
+                      "do": "add_var",
+                      "var": "msg_i",
+                      "value": 1
+                    },
+                    {
+                      "do": "if_var",
+                      "var": "msg_i",
+                      "op": "<",
+                      "from": "msg_n",
+                      "then": [
+                        {
+                          "do": "wait",
+                          "ticks": 180
+                        },
+                        {
+                          "do": "add_var",
+                          "var": "msg_i",
+                          "value": 1
+                        },
+                        {
+                          "do": "if_var",
+                          "var": "msg_i",
+                          "op": "<",
+                          "from": "msg_n",
+                          "then": [
+                            {
+                              "do": "wait",
+                              "ticks": 180
+                            },
+                            {
+                              "do": "add_var",
+                              "var": "msg_i",
+                              "value": 1
+                            },
+                            {
+                              "do": "if_var",
+                              "var": "msg_i",
+                              "op": "<",
+                              "from": "msg_n",
+                              "then": [
+                                {
+                                  "do": "wait",
+                                  "ticks": 180
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    },
+                    {
+                      "do": "set_var",
+                      "var": "msg_q",
+                      "value": 0
+                    },
+                    {
+                      "do": "set_var",
+                      "var": "msg_n",
+                      "value": 0
+                    },
+                    {
+                      "do": "set_var",
+                      "var": "msg_i",
+                      "value": 0
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "player",
+      "object": "plr_menu",
+      "x": 840,
+      "y": 544,
+      "overrides": {
+        "topdown_controller": {
+          "enter_ticks": 0
+        }
+      }
+    },
+    {
+      "id": "sign_waves",
+      "object": "prop_sign",
+      "x": 904,
+      "y": 608,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": ">=",
+          "value": 9
+        }
+      }
+    },
+    {
+      "id": "near_waves",
+      "object": "trg_sign_waves",
+      "x": 886,
+      "y": 583
+    },
+    {
+      "id": "sign_locked",
+      "object": "prop_sign_locked",
+      "x": 904,
+      "y": 608
+    },
+    {
+      "id": "near_locked",
+      "object": "trg_sign_locked",
+      "x": 886,
+      "y": 583
+    },
+    {
+      "id": "d5_bramble",
+      "object": "prop_bramble",
+      "x": 880,
+      "y": 684
+    },
+    {
+      "id": "d5_hint",
+      "object": "trg_hint",
+      "x": 860,
+      "y": 640,
+      "overrides": {
+        "appear_if": {
+          "var": "gate_2",
+          "op": "==",
+          "value": 0
+        },
+        "trigger_zone": {
+          "on_enter": [
+            {
+              "do": "set_var",
+              "var": "hint",
+              "value": 1
+            }
+          ],
+          "on_exit": [
+            {
+              "do": "set_var",
+              "var": "hint",
+              "value": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "e4_flames",
+      "object": "prop_flames",
+      "x": 1000,
+      "y": 592
+    },
+    {
+      "id": "e4_hint",
+      "object": "trg_hint",
+      "x": 960,
+      "y": 556,
+      "overrides": {
+        "appear_if": {
+          "var": "gate_3",
+          "op": "==",
+          "value": 0
+        },
+        "trigger_zone": {
+          "on_enter": [
+            {
+              "do": "set_var",
+              "var": "hint",
+              "value": 2
+            }
+          ],
+          "on_exit": [
+            {
+              "do": "set_var",
+              "var": "hint",
+              "value": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "e3_crystal",
+      "object": "prop_crystal",
+      "x": 984,
+      "y": 432
+    },
+    {
+      "id": "e3_hint",
+      "object": "trg_hint",
+      "x": 992,
+      "y": 396,
+      "overrides": {
+        "appear_if": {
+          "var": "gate_4",
+          "op": "==",
+          "value": 0
+        },
+        "trigger_zone": {
+          "on_enter": [
+            {
+              "do": "set_var",
+              "var": "hint",
+              "value": 3
+            }
+          ],
+          "on_exit": [
+            {
+              "do": "set_var",
+              "var": "hint",
+              "value": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "b2_sprout",
+      "object": "prop_sprout",
+      "x": 456,
+      "y": 272
+    },
+    {
+      "id": "b2_block_0",
+      "object": "prop_block_32x32",
+      "x": 416,
+      "y": 256,
+      "overrides": {
+        "appear_if": {
+          "var": "gate_5",
+          "op": "==",
+          "value": 0
+        }
+      }
+    },
+    {
+      "id": "b2_bridge",
+      "object": "prop_vine_bridge",
+      "x": 432,
+      "y": 272,
+      "overrides": {
+        "appear_if": {
+          "var": "gate_5",
+          "op": "==",
+          "value": 1
+        }
+      }
+    },
+    {
+      "id": "b2_hint",
+      "object": "trg_hint",
+      "x": 440,
+      "y": 252,
+      "overrides": {
+        "appear_if": {
+          "var": "gate_5",
+          "op": "==",
+          "value": 0
+        },
+        "trigger_zone": {
+          "on_enter": [
+            {
+              "do": "set_var",
+              "var": "hint",
+              "value": 4
+            }
+          ],
+          "on_exit": [
+            {
+              "do": "set_var",
+              "var": "hint",
+              "value": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "d2_boulder",
+      "object": "prop_boulder",
+      "x": 936,
+      "y": 288
+    },
+    {
+      "id": "d2_hint",
+      "object": "trg_hint",
+      "x": 888,
+      "y": 252,
+      "overrides": {
+        "appear_if": {
+          "var": "gate_6",
+          "op": "==",
+          "value": 0
+        },
+        "trigger_zone": {
+          "on_enter": [
+            {
+              "do": "set_var",
+              "var": "hint",
+              "value": 5
+            }
+          ],
+          "on_exit": [
+            {
+              "do": "set_var",
+              "var": "hint",
+              "value": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "g5_block_0",
+      "object": "plat_hole_32x32",
+      "x": 1520,
+      "y": 672
+    },
+    {
+      "id": "g5_block_1",
+      "object": "plat_hole_32x32",
+      "x": 1584,
+      "y": 672
+    },
+    {
+      "id": "g5_hole",
+      "object": "plat_hole_32x32",
+      "x": 1552,
+      "y": 672,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "<=",
+          "value": 7
+        }
+      }
+    },
+    {
+      "id": "g5_bridge",
+      "object": "prop_log_bridge",
+      "x": 1568,
+      "y": 688,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": ">=",
+          "value": 8
+        }
+      }
+    },
+    {
+      "id": "g5_hint",
+      "object": "trg_hint",
+      "x": 1544,
+      "y": 640,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "<=",
+          "value": 7
+        },
+        "trigger_zone": {
+          "on_enter": [
+            {
+              "do": "set_var",
+              "var": "hint",
+              "value": 6
+            }
+          ],
+          "on_exit": [
+            {
+              "do": "set_var",
+              "var": "hint",
+              "value": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "d6_hedge",
+      "object": "npc_hedge",
+      "x": 744,
+      "y": 896
+    },
+    {
+      "id": "d6_hint",
+      "object": "trg_hint",
+      "x": 752,
+      "y": 860,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "<",
+          "value": 9
+        },
+        "trigger_zone": {
+          "on_enter": [
+            {
+              "do": "set_var",
+              "var": "hint",
+              "value": 7
+            }
+          ],
+          "on_exit": [
+            {
+              "do": "set_var",
+              "var": "hint",
+              "value": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "e6_bramble",
+      "object": "prop_bramble",
+      "x": 1088,
+      "y": 948,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "==",
+          "value": 2
+        },
+        "move_switch": {
+          "on_open": [
+            {
+              "do": "play_sfx",
+              "sfx": "sfx_burn"
+            },
+            {
+              "do": "spawn",
+              "object": "ptc_gate_burn",
+              "x": 0,
+              "y": -12,
+              "relative": true
+            },
+            {
+              "do": "destroy_self"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "e6_hint",
+      "object": "trg_hint",
+      "x": 1068,
+      "y": 884,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "==",
+          "value": 2
+        },
+        "trigger_zone": {
+          "on_enter": [
+            {
+              "do": "set_var",
+              "var": "hint",
+              "value": 1
+            }
+          ],
+          "on_exit": [
+            {
+              "do": "set_var",
+              "var": "hint",
+              "value": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "e7_vines",
+      "object": "prop_vines",
+      "x": 1080,
+      "y": 1044,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "==",
+          "value": 2
+        }
+      }
+    },
+    {
+      "id": "e7_splashell",
+      "object": "prop_freed_splashell",
+      "x": 1080,
+      "y": 1044,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "==",
+          "value": 2
+        }
+      }
+    },
+    {
+      "id": "e7_free",
+      "object": "trg_freed",
+      "x": 1064,
+      "y": 1020,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "==",
+          "value": 2
+        },
+        "trigger_zone": {
+          "on_enter": [
+            {
+              "do": "set_var",
+              "var": "unlocked",
+              "value": 3
+            },
+            {
+              "do": "set_var",
+              "var": "new_mon",
+              "value": 2
+            },
+            {
+              "do": "save_game"
+            },
+            {
+              "do": "play_music",
+              "music": "mus_menu"
+            },
+            {
+              "do": "pause_world",
+              "ticks": 40
+            },
+            {
+              "do": "spawn",
+              "object": "ptc_freed",
+              "x": 1080,
+              "y": 1036,
+              "relative": false
+            },
+            {
+              "do": "spawn",
+              "object": "prop_freed_splashell",
+              "x": 1080,
+              "y": 1044,
+              "relative": false
+            },
+            {
+              "do": "play_sfx",
+              "sfx": "sfx_cry_splashell"
+            },
+            {
+              "do": "set_var",
+              "var": "banner",
+              "value": 1
+            },
+            {
+              "do": "wait",
+              "ticks": 30
+            },
+            {
+              "do": "play_sfx",
+              "sfx": "sfx_new_move"
+            },
+            {
+              "do": "wait",
+              "ticks": 210
+            },
+            {
+              "do": "set_var",
+              "var": "banner",
+              "value": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "f7_block_0",
+      "object": "plat_hole_64x32",
+      "x": 1248,
+      "y": 992
+    },
+    {
+      "id": "f7_block_1",
+      "object": "plat_hole_48x64",
+      "x": 1344,
+      "y": 992
+    },
+    {
+      "id": "f7_block_2",
+      "object": "plat_hole_16x64",
+      "x": 1232,
+      "y": 1008
+    },
+    {
+      "id": "f7_block_3",
+      "object": "plat_hole_16x64",
+      "x": 1392,
+      "y": 1008
+    },
+    {
+      "id": "f7_block_4",
+      "object": "plat_hole_16x32",
+      "x": 1216,
+      "y": 1024
+    },
+    {
+      "id": "f7_block_5",
+      "object": "plat_hole_48x64",
+      "x": 1248,
+      "y": 1024
+    },
+    {
+      "id": "f7_block_6",
+      "object": "plat_hole_16x32",
+      "x": 1408,
+      "y": 1024
+    },
+    {
+      "id": "f7_block_7",
+      "object": "plat_hole_64x48",
+      "x": 1296,
+      "y": 1056
+    },
+    {
+      "id": "f7_block_8",
+      "object": "plat_hole_32x32",
+      "x": 1360,
+      "y": 1056
+    },
+    {
+      "id": "f7_block_9",
+      "object": "plat_hole_16x16",
+      "x": 1280,
+      "y": 1088
+    },
+    {
+      "id": "f7_hole",
+      "object": "plat_hole_32x32",
+      "x": 1312,
+      "y": 992,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "<=",
+          "value": 7
+        }
+      }
+    },
+    {
+      "id": "f7_bridge",
+      "object": "prop_log_bridge",
+      "x": 1328,
+      "y": 1008,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": ">=",
+          "value": 8
+        }
+      }
+    },
+    {
+      "id": "f7_wispook",
+      "object": "prop_freed_wispook",
+      "x": 1320,
+      "y": 1048,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "==",
+          "value": 7
+        }
+      }
+    },
+    {
+      "id": "f7_free",
+      "object": "trg_freed",
+      "x": 1304,
+      "y": 1020,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "==",
+          "value": 7
+        },
+        "trigger_zone": {
+          "on_enter": [
+            {
+              "do": "set_var",
+              "var": "unlocked",
+              "value": 8
+            },
+            {
+              "do": "set_var",
+              "var": "new_mon",
+              "value": 7
+            },
+            {
+              "do": "save_game"
+            },
+            {
+              "do": "play_music",
+              "music": "mus_menu"
+            },
+            {
+              "do": "pause_world",
+              "ticks": 40
+            },
+            {
+              "do": "spawn",
+              "object": "ptc_freed",
+              "x": 1320,
+              "y": 1040,
+              "relative": false
+            },
+            {
+              "do": "spawn",
+              "object": "prop_log_bridge",
+              "x": 1328,
+              "y": 1008,
+              "relative": false
+            },
+            {
+              "do": "spawn",
+              "object": "prop_freed_wispook",
+              "x": 1320,
+              "y": 1048,
+              "relative": false
+            },
+            {
+              "do": "play_sfx",
+              "sfx": "sfx_cry_wispook"
+            },
+            {
+              "do": "set_var",
+              "var": "banner",
+              "value": 1
+            },
+            {
+              "do": "wait",
+              "ticks": 30
+            },
+            {
+              "do": "play_sfx",
+              "sfx": "sfx_new_move"
+            },
+            {
+              "do": "wait",
+              "ticks": 210
+            },
+            {
+              "do": "set_var",
+              "var": "banner",
+              "value": 0
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "a1_block_0",
+      "object": "prop_block_32x32",
+      "x": 64,
+      "y": 16
+    },
+    {
+      "id": "a1_block_1",
+      "object": "prop_block_32x32",
+      "x": 144,
+      "y": 16
+    },
+    {
+      "id": "a1_block_2",
+      "object": "prop_block_32x32",
+      "x": 64,
+      "y": 64
+    },
+    {
+      "id": "a1_block_3",
+      "object": "prop_block_32x32",
+      "x": 144,
+      "y": 64
+    },
+    {
+      "id": "a1_span_1",
+      "object": "prop_block_32x32",
+      "x": 96,
+      "y": 96,
+      "overrides": {
+        "appear_if": {
+          "var": "sw_1",
+          "op": "==",
+          "value": 0
+        }
+      }
+    },
+    {
+      "id": "a1_bridge_1",
+      "object": "prop_vine_bridge_v",
+      "x": 112,
+      "y": 112,
+      "overrides": {
+        "appear_if": {
+          "var": "sw_1",
+          "op": "==",
+          "value": 1
+        }
+      }
+    },
+    {
+      "id": "a1_sprout_1",
+      "object": "prop_sprout",
+      "x": 112,
+      "y": 142,
+      "overrides": {
+        "appear_if": {
+          "var": "sw_1",
+          "op": "==",
+          "value": 0
+        },
+        "move_switch": {
+          "on_open": [
+            {
+              "do": "set_var",
+              "var": "sw_1",
+              "value": 1
+            },
+            {
+              "do": "play_sfx",
+              "sfx": "sfx_grow"
+            },
+            {
+              "do": "spawn",
+              "object": "ptc_gate_grow",
+              "x": 0,
+              "y": -8,
+              "relative": true
+            },
+            {
+              "do": "spawn",
+              "object": "prop_vine_bridge_v",
+              "x": 112,
+              "y": 112,
+              "relative": false
+            },
+            {
+              "do": "destroy_self"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "a1_span_2",
+      "object": "prop_block_32x16",
+      "x": 64,
+      "y": 48,
+      "overrides": {
+        "appear_if": {
+          "var": "sw_2",
+          "op": "==",
+          "value": 0
+        }
+      }
+    },
+    {
+      "id": "a1_bridge_2",
+      "object": "prop_vine_bridge",
+      "x": 80,
+      "y": 56,
+      "overrides": {
+        "appear_if": {
+          "var": "sw_2",
+          "op": "==",
+          "value": 1
+        }
+      }
+    },
+    {
+      "id": "a1_sprout_2",
+      "object": "prop_sprout",
+      "x": 104,
+      "y": 62,
+      "overrides": {
+        "appear_if": {
+          "var": "sw_2",
+          "op": "==",
+          "value": 0
+        },
+        "move_switch": {
+          "on_open": [
+            {
+              "do": "set_var",
+              "var": "sw_2",
+              "value": 1
+            },
+            {
+              "do": "play_sfx",
+              "sfx": "sfx_grow"
+            },
+            {
+              "do": "spawn",
+              "object": "ptc_gate_grow",
+              "x": 0,
+              "y": -8,
+              "relative": true
+            },
+            {
+              "do": "spawn",
+              "object": "prop_vine_bridge",
+              "x": 80,
+              "y": 56,
+              "relative": false
+            },
+            {
+              "do": "destroy_self"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "a1_span_3",
+      "object": "prop_block_32x16",
+      "x": 144,
+      "y": 48,
+      "overrides": {
+        "appear_if": {
+          "var": "sw_3",
+          "op": "==",
+          "value": 0
+        }
+      }
+    },
+    {
+      "id": "a1_bridge_3",
+      "object": "prop_vine_bridge",
+      "x": 160,
+      "y": 56,
+      "overrides": {
+        "appear_if": {
+          "var": "sw_3",
+          "op": "==",
+          "value": 1
+        }
+      }
+    },
+    {
+      "id": "a1_sprout_3",
+      "object": "prop_sprout",
+      "x": 136,
+      "y": 62,
+      "overrides": {
+        "appear_if": {
+          "var": "sw_3",
+          "op": "==",
+          "value": 0
+        },
+        "move_switch": {
+          "on_open": [
+            {
+              "do": "set_var",
+              "var": "sw_3",
+              "value": 1
+            },
+            {
+              "do": "play_sfx",
+              "sfx": "sfx_grow"
+            },
+            {
+              "do": "spawn",
+              "object": "ptc_gate_grow",
+              "x": 0,
+              "y": -8,
+              "relative": true
+            },
+            {
+              "do": "spawn",
+              "object": "prop_vine_bridge",
+              "x": 160,
+              "y": 56,
+              "relative": false
+            },
+            {
+              "do": "destroy_self"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "a7_block_0",
+      "object": "npc_hedge_wall_32x32",
+      "x": 48,
+      "y": 992
+    },
+    {
+      "id": "a7_block_1",
+      "object": "npc_hedge_wall_32x32",
+      "x": 112,
+      "y": 992
+    },
+    {
+      "id": "a7_block_2",
+      "object": "npc_hedge_wall_32x32",
+      "x": 176,
+      "y": 992
+    },
+    {
+      "id": "a7_block_3",
+      "object": "npc_hedge_wall_64x32",
+      "x": 48,
+      "y": 1056
+    },
+    {
+      "id": "a7_block_4",
+      "object": "npc_hedge_wall_64x32",
+      "x": 144,
+      "y": 1056
+    },
+    {
+      "id": "a5_vines",
+      "object": "prop_vines",
+      "x": 120,
+      "y": 780,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "==",
+          "value": 1
+        }
+      }
+    },
+    {
+      "id": "a5_trapped",
+      "object": "prop_freed_emberpup",
+      "x": 120,
+      "y": 780,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "==",
+          "value": 1
+        }
+      }
+    },
+    {
+      "id": "a5_guard_1",
+      "object": "enm_land_pebbulk",
+      "x": 60,
+      "y": 700
+    },
+    {
+      "id": "a5_guard_2",
+      "object": "enm_land_pebbulk",
+      "x": 184,
+      "y": 692
+    },
+    {
+      "id": "a5_guard_3",
+      "object": "enm_land_pebbulk",
+      "x": 100,
+      "y": 756
+    },
+    {
+      "id": "a5_guard_4",
+      "object": "enm_land_pebbulk",
+      "x": 196,
+      "y": 732
+    },
+    {
+      "id": "g3_vines",
+      "object": "prop_vines",
+      "x": 1560,
+      "y": 348,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "==",
+          "value": 3
+        }
+      }
+    },
+    {
+      "id": "g3_trapped",
+      "object": "prop_freed_voltail",
+      "x": 1560,
+      "y": 348,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "==",
+          "value": 3
+        }
+      }
+    },
+    {
+      "id": "g3_guard_1",
+      "object": "enm_land_emberpup",
+      "x": 1480,
+      "y": 360
+    },
+    {
+      "id": "g3_guard_2",
+      "object": "enm_land_emberpup",
+      "x": 1624,
+      "y": 360
+    },
+    {
+      "id": "g3_guard_3",
+      "object": "enm_land_emberpup",
+      "x": 1480,
+      "y": 408
+    },
+    {
+      "id": "g3_guard_4",
+      "object": "enm_land_emberpup",
+      "x": 1560,
+      "y": 392
+    },
+    {
+      "id": "g3_guard_5",
+      "object": "enm_land_emberpup",
+      "x": 1648,
+      "y": 392
+    },
+    {
+      "id": "g3_guard_6",
+      "object": "enm_land_emberpup",
+      "x": 1576,
+      "y": 436
+    },
+    {
+      "id": "g3_guard_7",
+      "object": "enm_land_emberpup",
+      "x": 1528,
+      "y": 424
+    },
+    {
+      "id": "g3_guard_8",
+      "object": "enm_land_emberpup",
+      "x": 1640,
+      "y": 444
+    },
+    {
+      "id": "c1_vines",
+      "object": "prop_vines",
+      "x": 688,
+      "y": 142,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "==",
+          "value": 4
+        }
+      }
+    },
+    {
+      "id": "c1_trapped",
+      "object": "prop_freed_sproutle",
+      "x": 688,
+      "y": 142,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "==",
+          "value": 4
+        }
+      }
+    },
+    {
+      "id": "c1_guard_1",
+      "object": "enm_land_splashell",
+      "x": 504,
+      "y": 92
+    },
+    {
+      "id": "c1_guard_2",
+      "object": "enm_land_splashell",
+      "x": 560,
+      "y": 108
+    },
+    {
+      "id": "c1_guard_3",
+      "object": "enm_land_splashell",
+      "x": 608,
+      "y": 92
+    },
+    {
+      "id": "c1_guard_4",
+      "object": "enm_land_splashell",
+      "x": 656,
+      "y": 108
+    },
+    {
+      "id": "c1_guard_5",
+      "object": "enm_land_splashell",
+      "x": 696,
+      "y": 92
+    },
+    {
+      "id": "a1_vines",
+      "object": "prop_vines",
+      "x": 120,
+      "y": 34,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "==",
+          "value": 5
+        }
+      }
+    },
+    {
+      "id": "a1_trapped",
+      "object": "prop_freed_venomole",
+      "x": 120,
+      "y": 34,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "==",
+          "value": 5
+        }
+      }
+    },
+    {
+      "id": "a1_guard_1",
+      "object": "enm_land_voltail",
+      "x": 40,
+      "y": 64
+    },
+    {
+      "id": "a1_guard_2",
+      "object": "enm_land_voltail",
+      "x": 200,
+      "y": 64
+    },
+    {
+      "id": "a1_guard_3",
+      "object": "enm_land_voltail",
+      "x": 108,
+      "y": 88
+    },
+    {
+      "id": "a1_guard_4",
+      "object": "enm_land_voltail",
+      "x": 132,
+      "y": 88
+    },
+    {
+      "id": "g1_vines",
+      "object": "prop_vines",
+      "x": 1560,
+      "y": 28,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "==",
+          "value": 6
+        }
+      }
+    },
+    {
+      "id": "g1_trapped",
+      "object": "prop_freed_gustling",
+      "x": 1560,
+      "y": 28,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "==",
+          "value": 6
+        }
+      }
+    },
+    {
+      "id": "g1_guard_1",
+      "object": "enm_land_sproutle",
+      "x": 1496,
+      "y": 40
+    },
+    {
+      "id": "g1_guard_2",
+      "object": "enm_land_sproutle",
+      "x": 1624,
+      "y": 40
+    },
+    {
+      "id": "g1_guard_3",
+      "object": "enm_land_sproutle",
+      "x": 1528,
+      "y": 104
+    },
+    {
+      "id": "g1_guard_4",
+      "object": "enm_land_sproutle",
+      "x": 1624,
+      "y": 104
+    },
+    {
+      "id": "a7_vines",
+      "object": "prop_vines",
+      "x": 120,
+      "y": 1036,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "==",
+          "value": 8
+        }
+      }
+    },
+    {
+      "id": "a7_trapped",
+      "object": "prop_freed_pebbulk",
+      "x": 120,
+      "y": 1036,
+      "overrides": {
+        "appear_if": {
+          "var": "unlocked",
+          "op": "==",
+          "value": 8
+        }
+      }
+    },
+    {
+      "id": "a7_guard_1",
+      "object": "enm_land_furrbit",
+      "x": 40,
+      "y": 990
+    },
+    {
+      "id": "a7_guard_2",
+      "object": "enm_land_furrbit",
+      "x": 200,
+      "y": 1100
+    },
+    {
+      "id": "a7_guard_3",
+      "object": "enm_land_furrbit",
+      "x": 88,
+      "y": 1036
+    },
+    {
+      "id": "a7_guard_4",
+      "object": "enm_land_venomole",
+      "x": 200,
+      "y": 990
+    },
+    {
+      "id": "a7_guard_5",
+      "object": "enm_land_venomole",
+      "x": 40,
+      "y": 1100
+    },
+    {
+      "id": "a7_guard_6",
+      "object": "enm_land_venomole",
+      "x": 152,
+      "y": 1036
+    }
+  ],
+  "on_start": [
+    {
+      "do": "load_game"
+    },
+    {
+      "do": "set_var",
+      "var": "msg_q",
+      "value": 0
+    },
+    {
+      "do": "set_var",
+      "var": "msg_n",
+      "value": 0
+    },
+    {
+      "do": "set_var",
+      "var": "msg_i",
+      "value": 0
+    },
+    {
+      "do": "set_var",
+      "var": "near",
+      "value": 0
+    },
+    {
+      "do": "if_var",
+      "var": "run_ended",
+      "op": "==",
+      "value": 1,
+      "then": [
+        {
+          "do": "set_var",
+          "var": "hp_total",
+          "from": "hp_ups"
+        },
+        {
+          "do": "set_var",
+          "var": "power_total",
+          "from": "power_ups"
+        },
+        {
+          "do": "if_var",
+          "var": "plot_1",
+          "op": "==",
+          "value": 6,
+          "then": [
+            {
+              "do": "add_var",
+              "var": "hp_total",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "do": "if_var",
+          "var": "plot_2",
+          "op": "==",
+          "value": 6,
+          "then": [
+            {
+              "do": "add_var",
+              "var": "hp_total",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "do": "if_var",
+          "var": "plot_3",
+          "op": "==",
+          "value": 6,
+          "then": [
+            {
+              "do": "add_var",
+              "var": "hp_total",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "do": "if_var",
+          "var": "plot_4",
+          "op": "==",
+          "value": 6,
+          "then": [
+            {
+              "do": "add_var",
+              "var": "hp_total",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "do": "if_var",
+          "var": "plot_1",
+          "op": "==",
+          "value": 7,
+          "then": [
+            {
+              "do": "add_var",
+              "var": "power_total",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "do": "if_var",
+          "var": "plot_2",
+          "op": "==",
+          "value": 7,
+          "then": [
+            {
+              "do": "add_var",
+              "var": "power_total",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "do": "if_var",
+          "var": "plot_3",
+          "op": "==",
+          "value": 7,
+          "then": [
+            {
+              "do": "add_var",
+              "var": "power_total",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "do": "if_var",
+          "var": "plot_4",
+          "op": "==",
+          "value": 7,
+          "then": [
+            {
+              "do": "add_var",
+              "var": "power_total",
+              "value": 1
+            }
+          ]
+        },
+        {
+          "do": "if_var",
+          "var": "plot_1",
+          "op": ">=",
+          "value": 1,
+          "then": [
+            {
+              "do": "if_var",
+              "var": "plot_1",
+              "op": "<=",
+              "value": 5,
+              "then": [
+                {
+                  "do": "add_var",
+                  "var": "grow_1",
+                  "value": 1
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "do": "if_var",
+          "var": "grow_1",
+          "op": ">=",
+          "value": 1,
+          "then": [
+            {
+              "do": "set_var",
+              "var": "grow_1",
+              "value": 0
+            },
+            {
+              "do": "if_var",
+              "var": "plot_1",
+              "op": "==",
+              "value": 5,
+              "then": [
+                {
+                  "do": "random_var",
+                  "var": "item_roll",
+                  "min": 0,
+                  "max": 1
+                },
+                {
+                  "do": "if_var",
+                  "var": "hp_total",
+                  "op": ">=",
+                  "value": 5,
+                  "then": [
+                    {
+                      "do": "set_var",
+                      "var": "item_roll",
+                      "value": 1
+                    }
+                  ]
+                },
+                {
+                  "do": "if_var",
+                  "var": "power_total",
+                  "op": ">=",
+                  "value": 5,
+                  "then": [
+                    {
+                      "do": "set_var",
+                      "var": "item_roll",
+                      "value": 0
+                    }
+                  ]
+                },
+                {
+                  "do": "if_var",
+                  "var": "item_roll",
+                  "op": "==",
+                  "value": 0,
+                  "then": [
+                    {
+                      "do": "set_var",
+                      "var": "plot_1",
+                      "value": 6
+                    },
+                    {
+                      "do": "add_var",
+                      "var": "hp_total",
+                      "value": 1
+                    }
+                  ],
+                  "else": [
+                    {
+                      "do": "set_var",
+                      "var": "plot_1",
+                      "value": 7
+                    },
+                    {
+                      "do": "add_var",
+                      "var": "power_total",
+                      "value": 1
+                    }
+                  ]
+                }
+              ],
+              "else": [
+                {
+                  "do": "if_var",
+                  "var": "plot_1",
+                  "op": "<=",
+                  "value": 4,
+                  "then": [
+                    {
+                      "do": "add_var",
+                      "var": "plot_1",
+                      "value": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "do": "if_var",
+          "var": "plot_2",
+          "op": ">=",
+          "value": 1,
+          "then": [
+            {
+              "do": "if_var",
+              "var": "plot_2",
+              "op": "<=",
+              "value": 5,
+              "then": [
+                {
+                  "do": "add_var",
+                  "var": "grow_2",
+                  "value": 1
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "do": "if_var",
+          "var": "grow_2",
+          "op": ">=",
+          "value": 1,
+          "then": [
+            {
+              "do": "set_var",
+              "var": "grow_2",
+              "value": 0
+            },
+            {
+              "do": "if_var",
+              "var": "plot_2",
+              "op": "==",
+              "value": 5,
+              "then": [
+                {
+                  "do": "random_var",
+                  "var": "item_roll",
+                  "min": 0,
+                  "max": 1
+                },
+                {
+                  "do": "if_var",
+                  "var": "hp_total",
+                  "op": ">=",
+                  "value": 5,
+                  "then": [
+                    {
+                      "do": "set_var",
+                      "var": "item_roll",
+                      "value": 1
+                    }
+                  ]
+                },
+                {
+                  "do": "if_var",
+                  "var": "power_total",
+                  "op": ">=",
+                  "value": 5,
+                  "then": [
+                    {
+                      "do": "set_var",
+                      "var": "item_roll",
+                      "value": 0
+                    }
+                  ]
+                },
+                {
+                  "do": "if_var",
+                  "var": "item_roll",
+                  "op": "==",
+                  "value": 0,
+                  "then": [
+                    {
+                      "do": "set_var",
+                      "var": "plot_2",
+                      "value": 6
+                    },
+                    {
+                      "do": "add_var",
+                      "var": "hp_total",
+                      "value": 1
+                    }
+                  ],
+                  "else": [
+                    {
+                      "do": "set_var",
+                      "var": "plot_2",
+                      "value": 7
+                    },
+                    {
+                      "do": "add_var",
+                      "var": "power_total",
+                      "value": 1
+                    }
+                  ]
+                }
+              ],
+              "else": [
+                {
+                  "do": "if_var",
+                  "var": "plot_2",
+                  "op": "<=",
+                  "value": 4,
+                  "then": [
+                    {
+                      "do": "add_var",
+                      "var": "plot_2",
+                      "value": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "do": "if_var",
+          "var": "plot_3",
+          "op": ">=",
+          "value": 1,
+          "then": [
+            {
+              "do": "if_var",
+              "var": "plot_3",
+              "op": "<=",
+              "value": 5,
+              "then": [
+                {
+                  "do": "add_var",
+                  "var": "grow_3",
+                  "value": 1
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "do": "if_var",
+          "var": "grow_3",
+          "op": ">=",
+          "value": 1,
+          "then": [
+            {
+              "do": "set_var",
+              "var": "grow_3",
+              "value": 0
+            },
+            {
+              "do": "if_var",
+              "var": "plot_3",
+              "op": "==",
+              "value": 5,
+              "then": [
+                {
+                  "do": "random_var",
+                  "var": "item_roll",
+                  "min": 0,
+                  "max": 1
+                },
+                {
+                  "do": "if_var",
+                  "var": "hp_total",
+                  "op": ">=",
+                  "value": 5,
+                  "then": [
+                    {
+                      "do": "set_var",
+                      "var": "item_roll",
+                      "value": 1
+                    }
+                  ]
+                },
+                {
+                  "do": "if_var",
+                  "var": "power_total",
+                  "op": ">=",
+                  "value": 5,
+                  "then": [
+                    {
+                      "do": "set_var",
+                      "var": "item_roll",
+                      "value": 0
+                    }
+                  ]
+                },
+                {
+                  "do": "if_var",
+                  "var": "item_roll",
+                  "op": "==",
+                  "value": 0,
+                  "then": [
+                    {
+                      "do": "set_var",
+                      "var": "plot_3",
+                      "value": 6
+                    },
+                    {
+                      "do": "add_var",
+                      "var": "hp_total",
+                      "value": 1
+                    }
+                  ],
+                  "else": [
+                    {
+                      "do": "set_var",
+                      "var": "plot_3",
+                      "value": 7
+                    },
+                    {
+                      "do": "add_var",
+                      "var": "power_total",
+                      "value": 1
+                    }
+                  ]
+                }
+              ],
+              "else": [
+                {
+                  "do": "if_var",
+                  "var": "plot_3",
+                  "op": "<=",
+                  "value": 4,
+                  "then": [
+                    {
+                      "do": "add_var",
+                      "var": "plot_3",
+                      "value": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "do": "if_var",
+          "var": "plot_4",
+          "op": ">=",
+          "value": 1,
+          "then": [
+            {
+              "do": "if_var",
+              "var": "plot_4",
+              "op": "<=",
+              "value": 5,
+              "then": [
+                {
+                  "do": "add_var",
+                  "var": "grow_4",
+                  "value": 1
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "do": "if_var",
+          "var": "grow_4",
+          "op": ">=",
+          "value": 1,
+          "then": [
+            {
+              "do": "set_var",
+              "var": "grow_4",
+              "value": 0
+            },
+            {
+              "do": "if_var",
+              "var": "plot_4",
+              "op": "==",
+              "value": 5,
+              "then": [
+                {
+                  "do": "random_var",
+                  "var": "item_roll",
+                  "min": 0,
+                  "max": 1
+                },
+                {
+                  "do": "if_var",
+                  "var": "hp_total",
+                  "op": ">=",
+                  "value": 5,
+                  "then": [
+                    {
+                      "do": "set_var",
+                      "var": "item_roll",
+                      "value": 1
+                    }
+                  ]
+                },
+                {
+                  "do": "if_var",
+                  "var": "power_total",
+                  "op": ">=",
+                  "value": 5,
+                  "then": [
+                    {
+                      "do": "set_var",
+                      "var": "item_roll",
+                      "value": 0
+                    }
+                  ]
+                },
+                {
+                  "do": "if_var",
+                  "var": "item_roll",
+                  "op": "==",
+                  "value": 0,
+                  "then": [
+                    {
+                      "do": "set_var",
+                      "var": "plot_4",
+                      "value": 6
+                    },
+                    {
+                      "do": "add_var",
+                      "var": "hp_total",
+                      "value": 1
+                    }
+                  ],
+                  "else": [
+                    {
+                      "do": "set_var",
+                      "var": "plot_4",
+                      "value": 7
+                    },
+                    {
+                      "do": "add_var",
+                      "var": "power_total",
+                      "value": 1
+                    }
+                  ]
+                }
+              ],
+              "else": [
+                {
+                  "do": "if_var",
+                  "var": "plot_4",
+                  "op": "<=",
+                  "value": 4,
+                  "then": [
+                    {
+                      "do": "add_var",
+                      "var": "plot_4",
+                      "value": 1
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "do": "if_var",
+          "var": "run_seed",
+          "op": "==",
+          "value": 1,
+          "then": [
+            {
+              "do": "if_var",
+              "var": "plot_1",
+              "op": "==",
+              "value": 0,
+              "then": [
+                {
+                  "do": "set_var",
+                  "var": "plot_1",
+                  "value": 1
+                },
+                {
+                  "do": "set_var",
+                  "var": "grow_1",
+                  "value": 0
+                },
+                {
+                  "do": "set_var",
+                  "var": "run_seed",
+                  "value": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "do": "if_var",
+          "var": "run_seed",
+          "op": "==",
+          "value": 1,
+          "then": [
+            {
+              "do": "if_var",
+              "var": "plot_2",
+              "op": "==",
+              "value": 0,
+              "then": [
+                {
+                  "do": "set_var",
+                  "var": "plot_2",
+                  "value": 1
+                },
+                {
+                  "do": "set_var",
+                  "var": "grow_2",
+                  "value": 0
+                },
+                {
+                  "do": "set_var",
+                  "var": "run_seed",
+                  "value": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "do": "if_var",
+          "var": "run_seed",
+          "op": "==",
+          "value": 1,
+          "then": [
+            {
+              "do": "if_var",
+              "var": "plot_3",
+              "op": "==",
+              "value": 0,
+              "then": [
+                {
+                  "do": "set_var",
+                  "var": "plot_3",
+                  "value": 1
+                },
+                {
+                  "do": "set_var",
+                  "var": "grow_3",
+                  "value": 0
+                },
+                {
+                  "do": "set_var",
+                  "var": "run_seed",
+                  "value": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "do": "if_var",
+          "var": "run_seed",
+          "op": "==",
+          "value": 1,
+          "then": [
+            {
+              "do": "if_var",
+              "var": "plot_4",
+              "op": "==",
+              "value": 0,
+              "then": [
+                {
+                  "do": "set_var",
+                  "var": "plot_4",
+                  "value": 1
+                },
+                {
+                  "do": "set_var",
+                  "var": "grow_4",
+                  "value": 0
+                },
+                {
+                  "do": "set_var",
+                  "var": "run_seed",
+                  "value": 0
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "do": "set_var",
+          "var": "run_ended",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "run_seed",
+          "value": 0
+        },
+        {
+          "do": "save_game"
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "unlocked",
+      "op": "<",
+      "value": 9,
+      "then": [
+        {
+          "do": "set_var",
+          "var": "mode",
+          "value": 0
+        }
+      ]
+    },
+    {
+      "do": "set_var",
+      "var": "spot",
+      "value": 0
+    },
+    {
+      "do": "if_var",
+      "var": "unlocked",
+      "op": ">",
+      "value": 2,
+      "then": [
+        {
+          "do": "set_var",
+          "var": "gate_2",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "unlocked",
+      "op": ">",
+      "value": 3,
+      "then": [
+        {
+          "do": "set_var",
+          "var": "gate_3",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "unlocked",
+      "op": ">",
+      "value": 4,
+      "then": [
+        {
+          "do": "set_var",
+          "var": "gate_4",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "unlocked",
+      "op": ">",
+      "value": 5,
+      "then": [
+        {
+          "do": "set_var",
+          "var": "gate_5",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "do": "if_var",
+      "var": "unlocked",
+      "op": ">",
+      "value": 6,
+      "then": [
+        {
+          "do": "set_var",
+          "var": "gate_6",
+          "value": 1
+        }
+      ]
+    },
+    {
+      "do": "set_var",
+      "var": "land_sign",
+      "value": 0
+    },
+    {
+      "do": "set_var",
+      "var": "hint",
+      "value": 0
+    },
+    {
+      "do": "set_var",
+      "var": "banner",
+      "value": 0
+    },
+    {
+      "do": "set_var",
+      "var": "land",
+      "value": 0
+    },
+    {
+      "do": "set_var",
+      "var": "prev_land",
+      "value": 0
+    },
+    {
+      "do": "fade_in",
+      "ticks": 16
+    }
+  ]
+}

@@ -1,0 +1,220 @@
+{
+  "id": "menu_clear_save",
+  "kind": "object",
+  "type": "menu",
+  "name": "Clear saved progress",
+  "notes": "Opens with A or B while the monster stands by the CLEAR SAVE sign of the menu map. Asks before wiping the saved progress, every word in red, and lists everything that will be lost: unlocked monsters and the map's opened paths (the bramble, flames, crystal, vine bridge and boulder come back), best times, shiny monsters, the garden (its HP UP and POWER UP items, plants and seeds) and the items waiting for the next run. NO (or B / START) closes it; YES clears it all (only Furrbit unlocked, so the waves mode closes too), saves and reloads the menu.",
+  "font": "font_default",
+  "title": "CLEAR SAVED PROGRESS?",
+  "cursor": "icon_cursor",
+  "box": {
+    "x": 8,
+    "y": 24,
+    "w": 224,
+    "h": 120,
+    "paper": 3,
+    "border": 2
+  },
+  "texts": [
+    {
+      "x": 24,
+      "y": 48,
+      "text": "EVERYTHING WILL BE LOST:"
+    },
+    {
+      "x": 16,
+      "y": 64,
+      "text": "- UNLOCKED MONSTERS, PATHS"
+    },
+    {
+      "x": 16,
+      "y": 72,
+      "text": "- BEST TIMES"
+    },
+    {
+      "x": 16,
+      "y": 80,
+      "text": "- SHINY MONSTERS"
+    },
+    {
+      "x": 16,
+      "y": 88,
+      "text": "- ITEMS, PLANTS AND SEEDS"
+    },
+    {
+      "x": 16,
+      "y": 96,
+      "text": "- ITEMS FOR THE NEXT RUN"
+    }
+  ],
+  "layout": {
+    "x": 104,
+    "y": 112,
+    "spacing": 16,
+    "title_y": 32
+  },
+  "options": [
+    {
+      "label": "NO",
+      "actions": [
+        {
+          "do": "close_menu"
+        }
+      ]
+    },
+    {
+      "label": "YES",
+      "actions": [
+        {
+          "do": "set_var",
+          "var": "unlocked",
+          "value": 1
+        },
+        {
+          "do": "set_var",
+          "var": "chosen",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "best_time",
+          "value": -1
+        },
+        {
+          "do": "set_var",
+          "var": "mode",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "shiny",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "prize_1",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "prize_2",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "prize_3",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "hp_ups",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "power_ups",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "plot_1",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "plot_2",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "plot_3",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "plot_4",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "grow_1",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "grow_2",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "grow_3",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "grow_4",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "run_seed",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "run_ended",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "gate_2",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "gate_3",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "gate_4",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "gate_5",
+          "value": 0
+        },
+        {
+          "do": "set_var",
+          "var": "gate_6",
+          "value": 0
+        },
+        {
+          "do": "save_game"
+        },
+        {
+          "do": "close_menu"
+        },
+        {
+          "do": "fade_out",
+          "ticks": 16
+        },
+        {
+          "do": "goto_scene",
+          "scene": "scn_menu"
+        }
+      ]
+    }
+  ],
+  "on_cancel": [
+    {
+      "do": "close_menu"
+    }
+  ],
+  "sounds": {
+    "move": "sfx_select",
+    "select": "sfx_confirm"
+  },
+  "color": "#f86860"
+}

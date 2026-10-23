@@ -1,0 +1,29 @@
+{
+  "id": "body_bramble",
+  "kind": "object",
+  "type": "body",
+  "name": "Bramble wall body",
+  "notes": "A bramble wall across a path 32 px wide: its box is 32 x 24 above its feet; solid.",
+  "origin": [
+    16,
+    31
+  ],
+  "hitbox": {
+    "x": -16,
+    "y": -24,
+    "w": 32,
+    "h": 24
+  },
+  "physics": {
+    "gravity": false,
+    "solid": true,
+    "collides_with": []
+  },
+  "animations": {
+    "idle": "anim_bramble"
+  },
+  "default_animation": "idle",
+  "children": [
+    "anim_bramble"
+  ]
+}

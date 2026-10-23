@@ -1,0 +1,123 @@
+{
+  "id": "hud_map",
+  "kind": "object",
+  "type": "hud",
+  "name": "Map HUD",
+  "notes": "On the menu map outside the Green Meadow (no panel, so the whole screen stays in view). Bottom left: A, B and R with the charge circles of the monster's 3 moves, as in a run. Bottom right: LV7 and the HP bar (green, yellow at half, red at a quarter). Top middle, in the thin gold letters: the land's name for 3 s when the monster walks into it (EMBER CRATER); what a gate needs while it stands by it (ONLY FIRE CAN BURN THIS); on walking into a challenge screen whose monster is still trapped, for 3 s, the garden items its fight is tuned for (BRING 5 GARDEN ITEMS / YOU HAVE 3). Middle, in the same gold letters, when a monster is freed: <NAME> UNLOCKED! / PICK IT IN THE CAVE.",
+  "font": "font_default",
+  "elements": [
+    {
+      "kind": "icon",
+      "x": 8,
+      "y": 144,
+      "icon": "icon_btn_a"
+    },
+    {
+      "kind": "gauge",
+      "x": 24,
+      "y": 144,
+      "var": "g1",
+      "icons": [
+        "icon_gauge_0",
+        "icon_gauge_1",
+        "icon_gauge_2",
+        "icon_gauge_3",
+        "icon_gauge_4",
+        "icon_gauge_5",
+        "icon_gauge_6"
+      ]
+    },
+    {
+      "kind": "icon",
+      "x": 40,
+      "y": 144,
+      "icon": "icon_btn_b"
+    },
+    {
+      "kind": "gauge",
+      "x": 56,
+      "y": 144,
+      "var": "g2",
+      "icons": [
+        "icon_gauge_0",
+        "icon_gauge_1",
+        "icon_gauge_2",
+        "icon_gauge_3",
+        "icon_gauge_4",
+        "icon_gauge_5",
+        "icon_gauge_6"
+      ]
+    },
+    {
+      "kind": "icon",
+      "x": 72,
+      "y": 144,
+      "icon": "icon_btn_r"
+    },
+    {
+      "kind": "gauge",
+      "x": 88,
+      "y": 144,
+      "var": "g3",
+      "icons": [
+        "icon_gauge_0",
+        "icon_gauge_1",
+        "icon_gauge_2",
+        "icon_gauge_3",
+        "icon_gauge_4",
+        "icon_gauge_5",
+        "icon_gauge_6"
+      ]
+    },
+    {
+      "kind": "text",
+      "x": 136,
+      "y": 144,
+      "text": "LV{map_level}"
+    },
+    {
+      "kind": "bar",
+      "x": 168,
+      "y": 144,
+      "var": "map_hp",
+      "max_var": "map_hp_max",
+      "length": 8,
+      "color": 9,
+      "mid_color": 4,
+      "low_color": 5,
+      "back": 13
+    },
+    {
+      "kind": "text",
+      "x": 120,
+      "y": 8,
+      "align": "center",
+      "font": "font_info",
+      "text": "{land_sign|{hint||ONLY FIRE CAN BURN THIS|ONLY WATER CAN PUT THIS OUT|ONLY ELECTRICITY BREAKS THIS|ONLY GRASS GROWS A BRIDGE|ONLY POISON MELTS THIS ROCK|ONLY A FLYER CAN CROSS THIS|ONLY A GHOST CAN PASS THIS||||BRING 5 GARDEN ITEMS||BRING 6 GARDEN ITEMS|BRING 6 GARDEN ITEMS|BRING 7 GARDEN ITEMS|BRING 8 GARDEN ITEMS||BRING 10 GARDEN ITEMS}|{land|GREEN MEADOW|BOULDER CANYON|VERDANT JUNGLE|EMBER CRATER|CORAL LAGOON|STORM PLATEAU|MIASMA SWAMP|SKY ISLE|HAUNTED HOLLOW}}"
+    },
+    {
+      "kind": "text",
+      "x": 120,
+      "y": 16,
+      "align": "center",
+      "font": "font_info",
+      "text": "{land_sign|{hint||||||||||||YOU HAVE {garden_owned}||YOU HAVE {garden_owned}|YOU HAVE {garden_owned}|YOU HAVE {garden_owned}|YOU HAVE {garden_owned}||YOU HAVE {garden_owned}}|}"
+    },
+    {
+      "kind": "text",
+      "x": 120,
+      "y": 40,
+      "align": "center",
+      "font": "font_info",
+      "text": "{banner||{new_mon.name} UNLOCKED!}"
+    },
+    {
+      "kind": "text",
+      "x": 120,
+      "y": 56,
+      "align": "center",
+      "font": "font_info",
+      "text": "{banner||PICK IT IN THE CAVE}"
+    }
+  ]
+}
