@@ -1,0 +1,3 @@
+build/
+# PCSX-Redux crash-reporter state (created in the emulator's working directory)
+.sentry-native/

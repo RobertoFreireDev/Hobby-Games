@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<iso_project>
+  <track type="data">
+    <identifiers system="PLAYSTATION" application="PLAYSTATION"
+                 volume="GAME" volume_set="GAME" publisher="HOMEBREW"
+                 data_preparer="PSN00BSDK ${PSN00BSDK_VERSION}" copyright="README.TXT;1" />
+    <directory_tree>
+      <file name="SYSTEM.CNF" type="data" source="${PROJECT_SOURCE_DIR}/system.cnf" />
+      <file name="GAME.EXE"   type="data" source="game.exe" />
+      <!-- extra data files: <file name="LEVEL1.BIN" type="data" source="${PROJECT_SOURCE_DIR}/data/level1.bin" /> -->
+      <dummy sectors="1024"/>
+    </directory_tree>
+  </track>
+  <!-- CD audio is not used: music is synthesized (section 12). -->
+</iso_project>
